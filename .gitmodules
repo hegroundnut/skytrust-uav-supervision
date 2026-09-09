@@ -1,0 +1,21 @@
+[submodule "platforms/gchain-back"]
+	path = platforms/gchain-back
+	url = https://gitee.com/rwolf07/gchain-back.git
+[submodule "platforms/gchain-web"]
+	path = platforms/gchain-web
+	url = https://gitee.com/rwolf07/gchain-web.git
+[submodule "platforms/fisco-bcos"]
+	path = platforms/fisco-bcos
+	url = https://github.com/FISCO-BCOS/go-sdk.git
+[submodule "platforms/fisco-console"]
+	path = platforms/fisco-console
+	url = https://github.com/FISCO-BCOS/console.git
+[submodule "platforms/fisco-node"]
+	path = platforms/fisco-node
+	url = https://github.com/FISCO-BCOS/FISCO-BCOS.git
+[submodule "platforms/fabric-samples"]
+	path = platforms/fabric-samples
+	url = https://github.com/hyperledger/fabric-samples.git
+[submodule "platforms/chainmaker/chainmaker-go"]
+	path = platforms/chainmaker/chainmaker-go
+	url = https://git.chainmaker.org.cn/chainmaker/chainmaker-go.git
