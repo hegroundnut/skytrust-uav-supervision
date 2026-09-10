@@ -89,6 +89,17 @@ func (c *Chain) txID(contract, method string, params map[string]any) string {
 	return strings.ToUpper(c.name) + "-" + hex.EncodeToString(h[:])[:32]
 }
 
+// ResetState 清空链模拟器全部运行时状态：回执、KV 状态、区块高度、交易计数与故障注入计数。
+func (c *Chain) ResetState() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.receipts = map[string]*chainadapter.TxReceipt{}
+	c.state = map[string][]byte{}
+	c.blockNum = 0
+	c.txCount = 0
+	c.failNext = map[string]int{}
+}
+
 func (c *Chain) QueryTx(ctx context.Context, txID string) (*chainadapter.TxReceipt, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

@@ -8,25 +8,28 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"skytrust-backend/internal/chainadapter/sim"
 	"skytrust-backend/internal/crypto"
+	"skytrust-backend/internal/demo"
 	"skytrust-backend/internal/model"
 )
 
-func setupTestRouter(t *testing.T) *gin.Engine {
+func setupFullTestRouter(t *testing.T) *gin.Engine {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
-	db, err := model.Open(":memory:")
-	if err != nil {
-		t.Fatal(err)
+	db, _ := model.Open(":memory:")
+	model.Migrate(db)
+	cs, _ := crypto.NewService(t.TempDir())
+	chains := map[string]*sim.Chain{
+		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
 	}
-	if err := model.Migrate(db); err != nil {
-		t.Fatal(err)
-	}
-	cs, err := crypto.NewService(t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
-	return NewRouter(&Deps{DB: db, Crypto: cs})
+	seeder := demo.NewSeeder(db, cs, chains)
+	return NewRouter(&Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder})
+}
+
+func setupTestRouter(t *testing.T) *gin.Engine {
+	t.Helper()
+	return setupFullTestRouter(t)
 }
 
 func post(r *gin.Engine, path string, body any) Resp {

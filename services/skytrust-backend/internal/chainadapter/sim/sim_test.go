@@ -96,3 +96,36 @@ func TestHealthAndChainName(t *testing.T) {
 		t.Error("bad name/health")
 	}
 }
+
+func TestResetState(t *testing.T) {
+	c := New("chainmaker", WithFailNext("IssuePass", 3))
+	rc, err := c.SubmitTx(context.Background(), "cc", "m", map[string]any{"a": 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.PutState("cc", "k", []byte("v"))
+
+	c.ResetState()
+
+	// 旧回执已清除
+	if _, err := c.QueryTx(context.Background(), rc.TxID); err == nil {
+		t.Error("receipts must be cleared after ResetState")
+	}
+	// 旧 KV 已清除
+	if _, err := c.QueryState(context.Background(), "cc", "k"); err == nil {
+		t.Error("state must be cleared after ResetState")
+	}
+	// failNext 已清除：故障注入方法立即成功
+	rf, err := c.SubmitTx(context.Background(), "FlightPass", "IssuePass", nil)
+	if err != nil || rf.Status != 0 {
+		t.Errorf("failNext must be cleared: %+v %v", rf, err)
+	}
+	// 区块高度归零后重新计数：上一笔为 1，下一笔为 2
+	rm, err := c.SubmitTx(context.Background(), "cc", "m", map[string]any{"a": 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rf.BlockNum != 1 || rm.BlockNum != 2 {
+		t.Errorf("blockNum must restart at 1: got %d then %d", rf.BlockNum, rm.BlockNum)
+	}
+}

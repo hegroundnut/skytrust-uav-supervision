@@ -3,15 +3,32 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"skytrust-backend/internal/chainadapter/sim"
 	"skytrust-backend/internal/crypto"
+	"skytrust-backend/internal/demo"
 )
 
 type ChainStatusProvider interface{ Health() error }
 
 type Deps struct {
-	DB     *gorm.DB
-	Chains map[string]ChainStatusProvider
-	Crypto *crypto.Service
+	DB        *gorm.DB
+	Chains    map[string]ChainStatusProvider
+	SimChains map[string]*sim.Chain
+	Crypto    *crypto.Service
+	Seeder    *demo.Seeder
+}
+
+// chainProviders 优先返回 SimChains（*sim.Chain 结构上满足 ChainStatusProvider），
+// 否则回退到 Chains（保留兼容既有测试/接线）。
+func chainProviders(deps *Deps) map[string]ChainStatusProvider {
+	if len(deps.SimChains) > 0 {
+		out := make(map[string]ChainStatusProvider, len(deps.SimChains))
+		for name, c := range deps.SimChains {
+			out[name] = c
+		}
+		return out
+	}
+	return deps.Chains
 }
 
 func healthCheck(deps *Deps) gin.HandlerFunc {
@@ -28,7 +45,7 @@ func healthCheck(deps *Deps) gin.HandlerFunc {
 			items["database"] = "ONLINE"
 		}
 		chains := gin.H{}
-		for name, ad := range deps.Chains {
+		for name, ad := range chainProviders(deps) {
 			if ad.Health() == nil {
 				chains[name] = "ONLINE"
 			} else {
@@ -48,7 +65,7 @@ func healthCheck(deps *Deps) gin.HandlerFunc {
 func chainStatus(deps *Deps) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		chains := gin.H{}
-		for name, ad := range deps.Chains {
+		for name, ad := range chainProviders(deps) {
 			if ad.Health() == nil {
 				chains[name] = "ONLINE"
 			} else {
