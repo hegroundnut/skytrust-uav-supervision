@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"skytrust-backend/internal/audit"
 	"skytrust-backend/internal/chainadapter/sim"
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/demo"
@@ -24,7 +25,7 @@ func setupFullTestRouter(t *testing.T) *gin.Engine {
 		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
 	}
 	seeder := demo.NewSeeder(db, cs, chains)
-	return NewRouter(&Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder})
+	return NewRouter(&Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: audit.New(db)})
 }
 
 func setupTestRouter(t *testing.T) *gin.Engine {

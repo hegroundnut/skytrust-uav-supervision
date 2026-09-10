@@ -16,6 +16,8 @@ func NewRouter(deps *Deps) *gin.Engine {
 		api.POST("/crypto/sm9/verify", sm9VerifyHandler(deps))
 		api.POST("/demo/init", demoInitHandler(deps))
 		api.POST("/demo/reset", demoResetHandler(deps))
+		api.POST("/audit/query", auditQueryHandler(deps))
+		api.POST("/audit/export", auditExportHandler(deps))
 	}
 	return r
 }

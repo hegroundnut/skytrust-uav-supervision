@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"skytrust-backend/internal/api"
+	"skytrust-backend/internal/audit"
 	"skytrust-backend/internal/chainadapter/sim"
 	"skytrust-backend/internal/config"
 	"skytrust-backend/internal/crypto"
@@ -38,7 +39,8 @@ func Run(addr string) error {
 		"fisco-bcos": sim.New("fisco-bcos", sim.WithLatency(10*time.Millisecond)),
 	}
 	seeder := demo.NewSeeder(db, cs, chains)
-	r := api.NewRouter(&api.Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder})
+	auditSvc := audit.New(db)
+	r := api.NewRouter(&api.Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: auditSvc})
 	log.Printf("skytrust-backend listening on %s (chain_mode=%s)", cfg.ServerAddr, cfg.ChainMode)
 	return r.Run(cfg.ServerAddr)
 }

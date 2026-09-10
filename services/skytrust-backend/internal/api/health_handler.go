@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"skytrust-backend/internal/audit"
 	"skytrust-backend/internal/chainadapter/sim"
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/demo"
@@ -16,6 +17,7 @@ type Deps struct {
 	SimChains map[string]*sim.Chain
 	Crypto    *crypto.Service
 	Seeder    *demo.Seeder
+	Audit     *audit.Service
 }
 
 // chainProviders 优先返回 SimChains（*sim.Chain 结构上满足 ChainStatusProvider），
