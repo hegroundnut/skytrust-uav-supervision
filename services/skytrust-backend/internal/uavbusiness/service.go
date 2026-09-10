@@ -34,7 +34,7 @@ func (s *Service) logAudit(traceID, actor, action, targetType, targetID string, 
 }
 
 // sendCrosschain 统一跨链出口：构规范化信封 → uid SM9 签名 → 网关 Send。
-// 返回的 tx 在失败时同样非 nil（网关留痕记录），调用方应透传给 FailData。
+// 网关错误时 tx 非 nil（留痕记录）；SignEnvelope 失败时返回 nil。调用方应将非 nil tx 透传给 FailData。
 func (s *Service) sendCrosschain(ctx context.Context, traceID, msgType, businessID, sourceChain, targetChain string, payload map[string]any, uid string, sourceTxID string) (*model.CrosschainTx, error) {
 	env := crosschain.BuildEnvelope(msgType, businessID, sourceChain, targetChain, payload)
 	sig, sm3, err := crosschain.SignEnvelope(s.cs, uid, env)

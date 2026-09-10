@@ -103,7 +103,9 @@ type crosschainListReq struct {
 func crosschainListHandler(deps *Deps) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req crosschainListReq
-		_ = c.ShouldBindJSON(&req) // 全字段可选，空体合法
+		if !bindOptionalBody(c, &req) {
+			return
+		}
 		f := crosschain.ListFilter{
 			Status: req.Status, MessageType: req.MessageType,
 			Page: req.Page, PageSize: req.PageSize,

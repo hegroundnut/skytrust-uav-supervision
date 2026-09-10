@@ -129,6 +129,10 @@ func TestCrosschainQueryAndList(t *testing.T) {
 	if l["code"].(float64) != 0 || l["data"].(map[string]any)["total"].(float64) != 1 {
 		t.Fatalf("list: %v", l)
 	}
+	bad := postJSON(t, r, "/api/crosschain/list", map[string]any{"page": "abc"})
+	if bad["code"].(float64) != 6002 {
+		t.Fatalf("list malformed body: want 6002, got %v", bad["code"])
+	}
 	empty := postJSON(t, r, "/api/crosschain/list", map[string]any{})
 	if empty["code"].(float64) != 0 {
 		t.Fatalf("list empty body must be legal: %v", empty)
