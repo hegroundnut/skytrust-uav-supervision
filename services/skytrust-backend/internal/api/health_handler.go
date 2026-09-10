@@ -7,8 +7,10 @@ import (
 	"gorm.io/gorm"
 	"skytrust-backend/internal/audit"
 	"skytrust-backend/internal/chainadapter/sim"
+	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/demo"
+	"skytrust-backend/internal/uavbusiness"
 )
 
 type ChainStatusProvider interface{ Health() error }
@@ -20,6 +22,8 @@ type Deps struct {
 	Crypto    *crypto.Service
 	Seeder    *demo.Seeder
 	Audit     *audit.Service
+	Gateway   *crosschain.Gateway
+	Business  *uavbusiness.Service
 }
 
 // Validate 构造期校验（B1）：接线遗漏在启动时暴露，而非运行期 panic。
@@ -41,6 +45,12 @@ func (d *Deps) Validate() error {
 	}
 	if len(d.SimChains) == 0 && len(d.Chains) == 0 {
 		return errors.New("deps: at least one chain (SimChains or Chains) is required")
+	}
+	if d.Gateway == nil {
+		return errors.New("deps: Gateway is required")
+	}
+	if d.Business == nil {
+		return errors.New("deps: Business is required")
 	}
 	return nil
 }

@@ -21,6 +21,9 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/demo/reset", demoResetHandler(deps))
 		api.POST("/audit/query", auditQueryHandler(deps))
 		api.POST("/audit/export", auditExportHandler(deps))
+		api.POST("/crosschain/send", crosschainSendHandler(deps))
+		api.POST("/crosschain/query", crosschainQueryHandler(deps))
+		api.POST("/crosschain/list", crosschainListHandler(deps))
 	}
 	return r, nil
 }

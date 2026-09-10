@@ -49,6 +49,14 @@ func Fail(c *gin.Context, code int, msg string) {
 	})
 }
 
+// FailData 携带业务数据的失败响应（如跨链失败时已落库的留痕记录）：code 非 0，data 非 nil。
+func FailData(c *gin.Context, code int, msg string, data any) {
+	c.JSON(http.StatusOK, Resp{
+		Code: code, Message: msg, Data: data,
+		TraceID: TraceIDFrom(c), Timestamp: Now().Format(TimeFmt),
+	})
+}
+
 // FailErr: BizError 用其码，其余归 9001。
 func FailErr(c *gin.Context, err error) {
 	if be, ok := err.(*BizError); ok {

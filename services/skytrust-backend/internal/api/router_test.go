@@ -9,10 +9,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"skytrust-backend/internal/audit"
+	"skytrust-backend/internal/chainadapter"
 	"skytrust-backend/internal/chainadapter/sim"
+	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/demo"
 	"skytrust-backend/internal/model"
+	"skytrust-backend/internal/uavbusiness"
 )
 
 func doPost(r *gin.Engine, path string) *httptest.ResponseRecorder {
@@ -39,7 +42,14 @@ func validTestDeps(t *testing.T) *Deps {
 	chains := map[string]*sim.Chain{
 		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
 	}
-	return &Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: demo.NewSeeder(db, cs, chains), Audit: audit.New(db)}
+	adapters := make(map[string]chainadapter.ChainAdapter, len(chains))
+	for name, s := range chains {
+		adapters[name] = s
+	}
+	auditSvc := audit.New(db)
+	gw := crosschain.NewGateway(db, cs, adapters, auditSvc)
+	biz := uavbusiness.New(db, cs, gw, auditSvc)
+	return &Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: demo.NewSeeder(db, cs, chains), Audit: auditSvc, Gateway: gw, Business: biz}
 }
 
 func TestHealthPing(t *testing.T) {
@@ -137,6 +147,16 @@ func TestNewRouterRejectsInvalidDeps(t *testing.T) {
 	d.SimChains, d.Chains = nil, nil
 	if _, err := NewRouter(d); err == nil {
 		t.Error("missing chains must be rejected")
+	}
+	d = validTestDeps(t)
+	d.Gateway = nil
+	if _, err := NewRouter(d); err == nil {
+		t.Error("missing Gateway must be rejected")
+	}
+	d = validTestDeps(t)
+	d.Business = nil
+	if _, err := NewRouter(d); err == nil {
+		t.Error("missing Business must be rejected")
 	}
 	if _, err := NewRouter(validTestDeps(t)); err != nil {
 		t.Errorf("valid deps rejected: %v", err)

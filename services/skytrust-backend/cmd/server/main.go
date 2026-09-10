@@ -7,11 +7,14 @@ import (
 
 	"skytrust-backend/internal/api"
 	"skytrust-backend/internal/audit"
+	"skytrust-backend/internal/chainadapter"
 	"skytrust-backend/internal/chainadapter/sim"
 	"skytrust-backend/internal/config"
+	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/demo"
 	"skytrust-backend/internal/model"
+	"skytrust-backend/internal/uavbusiness"
 )
 
 func Run(addr string) error {
@@ -40,7 +43,13 @@ func Run(addr string) error {
 	}
 	seeder := demo.NewSeeder(db, cs, chains)
 	auditSvc := audit.New(db)
-	r, err := api.NewRouter(&api.Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: auditSvc})
+	adapters := make(map[string]chainadapter.ChainAdapter, len(chains))
+	for name, s := range chains {
+		adapters[name] = s
+	}
+	gw := crosschain.NewGateway(db, cs, adapters, auditSvc)
+	biz := uavbusiness.New(db, cs, gw, auditSvc)
+	r, err := api.NewRouter(&api.Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: auditSvc, Gateway: gw, Business: biz})
 	if err != nil {
 		return err
 	}

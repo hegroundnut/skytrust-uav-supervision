@@ -11,10 +11,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"skytrust-backend/internal/api"
 	"skytrust-backend/internal/audit"
+	"skytrust-backend/internal/chainadapter"
 	"skytrust-backend/internal/chainadapter/sim"
+	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/demo"
 	"skytrust-backend/internal/model"
+	"skytrust-backend/internal/uavbusiness"
 )
 
 func bootServer(t *testing.T) *httptest.Server {
@@ -39,9 +42,17 @@ func bootServer(t *testing.T) *httptest.Server {
 	chains := map[string]*sim.Chain{
 		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
 	}
+	adapters := make(map[string]chainadapter.ChainAdapter, len(chains))
+	for name, s := range chains {
+		adapters[name] = s
+	}
+	auditSvc := audit.New(db)
+	gw := crosschain.NewGateway(db, cs, adapters, auditSvc)
+	biz := uavbusiness.New(db, cs, gw, auditSvc)
 	r, err := api.NewRouter(&api.Deps{
 		DB: db, Crypto: cs, SimChains: chains,
-		Seeder: demo.NewSeeder(db, cs, chains), Audit: audit.New(db),
+		Seeder: demo.NewSeeder(db, cs, chains), Audit: auditSvc,
+		Gateway: gw, Business: biz,
 	})
 	if err != nil {
 		t.Fatal(err)
