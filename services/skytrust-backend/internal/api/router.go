@@ -10,6 +10,10 @@ func NewRouter(deps *Deps) *gin.Engine {
 		api.POST("/health/ping", func(c *gin.Context) { OK(c, gin.H{"ping": "pong"}) })
 		api.POST("/health/check", healthCheck(deps))
 		api.POST("/chain/status", chainStatus(deps))
+		api.POST("/crypto/sm3", sm3Handler(deps))
+		api.POST("/crypto/sm9/keygen", sm9KeygenHandler(deps))
+		api.POST("/crypto/sm9/sign", sm9SignHandler(deps))
+		api.POST("/crypto/sm9/verify", sm9VerifyHandler(deps))
 	}
 	return r
 }

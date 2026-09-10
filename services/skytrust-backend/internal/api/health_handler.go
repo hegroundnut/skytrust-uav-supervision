@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"skytrust-backend/internal/crypto"
 )
 
 type ChainStatusProvider interface{ Health() error }
@@ -10,6 +11,7 @@ type ChainStatusProvider interface{ Health() error }
 type Deps struct {
 	DB     *gorm.DB
 	Chains map[string]ChainStatusProvider
+	Crypto *crypto.Service
 }
 
 func healthCheck(deps *Deps) gin.HandlerFunc {

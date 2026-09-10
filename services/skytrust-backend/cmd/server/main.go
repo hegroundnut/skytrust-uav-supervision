@@ -5,16 +5,33 @@ import (
 	"log"
 
 	"skytrust-backend/internal/api"
+	"skytrust-backend/internal/config"
+	"skytrust-backend/internal/crypto"
+	"skytrust-backend/internal/model"
 )
 
-// Run 启动 HTTP 服务。addr 为空返回错误。
 func Run(addr string) error {
 	if addr == "" {
 		return errors.New("server addr required")
 	}
-	r := api.NewRouter(&api.Deps{})
-	log.Printf("skytrust-backend listening on %s", addr)
-	return r.Run(addr)
+	cfg := config.Load()
+	if addr != ":8080" {
+		cfg.ServerAddr = addr
+	}
+	db, err := model.Open(cfg.DBPath)
+	if err != nil {
+		return err
+	}
+	if err := model.Migrate(db); err != nil {
+		return err
+	}
+	cs, err := crypto.NewService(cfg.SM9KeyDir)
+	if err != nil {
+		return err
+	}
+	r := api.NewRouter(&api.Deps{DB: db, Crypto: cs})
+	log.Printf("skytrust-backend listening on %s (chain_mode=%s)", cfg.ServerAddr, cfg.ChainMode)
+	return r.Run(cfg.ServerAddr)
 }
 
 func main() {
