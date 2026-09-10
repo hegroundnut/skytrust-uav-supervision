@@ -2,6 +2,7 @@ package model
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -61,5 +62,15 @@ func TestValidateID(t *testing.T) {
 	}
 	if !ValidateID("PASS", "PASS-2026-001") {
 		t.Error("valid pass id rejected")
+	}
+}
+
+func TestGenRegRecordID(t *testing.T) {
+	id := GenRegRecordID()
+	if !strings.HasPrefix(id, "REGREC-") || len(id) != len("REGREC-")+12 {
+		t.Errorf("bad format: %s", id)
+	}
+	if GenRegRecordID() == id {
+		t.Error("ids must be random")
 	}
 }

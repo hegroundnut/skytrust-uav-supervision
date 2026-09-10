@@ -26,6 +26,7 @@ func GenMappingID() string     { return "IDM-" + randHex(12) }
 func GenAuditID() string       { return "AUD-" + randHex(12) }
 func GenExperimentID() string  { return "EXP-" + time.Now().Format("20060102") + "-" + randHex(6) }
 func GenRunID() string         { return "RUN-" + randHex(12) }
+func GenRegRecordID() string   { return "REGREC-" + randHex(12) }
 
 func IdempotencyKey(msgType, businessID, sourceTxID string) string {
 	h := sha256.Sum256([]byte(msgType + "|" + businessID + "|" + sourceTxID))

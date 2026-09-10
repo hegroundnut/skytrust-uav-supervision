@@ -1,0 +1,458 @@
+package crosschain
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"gorm.io/gorm"
+
+	"skytrust-backend/internal/audit"
+	"skytrust-backend/internal/chainadapter"
+	"skytrust-backend/internal/chainadapter/sim"
+	"skytrust-backend/internal/crypto"
+	"skytrust-backend/internal/errcode"
+	"skytrust-backend/internal/model"
+)
+
+// ---------- 共享夹具 ----------
+
+func testEnvAdapters(t *testing.T, adapters map[string]chainadapter.ChainAdapter) (*Gateway, *crypto.Service, *gorm.DB) {
+	t.Helper()
+	db, err := model.Open(":memory:")
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := model.Migrate(db); err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+	cs, err := crypto.NewService(t.TempDir())
+	if err != nil {
+		t.Fatalf("crypto service: %v", err)
+	}
+	return NewGateway(db, cs, adapters, audit.New(db)), cs, db
+}
+
+func testEnv(t *testing.T, sims map[string]*sim.Chain) (*Gateway, *crypto.Service, *gorm.DB) {
+	t.Helper()
+	adapters := make(map[string]chainadapter.ChainAdapter, len(sims))
+	for name, s := range sims {
+		adapters[name] = s
+	}
+	return testEnvAdapters(t, adapters)
+}
+
+func defaultSims() map[string]*sim.Chain {
+	return map[string]*sim.Chain{
+		"fabric":     sim.New("fabric", sim.WithLatency(time.Millisecond)),
+		RegChainName: sim.New(RegChainName, sim.WithLatency(time.Millisecond)),
+		"fisco-bcos": sim.New("fisco-bcos", sim.WithLatency(time.Millisecond)),
+	}
+}
+
+// signReq 用 uid 对信封签名并回填 SM9Identity/Signature/SM3Hash。
+func signReq(t *testing.T, cs *crypto.Service, req *SendRequest, uid string) {
+	t.Helper()
+	env := BuildEnvelope(req.MessageType, req.BusinessID, req.SourceChain, req.FinalTargetChain, req.Payload)
+	sig, sm3, err := SignEnvelope(cs, uid, env)
+	if err != nil {
+		t.Fatalf("sign envelope: %v", err)
+	}
+	req.SM9Identity = uid
+	req.Signature = sig
+	req.SM3Hash = sm3
+}
+
+func errCode(err error) int {
+	var e *Error
+	if errors.As(err, &e) {
+		return e.Code
+	}
+	return -1
+}
+
+func reload(t *testing.T, db *gorm.DB, crossTxID string) model.CrosschainTx {
+	t.Helper()
+	var tx model.CrosschainTx
+	if err := db.Where("cross_tx_id = ?", crossTxID).First(&tx).Error; err != nil {
+		t.Fatalf("reload %s: %v", crossTxID, err)
+	}
+	return tx
+}
+
+var routeOf = map[string][2]string{
+	MsgUAVRegisterProof:    {"fabric", RegChainName},
+	MsgMissionApplication:  {"fabric", "fisco-bcos"},
+	MsgMissionReviewResult: {"fisco-bcos", "fabric"},
+	MsgFlightPass:          {"fisco-bcos", "fabric"},
+	MsgPassRevoke:          {"fisco-bcos", "fabric"},
+}
+
+// ---------- 测试 ----------
+
+func TestSendSuccessAllMessageTypes(t *testing.T) {
+	gw, cs, db := testEnv(t, defaultSims())
+	for _, mt := range ValidMessageTypes() {
+		req := &SendRequest{
+			MessageType: mt, BusinessID: "BIZ-" + mt,
+			SourceChain: routeOf[mt][0], FinalTargetChain: routeOf[mt][1],
+			Payload: validPayload(mt),
+		}
+		signReq(t, cs, req, crypto.SM9IdentityOf("Operator-A"))
+		tx, err := gw.Send(context.Background(), "TRACE-TEST", req)
+		if err != nil {
+			t.Fatalf("%s: send: %v", mt, err)
+		}
+		if tx.Status != "SUCCESS" || tx.ErrorCode != 0 {
+			t.Fatalf("%s: want SUCCESS, got %s (code %d)", mt, tx.Status, tx.ErrorCode)
+		}
+		// 两跳四段 TxID 全记录（强制原则 3）
+		if tx.SourceChainTxID == "" || tx.RegReceiveTxID == "" || tx.RegRelayTxID == "" || tx.TargetChainTxID == "" {
+			t.Errorf("%s: four tx ids required: %+v", mt, tx)
+		}
+		if !strings.HasPrefix(tx.RegRecordID, "REGREC-") {
+			t.Errorf("%s: reg_record_id = %q", mt, tx.RegRecordID)
+		}
+		if tx.VerifyResult != "PASS" || tx.PolicyResult != "PASS" {
+			t.Errorf("%s: verify=%q policy=%q", mt, tx.VerifyResult, tx.PolicyResult)
+		}
+		if tx.LatencyMs < 0 {
+			t.Errorf("%s: latency = %d", mt, tx.LatencyMs)
+		}
+		re := reload(t, db, tx.CrossTxID)
+		if re.Status != "SUCCESS" || re.TargetChainTxID != tx.TargetChainTxID {
+			t.Errorf("%s: persisted mismatch: %+v", mt, re)
+		}
+		var cnt int64
+		db.Model(&model.AuditLog{}).Where("target_id = ? AND actor = ?", tx.CrossTxID, "GATEWAY").Count(&cnt)
+		if cnt != 1 {
+			t.Errorf("%s: want 1 gateway audit row, got %d", mt, cnt)
+		}
+	}
+}
+
+func TestSendIdempotentDuplicate(t *testing.T) {
+	gw, cs, db := testEnv(t, defaultSims())
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-DUP-1",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, req, crypto.SM9IdentityOf("Operator-A"))
+	first, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if err != nil {
+		t.Fatalf("first send: %v", err)
+	}
+	second, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.IdempotentDup {
+		t.Fatalf("want code 2004, got %v", err)
+	}
+	if second == nil || second.CrossTxID != first.CrossTxID {
+		t.Fatalf("duplicate must return existing record: %+v", second)
+	}
+	var cnt int64
+	db.Model(&model.CrosschainTx{}).Where("business_id = ?", "APP-DUP-1").Count(&cnt)
+	if cnt != 1 {
+		t.Errorf("want 1 row, got %d", cnt)
+	}
+}
+
+func TestSendSM3Mismatch(t *testing.T) {
+	gw, cs, db := testEnv(t, defaultSims())
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-SM3-1",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, req, crypto.SM9IdentityOf("Operator-A"))
+	req.SM3Hash = strings.Repeat("ab", 32) // 声明摘要与计算值不符
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.SM3Integrity {
+		t.Fatalf("want code 1003, got %v", err)
+	}
+	if tx.VerifyResult != "FAIL_SM3" || tx.Status != "FAILED" {
+		t.Fatalf("want FAILED/FAIL_SM3, got %s/%s", tx.Status, tx.VerifyResult)
+	}
+	re := reload(t, db, tx.CrossTxID)
+	if re.VerifyResult != "FAIL_SM3" || re.ErrorCode != errcode.SM3Integrity {
+		t.Errorf("persisted mismatch: %+v", re)
+	}
+}
+
+func TestSendSM9Invalid(t *testing.T) {
+	gw, cs, db := testEnv(t, defaultSims())
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-SM9-1",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, req, crypto.SM9IdentityOf("Operator-A"))
+	req.SM3Hash = ""                // 跳过 SM3 比对，让 SM9 关卡生效
+	req.Payload["tampered"] = "yes" // 签名后篡改载荷
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.SM9Verify {
+		t.Fatalf("want code 1002, got %v", err)
+	}
+	if tx.VerifyResult != "FAIL_SM9" || tx.Status != "FAILED" {
+		t.Fatalf("want FAILED/FAIL_SM9, got %s/%s", tx.Status, tx.VerifyResult)
+	}
+	re := reload(t, db, tx.CrossTxID)
+	if re.VerifyResult != "FAIL_SM9" || re.ErrorCode != errcode.SM9Verify {
+		t.Errorf("persisted mismatch: %+v", re)
+	}
+}
+
+func TestSendSourceTxUnknown(t *testing.T) {
+	gw, cs, db := testEnv(t, defaultSims())
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-SRC-1",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication), SourceChainTxID: "NOPE-000000",
+	}
+	signReq(t, cs, req, crypto.SM9IdentityOf("Operator-A"))
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.CrosschainSend {
+		t.Fatalf("want code 2001, got %v", err)
+	}
+	if tx.Status != "FAILED" || tx.SourceChainTxID != "" {
+		t.Fatalf("want FAILED with empty source tx, got %+v", tx)
+	}
+	re := reload(t, db, tx.CrossTxID)
+	if re.Status != "FAILED" || re.ErrorCode != errcode.CrosschainSend {
+		t.Errorf("persisted mismatch: %+v", re)
+	}
+}
+
+func TestSendSourceTxFailedOnChain(t *testing.T) {
+	sims := defaultSims()
+	fabric := sim.New("fabric", sim.WithFailNext("SeedFail", 1))
+	sims["fabric"] = fabric
+	gw, cs, db := testEnv(t, sims)
+	// Task 1 修复后失败回执可查：先制造一笔链上失败交易
+	bad, err := fabric.SubmitTx(context.Background(), "operator_business", "SeedFail", map[string]any{"x": 1})
+	if err != nil || bad.Status != 1 {
+		t.Fatalf("seed failed tx: rc=%+v err=%v", bad, err)
+	}
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-SRC-2",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication), SourceChainTxID: bad.TxID,
+	}
+	signReq(t, cs, req, crypto.SM9IdentityOf("Operator-A"))
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.CrosschainSend {
+		t.Fatalf("want code 2001, got %v", err)
+	}
+	re := reload(t, db, tx.CrossTxID)
+	if re.Status != "FAILED" || re.SourceChainTxID != "" {
+		t.Errorf("persisted mismatch: %+v", re)
+	}
+}
+
+func TestSendTargetChainFailure(t *testing.T) {
+	sims := defaultSims()
+	sims["fisco-bcos"] = sim.New("fisco-bcos", sim.WithFailNext("SubmitApplication", 1))
+	gw, cs, db := testEnv(t, sims)
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-TGT-1",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, req, crypto.SM9IdentityOf("Operator-A"))
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.TargetChain {
+		t.Fatalf("want code 2002, got %v", err)
+	}
+	// 监管三写已发生、目标链未确认（强制原则 4：任何一跳失败不得 SUCCESS）
+	if tx.Status != "FAILED" || tx.VerifyResult != "PASS" {
+		t.Fatalf("want FAILED/PASS, got %s/%s", tx.Status, tx.VerifyResult)
+	}
+	if tx.SourceChainTxID == "" || tx.RegReceiveTxID == "" || tx.RegRelayTxID == "" || !strings.HasPrefix(tx.RegRecordID, "REGREC-") {
+		t.Fatalf("pre-target hops must be recorded: %+v", tx)
+	}
+	if tx.TargetChainTxID != "" {
+		t.Fatalf("target tx id must stay empty: %+v", tx)
+	}
+	re := reload(t, db, tx.CrossTxID)
+	if re.Status != "FAILED" || re.ErrorCode != errcode.TargetChain || re.RegRelayTxID != tx.RegRelayTxID {
+		t.Errorf("persisted mismatch: %+v", re)
+	}
+}
+
+func TestSendRegHopFailure(t *testing.T) {
+	sims := defaultSims()
+	sims[RegChainName] = sim.New(RegChainName, sim.WithFailNext("RegisterReceive", 1))
+	gw, cs, db := testEnv(t, sims)
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-REG-1",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, req, crypto.SM9IdentityOf("Operator-A"))
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.CrosschainSend {
+		t.Fatalf("want code 2001, got %v", err)
+	}
+	if tx.Status != "FAILED" || tx.RegReceiveTxID != "" || tx.TargetChainTxID != "" || tx.SourceChainTxID == "" {
+		t.Fatalf("want FAILED at reg hop: %+v", tx)
+	}
+	re := reload(t, db, tx.CrossTxID)
+	if re.Status != "FAILED" || re.ErrorCode != errcode.CrosschainSend {
+		t.Errorf("persisted mismatch: %+v", re)
+	}
+}
+
+func TestSendUnknownTypeAndRouteMismatch(t *testing.T) {
+	gw, cs, _ := testEnv(t, defaultSims())
+	// 未知消息类型 → 6002（落库 FAILED 留痕）
+	bad := &SendRequest{
+		MessageType: "UNKNOWN_TYPE", BusinessID: "BIZ-U-1",
+		SourceChain: "fabric", FinalTargetChain: RegChainName,
+		Payload: map[string]any{},
+	}
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", bad)
+	if errCode(err) != errcode.Param {
+		t.Fatalf("unknown type: want 6002, got %v", err)
+	}
+	if tx.Status != "FAILED" || tx.ErrorCode != errcode.Param {
+		t.Fatalf("unknown type: persisted %+v", tx)
+	}
+	// 路由不符（MISSION_APPLICATION 必须 fabric→fisco-bcos）→ 2003
+	mis := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "BIZ-U-2",
+		SourceChain: "fabric", FinalTargetChain: RegChainName,
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, mis, crypto.SM9IdentityOf("Operator-A"))
+	tx2, err := gw.Send(context.Background(), "TRACE-TEST", mis)
+	if errCode(err) != errcode.RegVerify {
+		t.Fatalf("route mismatch: want 2003, got %v", err)
+	}
+	if tx2.Status != "FAILED" || tx2.ErrorCode != errcode.RegVerify {
+		t.Fatalf("route mismatch: persisted %+v", tx2)
+	}
+}
+
+func TestSendMissingPayloadField(t *testing.T) {
+	gw, _, db := testEnv(t, defaultSims())
+	p := validPayload(MsgMissionApplication)
+	delete(p, "sm3_hash")
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-FLD-1",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: p,
+	}
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.Param {
+		t.Fatalf("want 6002, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "sm3_hash") {
+		t.Fatalf("error must name the missing field: %v", err)
+	}
+	re := reload(t, db, tx.CrossTxID)
+	if re.Status != "FAILED" || re.ErrorCode != errcode.Param {
+		t.Errorf("persisted mismatch: %+v", re)
+	}
+}
+
+// flakyChain 包装真适配器：前 fails 次 SubmitTx 返回传输层 error（模拟网络抖动）。
+type flakyChain struct {
+	inner chainadapter.ChainAdapter
+	mu    sync.Mutex
+	fails int
+}
+
+func (f *flakyChain) ChainName() string { return f.inner.ChainName() }
+func (f *flakyChain) Health() error     { return f.inner.Health() }
+func (f *flakyChain) SubmitTx(ctx context.Context, contract, method string, params map[string]any) (*chainadapter.TxReceipt, error) {
+	f.mu.Lock()
+	n := f.fails
+	if n > 0 {
+		f.fails--
+	}
+	f.mu.Unlock()
+	if n > 0 {
+		return nil, fmt.Errorf("transient transport error")
+	}
+	return f.inner.SubmitTx(ctx, contract, method, params)
+}
+func (f *flakyChain) QueryTx(ctx context.Context, txID string) (*chainadapter.TxReceipt, error) {
+	return f.inner.QueryTx(ctx, txID)
+}
+func (f *flakyChain) QueryState(ctx context.Context, contract, key string) ([]byte, error) {
+	return f.inner.QueryState(ctx, contract, key)
+}
+
+func TestSendRetriesTransportError(t *testing.T) {
+	sims := defaultSims()
+	flaky := &flakyChain{inner: sims["fabric"], fails: 1}
+	adapters := map[string]chainadapter.ChainAdapter{
+		"fabric": flaky, RegChainName: sims[RegChainName], "fisco-bcos": sims["fisco-bcos"],
+	}
+	gw, cs, _ := testEnvAdapters(t, adapters)
+	req := &SendRequest{
+		MessageType: MsgUAVRegisterProof, BusinessID: "UAV-RT-1",
+		SourceChain: "fabric", FinalTargetChain: RegChainName,
+		Payload: validPayload(MsgUAVRegisterProof),
+	}
+	signReq(t, cs, req, crypto.SM9IdentityOf("Manufacturer-A"))
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if err != nil {
+		t.Fatalf("send must succeed after retry: %v", err)
+	}
+	if tx.Status != "SUCCESS" {
+		t.Fatalf("want SUCCESS, got %s (code %d)", tx.Status, tx.ErrorCode)
+	}
+}
+
+func TestQueryAndList(t *testing.T) {
+	gw, cs, _ := testEnv(t, defaultSims())
+	app := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-L-1",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, app, crypto.SM9IdentityOf("Operator-A"))
+	tx1, err := gw.Send(context.Background(), "TRACE-TEST", app)
+	if err != nil {
+		t.Fatalf("send app: %v", err)
+	}
+	reg := &SendRequest{
+		MessageType: MsgUAVRegisterProof, BusinessID: "UAV-L-1",
+		SourceChain: "fabric", FinalTargetChain: RegChainName,
+		Payload: validPayload(MsgUAVRegisterProof),
+	}
+	signReq(t, cs, reg, crypto.SM9IdentityOf("Manufacturer-A"))
+	if _, err := gw.Send(context.Background(), "TRACE-TEST", reg); err != nil {
+		t.Fatalf("send reg: %v", err)
+	}
+
+	got, err := gw.Query(tx1.CrossTxID)
+	if err != nil || got.BusinessID != "APP-L-1" || got.Status != "SUCCESS" {
+		t.Fatalf("query: %+v err=%v", got, err)
+	}
+	if _, err := gw.Query("CX-NOPE"); errCode(err) != errcode.Param {
+		t.Fatalf("query unknown: want 6002, got %v", err)
+	}
+
+	all, total, err := gw.List(ListFilter{})
+	if err != nil || total != 2 || len(all) != 2 {
+		t.Fatalf("list all: %d/%d err=%v", len(all), total, err)
+	}
+	one, total, err := gw.List(ListFilter{Status: "SUCCESS", MessageType: MsgMissionApplication})
+	if err != nil || total != 1 || len(one) != 1 || one[0].CrossTxID != tx1.CrossTxID {
+		t.Fatalf("list filtered: %d/%d err=%v", len(one), total, err)
+	}
+	pg, total, err := gw.List(ListFilter{Page: 1, PageSize: 1})
+	if err != nil || total != 2 || len(pg) != 1 {
+		t.Fatalf("list paged: %d/%d err=%v", len(pg), total, err)
+	}
+	none, total, err := gw.List(ListFilter{Status: "FAILED"})
+	if err != nil || total != 0 || len(none) != 0 {
+		t.Fatalf("list empty: %d/%d err=%v", len(none), total, err)
+	}
+}
