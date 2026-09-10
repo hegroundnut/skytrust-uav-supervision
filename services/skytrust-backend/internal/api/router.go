@@ -24,6 +24,12 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/crosschain/send", crosschainSendHandler(deps))
 		api.POST("/crosschain/query", crosschainQueryHandler(deps))
 		api.POST("/crosschain/list", crosschainListHandler(deps))
+		api.POST("/manufacturer/register", manufacturerRegisterHandler(deps))
+		api.POST("/manufacturer/list", manufacturerListHandler(deps))
+		api.POST("/operator/register", operatorRegisterHandler(deps))
+		api.POST("/operator/list", operatorListHandler(deps))
+		api.POST("/route/create", routeCreateHandler(deps))
+		api.POST("/route/list", routeListHandler(deps))
 	}
 	return r, nil
 }
