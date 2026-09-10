@@ -2,6 +2,7 @@ package crosschain
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -129,8 +130,8 @@ func TestSendSuccessAllMessageTypes(t *testing.T) {
 		}
 		var cnt int64
 		db.Model(&model.AuditLog{}).Where("target_id = ? AND actor = ?", tx.CrossTxID, "GATEWAY").Count(&cnt)
-		if cnt != 1 {
-			t.Errorf("%s: want 1 gateway audit row, got %d", mt, cnt)
+		if cnt != 8 { // 7 STATE_TRANSITION（约束 7）+ 1 CROSSCHAIN_<msgtype>
+			t.Errorf("%s: want 8 gateway audit rows, got %d", mt, cnt)
 		}
 	}
 }
@@ -454,5 +455,87 @@ func TestQueryAndList(t *testing.T) {
 	none, total, err := gw.List(ListFilter{Status: "FAILED"})
 	if err != nil || total != 0 || len(none) != 0 {
 		t.Fatalf("list empty: %d/%d err=%v", len(none), total, err)
+	}
+}
+
+// transitionRows 返回某 cross_tx_id 的 STATE_TRANSITION 审计 (from,to) 序列（主键升序）。
+func transitionRows(t *testing.T, db *gorm.DB, crossTxID string) [][2]string {
+	t.Helper()
+	var logs []model.AuditLog
+	if err := db.Where("target_id = ? AND action = ? AND actor = ?", crossTxID, "STATE_TRANSITION", "GATEWAY").
+		Order("id ASC").Find(&logs).Error; err != nil {
+		t.Fatalf("query transitions: %v", err)
+	}
+	out := make([][2]string, 0, len(logs))
+	for _, l := range logs {
+		var d struct {
+			From    string `json:"from"`
+			To      string `json:"to"`
+			TraceID string `json:"trace_id"`
+		}
+		if err := json.Unmarshal([]byte(l.Detail), &d); err != nil {
+			t.Fatalf("parse detail %q: %v", l.Detail, err)
+		}
+		if d.TraceID != "TRACE-TEST" {
+			t.Errorf("transition detail trace_id = %q, want TRACE-TEST", d.TraceID)
+		}
+		out = append(out, [2]string{d.From, d.To})
+	}
+	return out
+}
+
+// TestStateTransitionAudit 约束 7：每次成功状态迁移写 STATE_TRANSITION 审计。
+func TestStateTransitionAudit(t *testing.T) {
+	gw, cs, db := testEnv(t, defaultSims())
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-ST-1",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, req, crypto.SM9IdentityOf("Operator-A"))
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	// 成功路径：恰好 7 条 STATE_TRANSITION，from/to 链完整且有序
+	wantChain := [][2]string{
+		{"PENDING", "SOURCE_CONFIRMED"},
+		{"SOURCE_CONFIRMED", "REG_RECEIVED"},
+		{"REG_RECEIVED", "REG_VERIFIED"},
+		{"REG_VERIFIED", "REG_RELAYED"},
+		{"REG_RELAYED", "TARGET_CONFIRMED"},
+		{"TARGET_CONFIRMED", "RETURN_REG_RECEIVED"},
+		{"RETURN_REG_RECEIVED", "SUCCESS"},
+	}
+	got := transitionRows(t, db, tx.CrossTxID)
+	if len(got) != len(wantChain) {
+		t.Fatalf("want %d STATE_TRANSITION rows, got %d: %+v", len(wantChain), len(got), got)
+	}
+	for i, w := range wantChain {
+		if got[i] != w {
+			t.Errorf("transition %d: want %s->%s, got %s->%s", i, w[0], w[1], got[i][0], got[i][1])
+		}
+	}
+
+	// 失败路径：末条 STATE_TRANSITION 为 REG_RELAYED->FAILED（目标链失败于第 10 步前）
+	sims := defaultSims()
+	sims["fisco-bcos"] = sim.New("fisco-bcos", sim.WithFailNext("SubmitApplication", 1))
+	gw2, cs2, db2 := testEnv(t, sims)
+	req2 := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-ST-2",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs2, req2, crypto.SM9IdentityOf("Operator-A"))
+	tx2, err2 := gw2.Send(context.Background(), "TRACE-TEST", req2)
+	if errCode(err2) != errcode.TargetChain {
+		t.Fatalf("want code 2002, got %v", err2)
+	}
+	got2 := transitionRows(t, db2, tx2.CrossTxID)
+	if len(got2) == 0 {
+		t.Fatal("failure path must write STATE_TRANSITION rows")
+	}
+	if last := got2[len(got2)-1]; last != [2]string{"REG_RELAYED", "FAILED"} {
+		t.Errorf("last transition: want REG_RELAYED->FAILED, got %s->%s", last[0], last[1])
 	}
 }

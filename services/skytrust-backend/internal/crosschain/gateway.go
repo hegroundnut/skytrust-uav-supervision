@@ -109,6 +109,7 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 		if aerr := statemachine.CrosschainMachine.Assert(tx.Status, "FAILED"); aerr != nil {
 			return tx, NewError(errcode.Internal, "state: %v (original: %s)", aerr, e.Msg)
 		}
+		from := tx.Status
 		tx.Status = "FAILED"
 		tx.ErrorCode = code
 		tx.LatencyMs = time.Since(t0).Milliseconds()
@@ -122,16 +123,22 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 		}).Error; uerr != nil {
 			return tx, NewError(errcode.Internal, "persist failure: %v (original: %s)", uerr, e.Msg)
 		}
+		g.logTransition(traceID, tx, from, "FAILED")
 		g.logAudit(traceID, tx, e.Msg)
 		return tx, e
 	}
-	// advance：状态推进（先 Assert 后落库）。
+	// advance：状态推进（先 Assert 后落库）；成功迁移写 STATE_TRANSITION 审计（约束 7）。
 	advance := func(to string) error {
 		if err := statemachine.CrosschainMachine.Assert(tx.Status, to); err != nil {
 			return err
 		}
+		from := tx.Status
 		tx.Status = to
-		return g.db.Model(tx).Update("status", to).Error
+		if err := g.db.Model(tx).Update("status", to).Error; err != nil {
+			return err
+		}
+		g.logTransition(traceID, tx, from, to)
+		return nil
 	}
 
 	// 步 1-2：类型/路由/字段校验 + 适配器存在性（tx 已落库 → 失败同样留痕）。
@@ -408,5 +415,16 @@ func (g *Gateway) logAudit(traceID string, tx *model.CrosschainTx, failReason st
 		"source_chain_tx_id": tx.SourceChainTxID, "reg_receive_tx_id": tx.RegReceiveTxID,
 		"reg_record_id": tx.RegRecordID, "reg_relay_tx_id": tx.RegRelayTxID,
 		"target_chain_tx_id": tx.TargetChainTxID, "fail_reason": failReason,
+	})
+}
+
+// logTransition STATE_TRANSITION 审计留痕（Global Constraint 7：每次成功状态迁移写审计）。
+// best-effort：审计写失败不中断跨链协议、不改变返回错误码（留痕不阻断）。
+func (g *Gateway) logTransition(traceID string, tx *model.CrosschainTx, from, to string) {
+	if g.audit == nil {
+		return
+	}
+	_ = g.audit.Log("GATEWAY", "STATE_TRANSITION", "CROSSCHAIN_TX", tx.CrossTxID, traceID, map[string]any{
+		"from": from, "to": to, "trace_id": traceID,
 	})
 }
