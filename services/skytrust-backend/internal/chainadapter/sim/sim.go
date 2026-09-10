@@ -14,21 +14,21 @@ import (
 )
 
 type Chain struct {
-	name       string
-	latency    time.Duration
-	failRate   float64
-	failNext   map[string]int
-	mu         sync.Mutex
-	blockNum   uint64
-	txCount    uint64
-	receipts   map[string]*chainadapter.TxReceipt
-	state      map[string][]byte
+	name     string
+	latency  time.Duration
+	failRate float64
+	failNext map[string]int
+	mu       sync.Mutex
+	blockNum uint64
+	txCount  uint64
+	receipts map[string]*chainadapter.TxReceipt
+	state    map[string][]byte
 }
 
 type Option func(*Chain)
 
-func WithLatency(d time.Duration) Option  { return func(c *Chain) { c.latency = d } }
-func WithFailRate(p float64) Option       { return func(c *Chain) { c.failRate = p } }
+func WithLatency(d time.Duration) Option { return func(c *Chain) { c.latency = d } }
+func WithFailRate(p float64) Option      { return func(c *Chain) { c.failRate = p } }
 func WithFailNext(method string, n int) Option {
 	return func(c *Chain) { c.failNext[method] = n }
 }

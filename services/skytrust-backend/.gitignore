@@ -1,3 +1,6 @@
 # Build artifacts
 *.exe
 /server
+
+# SM9 master key material — never commit
+*.pem

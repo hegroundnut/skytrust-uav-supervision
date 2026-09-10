@@ -14,18 +14,18 @@ func randHex(n int) string {
 	return hex.EncodeToString(b)
 }
 
-func GenTraceID() string      { return "TRACE-" + time.Now().Format("20060102") + "-" + randHex(6) }
-func GenCrossTxID() string    { return "CX-" + randHex(12) }
+func GenTraceID() string       { return "TRACE-" + time.Now().Format("20060102") + "-" + randHex(6) }
+func GenCrossTxID() string     { return "CX-" + randHex(12) }
 func GenApplicationID() string { return "APP-" + time.Now().Format("20060102") + "-" + randHex(6) }
-func GenReviewID() string     { return "REV-" + randHex(12) }
-func GenConflictID() string   { return "CFL-" + randHex(12) }
-func GenSessionID() string    { return "SESS-" + randHex(12) }
-func GenMessageID() string    { return "MSG-" + randHex(16) }
-func GenEventID() string      { return "WH-" + randHex(12) }
-func GenMappingID() string    { return "IDM-" + randHex(12) }
-func GenAuditID() string      { return "AUD-" + randHex(12) }
-func GenExperimentID() string { return "EXP-" + time.Now().Format("20060102") + "-" + randHex(6) }
-func GenRunID() string        { return "RUN-" + randHex(12) }
+func GenReviewID() string      { return "REV-" + randHex(12) }
+func GenConflictID() string    { return "CFL-" + randHex(12) }
+func GenSessionID() string     { return "SESS-" + randHex(12) }
+func GenMessageID() string     { return "MSG-" + randHex(16) }
+func GenEventID() string       { return "WH-" + randHex(12) }
+func GenMappingID() string     { return "IDM-" + randHex(12) }
+func GenAuditID() string       { return "AUD-" + randHex(12) }
+func GenExperimentID() string  { return "EXP-" + time.Now().Format("20060102") + "-" + randHex(6) }
+func GenRunID() string         { return "RUN-" + randHex(12) }
 
 func IdempotencyKey(msgType, businessID, sourceTxID string) string {
 	h := sha256.Sum256([]byte(msgType + "|" + businessID + "|" + sourceTxID))

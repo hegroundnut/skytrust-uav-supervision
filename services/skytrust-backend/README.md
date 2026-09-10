@@ -28,7 +28,7 @@ cd services/skytrust-backend && go run ./cmd/server
 | --- | --- | --- |
 | `SERVER_ADDR` | `:8080` | HTTP 监听地址 |
 | `DB_PATH` | `data/skytrust.db` | SQLite 数据库文件路径 |
-| `CHAIN_MODE` | `sim` | 链模式：`sim` 模拟链 / `real` 真实链 |
+| `CHAIN_MODE` | `sim` | 链模式：`sim`（模拟链，默认）/ `real`（预留，当前 main.go 恒构建模拟链，real 模式待 Plan 2 实现） |
 | `SM9_KEY_DIR` | `data/sm9` | SM9 主密钥持久化目录 |
 | `APP_TIMEZONE` | `Asia/Shanghai` | 响应时间戳时区 |
 | `LOG_LEVEL` | `info` | 日志级别 |
