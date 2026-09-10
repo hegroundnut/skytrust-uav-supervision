@@ -1,35 +1,38 @@
 package api
 
+import "skytrust-backend/internal/errcode"
+
+// 旧常量名保留为别名（Global Constraints 4/17），数值以 errcode 包为唯一真源。
 const (
-	ErrOK = 0
+	ErrOK = errcode.OK
 
-	ErrInvalidUAV   = 1001
-	ErrSM9Verify    = 1002
-	ErrSM3Integrity = 1003
-	ErrUAVState     = 1004
+	ErrInvalidUAV   = errcode.InvalidUAV
+	ErrSM9Verify    = errcode.SM9Verify
+	ErrSM3Integrity = errcode.SM3Integrity
+	ErrUAVState     = errcode.UAVState
 
-	ErrCrosschainSend = 2001
-	ErrTargetChain    = 2002
-	ErrRegVerify      = 2003
-	ErrIdempotentDup  = 2004
+	ErrCrosschainSend = errcode.CrosschainSend
+	ErrTargetChain    = errcode.TargetChain
+	ErrRegVerify      = errcode.RegVerify
+	ErrIdempotentDup  = errcode.IdempotentDup
 
-	ErrRouteConflict = 3001
-	ErrPassInvalid   = 3002
-	ErrReviewRule    = 3003
-	ErrMissionState  = 3004
+	ErrRouteConflict = errcode.RouteConflict
+	ErrPassInvalid   = errcode.PassInvalid
+	ErrReviewRule    = errcode.ReviewRule
+	ErrMissionState  = errcode.MissionState
 
-	ErrWormholeRisk    = 4001
-	ErrSessionAuth     = 4002
-	ErrNodeIdentity    = 4003
-	ErrPathUnreachable = 4004
+	ErrWormholeRisk    = errcode.WormholeRisk
+	ErrSessionAuth     = errcode.SessionAuth
+	ErrNodeIdentity    = errcode.NodeIdentity
+	ErrPathUnreachable = errcode.PathUnreachable
 
-	ErrTraceBroken = 5001
-	ErrNoAuth      = 5002
-	ErrAuthScope   = 5003
-	ErrAuthExpired = 5004
+	ErrTraceBroken = errcode.TraceBroken
+	ErrNoAuth      = errcode.NoAuth
+	ErrAuthScope   = errcode.AuthScope
+	ErrAuthExpired = errcode.AuthExpired
 
-	ErrExperiment = 6001
-	ErrParam      = 6002
+	ErrExperiment = errcode.Experiment
+	ErrParam      = errcode.Param
 
-	ErrInternal = 9001
+	ErrInternal = errcode.Internal
 )
