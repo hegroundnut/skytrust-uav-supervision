@@ -1,0 +1,58 @@
+package api
+
+import (
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
+
+type ChainStatusProvider interface{ Health() error }
+
+type Deps struct {
+	DB     *gorm.DB
+	Chains map[string]ChainStatusProvider
+}
+
+func healthCheck(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		items := gin.H{}
+		failed := false
+		if deps.DB == nil {
+			items["database"] = "ABSENT"
+			failed = true
+		} else if sqlDB, err := deps.DB.DB(); err != nil || sqlDB.Ping() != nil {
+			items["database"] = "OFFLINE"
+			failed = true
+		} else {
+			items["database"] = "ONLINE"
+		}
+		chains := gin.H{}
+		for name, ad := range deps.Chains {
+			if ad.Health() == nil {
+				chains[name] = "ONLINE"
+			} else {
+				chains[name] = "OFFLINE"
+				failed = true
+			}
+		}
+		items["chains"] = chains
+		if failed {
+			Fail(c, ErrInternal, "部分组件不可用")
+			return
+		}
+		OK(c, items)
+	}
+}
+
+func chainStatus(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		chains := gin.H{}
+		for name, ad := range deps.Chains {
+			if ad.Health() == nil {
+				chains[name] = "ONLINE"
+			} else {
+				chains[name] = "OFFLINE"
+			}
+		}
+		OK(c, gin.H{"chains": chains, "count": len(chains)})
+	}
+}
