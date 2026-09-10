@@ -53,3 +53,45 @@ func TestUnknownState(t *testing.T) {
 		t.Error("unknown state must not transition")
 	}
 }
+
+func TestAllMachinesSweep(t *testing.T) {
+	machines := map[string]*Machine{
+		"uav": UAVMachine, "mission": MissionMachine, "pass": PassMachine,
+		"session": SessionMachine, "alert": AlertMachine, "crosschain": CrosschainMachine,
+	}
+	for name, m := range machines {
+		if m == nil || m.name != name {
+			t.Fatalf("machine %q misconfigured", name)
+		}
+		for from, tos := range m.transitions {
+			for _, to := range tos {
+				if !m.Can(from, to) {
+					t.Errorf("%s: declared legal %s->%s rejected by Can", name, from, to)
+				}
+				if err := m.Assert(from, to); err != nil {
+					t.Errorf("%s: Assert(%s,%s) = %v", name, from, to, err)
+				}
+			}
+			if m.Can(from, "NO_SUCH_STATE") {
+				t.Errorf("%s: illegal target accepted from %s", name, from)
+			}
+			if err := m.Assert(from, "NO_SUCH_STATE"); err == nil {
+				t.Errorf("%s: Assert(%s,NO_SUCH_STATE) must error", name, from)
+			}
+			if len(tos) == 0 { // 终态无出边
+				for probe := range m.transitions {
+					if m.Can(from, probe) {
+						t.Errorf("%s: terminal state %s has outgoing edge to %s", name, from, probe)
+					}
+				}
+			}
+		}
+	}
+	// 跨链 9 态与实施文档 §5.2 清单核对
+	for _, s := range []string{"PENDING", "SOURCE_CONFIRMED", "REG_RECEIVED", "REG_VERIFIED",
+		"REG_RELAYED", "TARGET_CONFIRMED", "RETURN_REG_RECEIVED", "SUCCESS", "FAILED"} {
+		if _, ok := CrosschainMachine.transitions[s]; !ok {
+			t.Errorf("crosschain machine missing state %s", s)
+		}
+	}
+}

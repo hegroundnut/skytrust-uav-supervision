@@ -39,10 +39,13 @@ func bootServer(t *testing.T) *httptest.Server {
 	chains := map[string]*sim.Chain{
 		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
 	}
-	r := api.NewRouter(&api.Deps{
+	r, err := api.NewRouter(&api.Deps{
 		DB: db, Crypto: cs, SimChains: chains,
 		Seeder: demo.NewSeeder(db, cs, chains), Audit: audit.New(db),
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	return httptest.NewServer(r)
 }
 

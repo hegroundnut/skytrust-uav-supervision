@@ -25,7 +25,12 @@ func setupFullTestRouter(t *testing.T) *gin.Engine {
 		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
 	}
 	seeder := demo.NewSeeder(db, cs, chains)
-	return NewRouter(&Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: audit.New(db)})
+	deps := &Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: audit.New(db)}
+	r, err := NewRouter(deps)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return r
 }
 
 func setupTestRouter(t *testing.T) *gin.Engine {

@@ -40,7 +40,10 @@ func Run(addr string) error {
 	}
 	seeder := demo.NewSeeder(db, cs, chains)
 	auditSvc := audit.New(db)
-	r := api.NewRouter(&api.Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: auditSvc})
+	r, err := api.NewRouter(&api.Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: auditSvc})
+	if err != nil {
+		return err
+	}
 	log.Printf("skytrust-backend listening on %s (chain_mode=%s)", cfg.ServerAddr, cfg.ChainMode)
 	return r.Run(cfg.ServerAddr)
 }

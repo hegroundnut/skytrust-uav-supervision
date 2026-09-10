@@ -8,6 +8,11 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"skytrust-backend/internal/audit"
+	"skytrust-backend/internal/chainadapter/sim"
+	"skytrust-backend/internal/crypto"
+	"skytrust-backend/internal/demo"
+	"skytrust-backend/internal/model"
 )
 
 func doPost(r *gin.Engine, path string) *httptest.ResponseRecorder {
@@ -18,9 +23,31 @@ func doPost(r *gin.Engine, path string) *httptest.ResponseRecorder {
 	return w
 }
 
+func validTestDeps(t *testing.T) *Deps {
+	t.Helper()
+	db, err := model.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := model.Migrate(db); err != nil {
+		t.Fatal(err)
+	}
+	cs, err := crypto.NewService(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	chains := map[string]*sim.Chain{
+		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
+	}
+	return &Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: demo.NewSeeder(db, cs, chains), Audit: audit.New(db)}
+}
+
 func TestHealthPing(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	r := NewRouter(&Deps{})
+	r, err := NewRouter(validTestDeps(t))
+	if err != nil {
+		t.Fatal(err)
+	}
 	w := doPost(r, "/api/health/ping")
 	var resp Resp
 	json.Unmarshal(w.Body.Bytes(), &resp)
@@ -31,7 +58,14 @@ func TestHealthPing(t *testing.T) {
 
 func TestHealthCheckWithoutDB(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	r := NewRouter(&Deps{})
+	d := validTestDeps(t)
+	r, err := NewRouter(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// B1 之后 NewRouter 拒绝 nil-DB 接线（见 TestNewRouterRejectsInvalidDeps）；
+	// 构造后移除 DB，保留 healthCheck 防御分支（ABSENT → 非零 code）的覆盖。
+	d.DB = nil
 	w := doPost(r, "/api/health/check")
 	var resp Resp
 	json.Unmarshal(w.Body.Bytes(), &resp)
@@ -51,9 +85,15 @@ func (f fakeChain) Health() error {
 
 func TestChainStatus(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	r := NewRouter(&Deps{Chains: map[string]ChainStatusProvider{
+	d := validTestDeps(t)
+	d.SimChains = nil
+	d.Chains = map[string]ChainStatusProvider{
 		"fabric": fakeChain{ok: true}, "fisco-bcos": fakeChain{ok: false},
-	}})
+	}
+	r, err := NewRouter(d)
+	if err != nil {
+		t.Fatal(err)
+	}
 	w := doPost(r, "/api/chain/status")
 	var resp Resp
 	json.Unmarshal(w.Body.Bytes(), &resp)
@@ -68,12 +108,37 @@ func TestChainStatus(t *testing.T) {
 
 func TestRecoveryMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	r := NewRouter(&Deps{})
+	r, err := NewRouter(validTestDeps(t))
+	if err != nil {
+		t.Fatal(err)
+	}
 	r.POST("/api/test/panic", func(c *gin.Context) { panic("boom") })
 	w := doPost(r, "/api/test/panic")
 	var resp Resp
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	if resp.Code != ErrInternal {
 		t.Errorf("panic should map to 9001, got %d", resp.Code)
+	}
+}
+
+func TestNewRouterRejectsInvalidDeps(t *testing.T) {
+	if _, err := NewRouter(nil); err == nil {
+		t.Error("nil deps must be rejected")
+	}
+	if _, err := NewRouter(&Deps{}); err == nil {
+		t.Error("empty deps must be rejected")
+	}
+	d := validTestDeps(t)
+	d.Crypto = nil
+	if _, err := NewRouter(d); err == nil {
+		t.Error("missing Crypto must be rejected")
+	}
+	d = validTestDeps(t)
+	d.SimChains, d.Chains = nil, nil
+	if _, err := NewRouter(d); err == nil {
+		t.Error("missing chains must be rejected")
+	}
+	if _, err := NewRouter(validTestDeps(t)); err != nil {
+		t.Errorf("valid deps rejected: %v", err)
 	}
 }

@@ -2,7 +2,10 @@ package api
 
 import "github.com/gin-gonic/gin"
 
-func NewRouter(deps *Deps) *gin.Engine {
+func NewRouter(deps *Deps) (*gin.Engine, error) {
+	if err := deps.Validate(); err != nil {
+		return nil, err
+	}
 	r := gin.New()
 	r.Use(TraceMiddleware(), LogMiddleware(), RecoveryMiddleware())
 	api := r.Group("/api")
@@ -19,5 +22,5 @@ func NewRouter(deps *Deps) *gin.Engine {
 		api.POST("/audit/query", auditQueryHandler(deps))
 		api.POST("/audit/export", auditExportHandler(deps))
 	}
-	return r
+	return r, nil
 }

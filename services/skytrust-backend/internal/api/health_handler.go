@@ -1,6 +1,8 @@
 package api
 
 import (
+	"errors"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"skytrust-backend/internal/audit"
@@ -18,6 +20,29 @@ type Deps struct {
 	Crypto    *crypto.Service
 	Seeder    *demo.Seeder
 	Audit     *audit.Service
+}
+
+// Validate 构造期校验（B1）：接线遗漏在启动时暴露，而非运行期 panic。
+func (d *Deps) Validate() error {
+	if d == nil {
+		return errors.New("deps: nil")
+	}
+	if d.DB == nil {
+		return errors.New("deps: DB is required")
+	}
+	if d.Crypto == nil {
+		return errors.New("deps: Crypto is required")
+	}
+	if d.Seeder == nil {
+		return errors.New("deps: Seeder is required")
+	}
+	if d.Audit == nil {
+		return errors.New("deps: Audit is required")
+	}
+	if len(d.SimChains) == 0 && len(d.Chains) == 0 {
+		return errors.New("deps: at least one chain (SimChains or Chains) is required")
+	}
+	return nil
 }
 
 // chainProviders 优先返回 SimChains（*sim.Chain 结构上满足 ChainStatusProvider），
