@@ -49,44 +49,52 @@ func loadOrCreate(dir string) (*sm9State, error) {
 	signPath := filepath.Join(dir, sm9SignMasterFileName)
 	encPath := filepath.Join(dir, sm9EncMasterFileName)
 
-	if b, err := os.ReadFile(signPath); err == nil {
+	b, err := os.ReadFile(signPath)
+	switch {
+	case err == nil:
 		st.signMaster, err = parseSignMaster(b)
 		if err != nil {
 			return nil, fmt.Errorf("parse sign master: %w", err)
 		}
-	} else {
-		k, err := sm9.GenerateSignMasterKey(rand.Reader)
-		if err != nil {
-			return nil, err
+	case os.IsNotExist(err):
+		k, gerr := sm9.GenerateSignMasterKey(rand.Reader)
+		if gerr != nil {
+			return nil, gerr
 		}
 		st.signMaster = k
-		b, err := marshalSignMaster(k)
-		if err != nil {
-			return nil, err
+		pemB, merr := marshalSignMaster(k)
+		if merr != nil {
+			return nil, merr
 		}
-		if err := os.WriteFile(signPath, b, 0o600); err != nil {
-			return nil, err
+		if werr := os.WriteFile(signPath, pemB, 0o600); werr != nil {
+			return nil, werr
 		}
+	default:
+		return nil, fmt.Errorf("read sign master: %w", err)
 	}
 
-	if b, err := os.ReadFile(encPath); err == nil {
+	b, err = os.ReadFile(encPath)
+	switch {
+	case err == nil:
 		st.encMaster, err = parseEncMaster(b)
 		if err != nil {
 			return nil, fmt.Errorf("parse enc master: %w", err)
 		}
-	} else {
-		k, err := sm9.GenerateEncryptMasterKey(rand.Reader)
-		if err != nil {
-			return nil, err
+	case os.IsNotExist(err):
+		k, gerr := sm9.GenerateEncryptMasterKey(rand.Reader)
+		if gerr != nil {
+			return nil, gerr
 		}
 		st.encMaster = k
-		b, err := marshalEncMaster(k)
-		if err != nil {
-			return nil, err
+		pemB, merr := marshalEncMaster(k)
+		if merr != nil {
+			return nil, merr
 		}
-		if err := os.WriteFile(encPath, b, 0o600); err != nil {
-			return nil, err
+		if werr := os.WriteFile(encPath, pemB, 0o600); werr != nil {
+			return nil, werr
 		}
+	default:
+		return nil, fmt.Errorf("read enc master: %w", err)
 	}
 
 	uk, err := st.encMaster.GenerateUserKey([]byte(sm9EncServiceUID), sm9HIDEnc)

@@ -62,16 +62,20 @@ func (c *Chain) SubmitTx(ctx context.Context, contract, method string, params ma
 	// 故障判定：FailNext 优先，其次 failRate（确定性：txCount*大质数 % 1000 < p*1000）
 	if n, ok := c.failNext[method]; ok && n > 0 {
 		c.failNext[method] = n - 1
-		return &chainadapter.TxReceipt{
+		rc := &chainadapter.TxReceipt{
 			TxID: c.txID(contract, method, params), BlockNum: c.blockNum,
 			Status: 1, Ret: []byte("SIMULATED_FAILURE"), Timestamp: time.Now(),
-		}, nil
+		}
+		c.receipts[rc.TxID] = rc
+		return rc, nil
 	}
 	if c.failRate > 0 && float64((c.txCount*2654435761)%1000) < c.failRate*1000 {
-		return &chainadapter.TxReceipt{
+		rc := &chainadapter.TxReceipt{
 			TxID: c.txID(contract, method, params), BlockNum: c.blockNum,
 			Status: 1, Ret: []byte("SIMULATED_FAILURE"), Timestamp: time.Now(),
-		}, nil
+		}
+		c.receipts[rc.TxID] = rc
+		return rc, nil
 	}
 
 	rc := &chainadapter.TxReceipt{

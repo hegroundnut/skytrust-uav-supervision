@@ -1,6 +1,8 @@
 package crypto
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -80,5 +82,20 @@ func TestSM9MasterKeyPersistence(t *testing.T) {
 	ok, err := s2.SM9VerifyUserID(uid, []byte("x"), sig)
 	if err != nil || !ok {
 		t.Fatalf("master key not persisted correctly: ok=%v err=%v", ok, err)
+	}
+}
+
+func TestNewServiceReadErrorDoesNotOverwrite(t *testing.T) {
+	dir := t.TempDir()
+	// signPath 做成目录 → os.ReadFile 返回非 NotExist 错误（Linux EISDIR / Windows 拒绝读取）
+	if err := os.MkdirAll(filepath.Join(dir, "sm9_sign_master.pem"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	_, err := NewService(dir)
+	if err == nil {
+		t.Fatal("expected error when sign master unreadable")
+	}
+	if !strings.Contains(err.Error(), "read sign master") {
+		t.Errorf("error must come from read phase, got: %v", err)
 	}
 }

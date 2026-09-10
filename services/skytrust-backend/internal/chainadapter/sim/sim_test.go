@@ -129,3 +129,21 @@ func TestResetState(t *testing.T) {
 		t.Errorf("blockNum must restart at 1: got %d then %d", rf.BlockNum, rm.BlockNum)
 	}
 }
+
+func TestFailedReceiptIsStored(t *testing.T) {
+	c := New("fabric", WithFailNext("BadMethod", 1))
+	rc, err := c.SubmitTx(context.Background(), "cc", "BadMethod", map[string]any{"x": 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rc.Status != 1 {
+		t.Fatalf("expected failed receipt, got status %d", rc.Status)
+	}
+	got, err := c.QueryTx(context.Background(), rc.TxID)
+	if err != nil {
+		t.Fatalf("failed receipt must be queryable: %v", err)
+	}
+	if got.Status != 1 || got.TxID != rc.TxID {
+		t.Errorf("receipt mismatch: %+v", got)
+	}
+}
