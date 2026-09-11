@@ -23,7 +23,7 @@ type crosschainSendReq struct {
 	SourceChain      string         `json:"source_chain" binding:"required"`
 	FinalTargetChain string         `json:"final_target_chain" binding:"required"`
 	Payload          map[string]any `json:"payload" binding:"required"`
-	SM9Identity      string         `json:"sm9_identity"`
+	SM9Identity      string         `json:"sm9_identity" binding:"required"`
 	Signature        string         `json:"signature"`
 	SM3Hash          string         `json:"sm3_hash"`
 	SourceChainTxID  string         `json:"source_chain_tx_id"`

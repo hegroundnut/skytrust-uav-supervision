@@ -138,3 +138,37 @@ func TestCrosschainQueryAndList(t *testing.T) {
 		t.Fatalf("list empty body must be legal: %v", empty)
 	}
 }
+
+// TestCrosschainSendRejectsEmptySM9Identity 终审修正案：sm9_identity 为合约必填，
+// 空身份 + 伪造签名须在 API 边界被 binding:"required" 拦截（6002），不得落库 FAILED
+// 记录归因于“无人”，以保住签名者不可抵赖性。
+func TestCrosschainSendRejectsEmptySM9Identity(t *testing.T) {
+	r, err := NewRouter(validTestDeps(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 请求前 crosschain 总数（新内存库应为 0），用于断言被拒请求不落库。
+	before := postJSON(t, r, "/api/crosschain/list", map[string]any{})
+	if before["code"].(float64) != 0 {
+		t.Fatalf("list before: %v", before)
+	}
+	beforeTotal := before["data"].(map[string]any)["total"].(float64)
+
+	// 合法路由（validAppSend）+ 空 sm9_identity + 伪造非空 signature。
+	body := validAppSend("APP-E2E-000005")
+	body["sm9_identity"] = ""
+	body["signature"] = "QUFBQUFBQUFBQQ==" // 非空 → 不走代签；空身份下伪造签名本必败
+	resp := postJSON(t, r, "/api/crosschain/send", body)
+	if resp["code"].(float64) != 6002 {
+		t.Fatalf("want code 6002, got %v (%s)", resp["code"], resp["message"])
+	}
+
+	// 断言被拒请求未持久化任何 FAILED 记录（总数不变）。
+	after := postJSON(t, r, "/api/crosschain/list", map[string]any{})
+	if after["code"].(float64) != 0 {
+		t.Fatalf("list after: %v", after)
+	}
+	if afterTotal := after["data"].(map[string]any)["total"].(float64); afterTotal != beforeTotal {
+		t.Fatalf("rejected send must not persist a row: total %v -> %v", beforeTotal, afterTotal)
+	}
+}
