@@ -2,6 +2,8 @@
 // 3xxx 任务/许可/审核，4xxx 链下/虫洞，5xxx 监管/授权，6xxx 实验/参数，9001 内部）。
 package errcode
 
+import "fmt"
+
 const (
 	OK = 0
 
@@ -35,3 +37,16 @@ const (
 
 	Internal = 9001
 )
+
+// Error 业务错误统一载体：Code 为 errcode 段数值。
+// （原 crosschain.Error，终审 F5 裁定迁移至此，阻断业务域对 crosschain 包的依赖倒置。）
+type Error struct {
+	Code int
+	Msg  string
+}
+
+func (e *Error) Error() string { return fmt.Sprintf("biz error %d: %s", e.Code, e.Msg) }
+
+func NewError(code int, format string, a ...any) *Error {
+	return &Error{Code: code, Msg: fmt.Sprintf(format, a...)}
+}

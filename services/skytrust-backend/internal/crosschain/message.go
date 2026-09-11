@@ -4,9 +4,8 @@
 package crosschain
 
 import (
-	"fmt"
-
 	"skytrust-backend/internal/crypto"
+	"skytrust-backend/internal/errcode"
 )
 
 // 5 种跨链消息类型（spec §6.3）。
@@ -70,14 +69,7 @@ func SignEnvelope(cs *crypto.Service, uid string, env Envelope) (string, string,
 	return sig, crypto.SM3Hex(b), nil
 }
 
-// Error 跨链业务错误：Code 为 errcode 段数值，随 CrosschainTx.ErrorCode 落库。
-type Error struct {
-	Code int
-	Msg  string
-}
+// Error/NewError 已迁移至 internal/errcode（P3-1/终审 F5）；别名保持全部既有调用点零改动。
+type Error = errcode.Error
 
-func (e *Error) Error() string { return fmt.Sprintf("crosschain error %d: %s", e.Code, e.Msg) }
-
-func NewError(code int, format string, a ...any) *Error {
-	return &Error{Code: code, Msg: fmt.Sprintf(format, a...)}
-}
+var NewError = errcode.NewError
