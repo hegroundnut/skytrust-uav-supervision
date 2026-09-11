@@ -35,6 +35,9 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/uav/list", uavListHandler(deps))
 		api.POST("/uav/status", uavStatusHandler(deps))
 		api.POST("/uav/revoke", uavRevokeHandler(deps))
+		api.POST("/mission/create", missionCreateHandler(deps))
+		api.POST("/mission/query", missionQueryHandler(deps))
+		api.POST("/mission/list", missionListHandler(deps))
 	}
 	return r, nil
 }
