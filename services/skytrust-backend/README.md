@@ -256,14 +256,14 @@ cd services/skytrust-backend && go run ./cmd/server
 }
 ```
 
-发送失败（如路径不可达 4004）时 `code≠0` 且 `data` 携带 FAILED 留痕行（`status:"FAILED"`，`evidence` 内含失败原因）——失败也留痕，与跨链网关同构。
+发送失败（如路径不可达 4004）时 `code≠0` 且 `data` 携带 FAILED 留痕行（`status:"FAILED"`，`evidence` 内含失败原因）——失败也留痕，与跨链网关同构。会话内消息 SM9 验签失败归入 4002（会话认证态失败语义），与系统一 1002 商密验签错误码带区分。
 
 `POST /api/message/list` 请求 `{"session_id":"SESS-3f8a1c92d4e5","msg_type":"","status":"SUCCESS","page":1,"page_size":20}`，响应 `data`：
 
 ```json
 {"records": [<消息对象>], "total": 5, "page": 1, "page_size": 20,
  "stats": {"count": 5, "success_count": 5, "success_rate": 1,
-   "avg_latency_ms": 40.4, "p50_latency_ms": 45, "p95_latency_ms": 50, "max_latency_ms": 50}}
+   "avg_latency_ms": 46, "p50_latency_ms": 45, "p95_latency_ms": 50, "max_latency_ms": 50}}
 ```
 
 `POST /api/wormhole/toggle` 请求 `{"enabled":true,"operator":"ATTACKER-SIM"}`，响应 `data`：
@@ -296,11 +296,11 @@ cd services/skytrust-backend && go run ./cmd/server
     "current_path": "[\"UAV-A-001-NODE\",\"N1\",\"N2\",\"N3\",\"N4\",\"MGR\"]", "…": "…"},
   "original_path": ["UAV-A-001-NODE", "N1", "NODE-X", "NODE-Y", "N4", "MGR"],
   "new_path": ["UAV-A-001-NODE", "N1", "N2", "N3", "N4", "MGR"],
-  "recovery_latency_ms": 41,
+  "recovery_latency_ms": 45,
   "event": {"event_id": "WH-5b8f…", "action": "RECOVER", "risk_score": 1.0,
     "original_path": "[\"UAV-A-001-NODE\",\"N1\",\"NODE-X\",\"NODE-Y\",\"N4\",\"MGR\"]",
     "new_path": "[\"UAV-A-001-NODE\",\"N1\",\"N2\",\"N3\",\"N4\",\"MGR\"]",
-    "recovery_latency_ms": 41, "…": "…"}
+    "recovery_latency_ms": 45, "…": "…"}
 }
 ```
 
