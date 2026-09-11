@@ -6,7 +6,7 @@
 
 - **基础平台（Plan 1）**：统一响应/错误码、健康检查、SM3/SM9 国密能力、多链适配（模拟 fabric / chainmaker / fisco-bcos）、演示数据预置、审计日志查询与导出；
 - **跨链网关（Plan 2）**：13 步跨链协议引擎——监管链非旁路、业务链不直连（fabric 与 fisco-bcos 之间必经 chainmaker 中转）、两跳四段 TxID 全程留痕、幂等去重（2004）、传输级重试、SM3/SM9 成败均留痕（`verify_result = PASS|FAIL_SM3|FAIL_SM9`）；
-- **系统一·任务申请跨域协同（Plan 2）**：主数据 → 无人机注册跨链证明 → 任务创建（SM9 加密 + 脱敏）→ 提交（源链交易 + MISSION_APPLICATION 跨链）→ 监管审核（REVIEW_RESULT 跨链）→ 三维冲突协调 → 飞行许可签发/验证/吊销（FLIGHT_PASS / PASS_REVOKE 跨链）。
+- **系统一·任务申请跨域协同（Plan 2）**：主数据 → 无人机注册跨链证明 → 任务创建（SM9 加密 + 脱敏）→ 提交（源链交易 + MISSION_APPLICATION 跨链）→ 监管审核（MISSION_REVIEW_RESULT 跨链）→ 三维冲突协调 → 飞行许可签发/验证/吊销（FLIGHT_PASS / PASS_REVOKE 跨链）。
 
 ## 启动方式
 
@@ -86,7 +86,7 @@ cd services/skytrust-backend && go run ./cmd/server
 | mission | `POST /api/mission/query` | 按 mission_id 查询（永不返回密文） |
 | mission | `POST /api/mission/list` | 分页列表（operator_id / uav_id / status 过滤） |
 | mission | `POST /api/mission/submit` | 提交：源链交易 + MISSION_APPLICATION 跨链（fabric→fisco-bcos）；失败自动撤回 DRAFT |
-| review | `POST /api/review/submit` | 监管审核裁决（APPROVED / REJECTED / NEED_COORDINATION）+ REVIEW_RESULT 跨链（fisco-bcos→fabric） |
+| review | `POST /api/review/submit` | 监管审核裁决（APPROVED / REJECTED / NEED_COORDINATION）+ MISSION_REVIEW_RESULT 跨链（fisco-bcos→fabric） |
 | review | `POST /api/review/query` | 按 review_id 或 application_id 查询审核记录 |
 | conflict | `POST /api/conflict/detect` | 三维冲突检测（时间∧航路∧高度同时重叠）→ 双方进 COORDINATING（已获批任务只标记不迁移） |
 | conflict | `POST /api/conflict/resolve` | 冲突解决 → RESOLVED，相关任务回 REVIEWING |
@@ -122,7 +122,7 @@ cd services/skytrust-backend && go run ./cmd/server
 2. `uav/register` 注册新机 → UAV_REGISTER_PROOF 跨链（fabric→chainmaker 身份索引）→ VERIFIED；
 3. `mission/create` 创建任务（描述 SM9 加密，响应仅 `masked_value` 脱敏值）→ DRAFT；
 4. `mission/submit` 提交 → 源链交易 + MISSION_APPLICATION 跨链（fabric→fisco-bcos）→ 任务 SUBMITTED / 申请 RELAYED；**跨链失败自动撤回 DRAFT**，可修改后重报；
-5. `review/submit` 监管审核 → REVIEW_RESULT 跨链（fisco-bcos→fabric）→ APPROVED / REJECTED / COORDINATING；
+5. `review/submit` 监管审核 → MISSION_REVIEW_RESULT 跨链（fisco-bcos→fabric）→ APPROVED / REJECTED / COORDINATING；
 6. `conflict/detect` + `conflict/resolve` 三维冲突协调（COORDINATING ⇄ REVIEWING）；
 7. `pass/issue` 签发飞行许可（FLIGHT_PASS 跨链）→ `pass/verify` 放行前验证；
 8. `pass/revoke` 吊销许可（PASS_REVOKE 跨链）；`uav/revoke` 注销无人机。
