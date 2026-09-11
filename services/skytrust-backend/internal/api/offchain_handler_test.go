@@ -239,3 +239,66 @@ func TestWormholeToggleEndpoint(t *testing.T) {
 		t.Fatalf("toggle off = %v", resp)
 	}
 }
+
+func TestRiskEvaluateEndpoint(t *testing.T) {
+	r := setupFullTestRouter(t)
+	postJSON(t, r, "/api/demo/init", map[string]any{})
+	open := postJSON(t, r, "/api/session/open", map[string]any{"uav_id": "UAV-A-001"})
+	sid := open["data"].(map[string]any)["session"].(map[string]any)["session_id"].(string)
+	// 2 条基线（seq1,2）→ 开虫洞 → 攻击消息 seq3（抖动相位 0，path 维满分）
+	for i := 0; i < 2; i++ {
+		postJSON(t, r, "/api/message/send", map[string]any{
+			"session_id": sid, "msg_type": "HEARTBEAT",
+			"source_node": "UAV-A-001-NODE", "target_node": "MGR",
+		})
+	}
+	postJSON(t, r, "/api/wormhole/toggle", map[string]any{"enabled": true})
+	postJSON(t, r, "/api/message/send", map[string]any{
+		"session_id": sid, "msg_type": "POSITION_UPDATE",
+		"source_node": "UAV-A-001-NODE", "target_node": "MGR",
+	})
+	resp := postJSON(t, r, "/api/risk/evaluate", map[string]any{"session_id": sid})
+	if resp["code"].(float64) != 0 {
+		t.Fatalf("evaluate: %v", resp)
+	}
+	d := resp["data"].(map[string]any)
+	if d["verdict"] != "DETECT" || d["threshold"].(float64) != 0.7 || d["risk_score"].(float64) < 0.7 {
+		t.Fatalf("d = %v", d)
+	}
+	if d["session_status"] != "DEGRADED" {
+		t.Fatalf("status = %v", d["session_status"])
+	}
+	dims := d["dimensions"].(map[string]any)
+	for _, k := range []string{"identity", "adjacency", "latency", "challenge", "path"} {
+		if _, ok := dims[k]; !ok {
+			t.Fatalf("dims missing %s: %v", k, dims)
+		}
+	}
+	if len(d["events"].([]any)) != 2 {
+		t.Fatalf("events = %v", d["events"])
+	}
+	// X/Y 已隔离（node/list 可证）
+	lst := postJSON(t, r, "/api/node/list", map[string]any{"node_type": "ATTACKER", "status": "ISOLATED"})
+	if lst["data"].(map[string]any)["total"].(float64) != 2 {
+		t.Fatalf("isolated = %v", lst["data"])
+	}
+}
+
+func TestRiskEvaluateEndpointErrors(t *testing.T) {
+	r := setupFullTestRouter(t)
+	postJSON(t, r, "/api/demo/init", map[string]any{})
+	// 会话不存在 → 6002
+	if resp := postJSON(t, r, "/api/risk/evaluate", map[string]any{"session_id": "SESS-none"}); resp["code"].(float64) != 6002 {
+		t.Fatalf("missing session = %v", resp)
+	}
+	// node_x 不存在 → 4003
+	open := postJSON(t, r, "/api/session/open", map[string]any{"uav_id": "UAV-A-001"})
+	sid := open["data"].(map[string]any)["session"].(map[string]any)["session_id"].(string)
+	if resp := postJSON(t, r, "/api/risk/evaluate", map[string]any{"session_id": sid, "node_x": "GHOST"}); resp["code"].(float64) != 4003 {
+		t.Fatalf("ghost node = %v", resp)
+	}
+	// 缺 session_id → 6002
+	if resp := postJSON(t, r, "/api/risk/evaluate", map[string]any{}); resp["code"].(float64) != 6002 {
+		t.Fatalf("missing sid = %v", resp)
+	}
+}

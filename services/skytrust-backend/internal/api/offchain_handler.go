@@ -148,3 +148,19 @@ func wormholeToggleHandler(deps *Deps) gin.HandlerFunc {
 		OK(c, res)
 	}
 }
+
+func riskEvaluateHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req offchain.RiskEvaluateRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			Fail(c, ErrParam, "参数错误: "+err.Error())
+			return
+		}
+		res, err := deps.Offchain.RiskEvaluate(c.Request.Context(), TraceIDFrom(c), &req)
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, res)
+	}
+}
