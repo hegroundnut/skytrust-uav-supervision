@@ -41,6 +41,8 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/mission/submit", missionSubmitHandler(deps))
 		api.POST("/review/submit", reviewSubmitHandler(deps))
 		api.POST("/review/query", reviewQueryHandler(deps))
+		api.POST("/conflict/detect", conflictDetectHandler(deps))
+		api.POST("/conflict/resolve", conflictResolveHandler(deps))
 	}
 	return r, nil
 }
