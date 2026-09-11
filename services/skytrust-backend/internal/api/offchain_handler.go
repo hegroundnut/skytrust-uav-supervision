@@ -180,3 +180,19 @@ func pathSwitchHandler(deps *Deps) gin.HandlerFunc {
 		OK(c, res)
 	}
 }
+
+func eventListHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var q offchain.EventQuery
+		if !bindOptionalBody(c, &q) {
+			return
+		}
+		q.Normalize()
+		records, total, err := deps.Offchain.EventList(c.Request.Context(), TraceIDFrom(c), q)
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, gin.H{"records": records, "total": total, "page": q.Page, "page_size": q.PageSize})
+	}
+}

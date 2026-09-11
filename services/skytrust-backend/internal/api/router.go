@@ -59,6 +59,7 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/wormhole/toggle", wormholeToggleHandler(deps))
 		api.POST("/risk/evaluate", riskEvaluateHandler(deps))
 		api.POST("/path/switch", pathSwitchHandler(deps))
+		api.POST("/event/list", eventListHandler(deps))
 	}
 	return r, nil
 }

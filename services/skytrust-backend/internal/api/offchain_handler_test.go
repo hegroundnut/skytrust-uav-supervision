@@ -354,3 +354,42 @@ func TestPathSwitchEndpoint(t *testing.T) {
 		t.Fatalf("active sessions = %v", lst["data"])
 	}
 }
+
+func TestEventListEndpoint(t *testing.T) {
+	r := setupFullTestRouter(t)
+	postJSON(t, r, "/api/demo/init", map[string]any{})
+	open := postJSON(t, r, "/api/session/open", map[string]any{"uav_id": "UAV-A-001"})
+	sid := open["data"].(map[string]any)["session"].(map[string]any)["session_id"].(string)
+	for i := 0; i < 2; i++ {
+		postJSON(t, r, "/api/message/send", map[string]any{
+			"session_id": sid, "msg_type": "HEARTBEAT",
+			"source_node": "UAV-A-001-NODE", "target_node": "MGR",
+		})
+	}
+	postJSON(t, r, "/api/wormhole/toggle", map[string]any{"enabled": true})
+	postJSON(t, r, "/api/message/send", map[string]any{
+		"session_id": sid, "msg_type": "POSITION_UPDATE",
+		"source_node": "UAV-A-001-NODE", "target_node": "MGR",
+	})
+	postJSON(t, r, "/api/risk/evaluate", map[string]any{"session_id": sid})
+	resp := postJSON(t, r, "/api/event/list", map[string]any{"session_id": sid})
+	if resp["code"].(float64) != 0 {
+		t.Fatalf("list: %v", resp)
+	}
+	d := resp["data"].(map[string]any)
+	if d["total"].(float64) != 2 { // DETECT + ISOLATE
+		t.Fatalf("total = %v", d["total"])
+	}
+	e0 := d["records"].([]any)[0].(map[string]any)
+	for _, k := range []string{"event_id", "action", "risk_score", "detection_dimensions", "node_x", "node_y"} {
+		if _, ok := e0[k]; !ok {
+			t.Fatalf("record missing %s: %v", k, e0)
+		}
+	}
+	if resp := postJSON(t, r, "/api/event/list", map[string]any{"action": "DETECT"}); resp["data"].(map[string]any)["total"].(float64) != 1 {
+		t.Fatalf("detect filter = %v", resp["data"])
+	}
+	if resp := postJSON(t, r, "/api/event/list", map[string]any{"action": "BOOM"}); resp["code"].(float64) != 6002 {
+		t.Fatalf("bad action = %v", resp)
+	}
+}
