@@ -138,3 +138,71 @@ func TestSessionCloseEndpoint(t *testing.T) {
 		t.Fatalf("missing = %v", resp)
 	}
 }
+
+func TestMessageSendEndpoint(t *testing.T) {
+	r := setupFullTestRouter(t)
+	postJSON(t, r, "/api/demo/init", map[string]any{})
+	open := postJSON(t, r, "/api/session/open", map[string]any{"uav_id": "UAV-A-001"})
+	sid := open["data"].(map[string]any)["session"].(map[string]any)["session_id"].(string)
+	resp := postJSON(t, r, "/api/message/send", map[string]any{
+		"session_id": sid, "msg_type": "HEARTBEAT",
+		"source_node": "UAV-A-001-NODE", "target_node": "MGR",
+		"payload": map[string]any{"alt": 100},
+	})
+	if resp["code"].(float64) != 0 {
+		t.Fatalf("send: %v", resp)
+	}
+	d := resp["data"].(map[string]any)
+	if d["message"].(map[string]any)["seq"].(float64) != 1 {
+		t.Fatalf("message = %v", d["message"])
+	}
+	if len(d["path_detail"].([]any)) != 5 {
+		t.Fatalf("path_detail = %v", d["path_detail"])
+	}
+	// msg_type 非法 → 6002
+	if resp := postJSON(t, r, "/api/message/send", map[string]any{
+		"session_id": sid, "msg_type": "TELEMETRY", "source_node": "N1", "target_node": "MGR",
+	}); resp["code"].(float64) != 6002 {
+		t.Fatalf("bad type = %v", resp)
+	}
+	// 会话不存在 → 6002
+	if resp := postJSON(t, r, "/api/message/send", map[string]any{
+		"session_id": "SESS-none", "msg_type": "HEARTBEAT", "source_node": "N1", "target_node": "MGR",
+	}); resp["code"].(float64) != 6002 {
+		t.Fatalf("bad session = %v", resp)
+	}
+}
+
+func TestMessageListEndpointWithStats(t *testing.T) {
+	r := setupFullTestRouter(t)
+	postJSON(t, r, "/api/demo/init", map[string]any{})
+	open := postJSON(t, r, "/api/session/open", map[string]any{"uav_id": "UAV-A-001"})
+	sid := open["data"].(map[string]any)["session"].(map[string]any)["session_id"].(string)
+	for _, mt := range []string{"HEARTBEAT", "POSITION_UPDATE"} {
+		postJSON(t, r, "/api/message/send", map[string]any{
+			"session_id": sid, "msg_type": mt, "source_node": "UAV-A-001-NODE", "target_node": "MGR",
+		})
+	}
+	resp := postJSON(t, r, "/api/message/list", map[string]any{"session_id": sid})
+	if resp["code"].(float64) != 0 {
+		t.Fatalf("list: %v", resp)
+	}
+	d := resp["data"].(map[string]any)
+	for _, k := range []string{"records", "total", "page", "page_size", "stats"} {
+		if _, ok := d[k]; !ok {
+			t.Fatalf("missing %s: %v", k, d)
+		}
+	}
+	stats := d["stats"].(map[string]any)
+	if stats["count"].(float64) != 2 || stats["success_count"].(float64) != 2 || stats["success_rate"].(float64) != 1.0 {
+		t.Fatalf("stats = %v", stats)
+	}
+	if stats["max_latency_ms"].(float64) <= 0 {
+		t.Fatalf("max = %v", stats["max_latency_ms"])
+	}
+	// msg_type 过滤
+	resp = postJSON(t, r, "/api/message/list", map[string]any{"msg_type": "HEARTBEAT"})
+	if resp["data"].(map[string]any)["total"].(float64) != 1 {
+		t.Fatalf("filter = %v", resp["data"])
+	}
+}

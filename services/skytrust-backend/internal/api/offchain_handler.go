@@ -96,3 +96,39 @@ func sessionListHandler(deps *Deps) gin.HandlerFunc {
 		OK(c, gin.H{"records": records, "total": total, "page": q.Page, "page_size": q.PageSize})
 	}
 }
+
+func messageSendHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req offchain.MessageSendRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			Fail(c, ErrParam, "参数错误: "+err.Error())
+			return
+		}
+		res, err := deps.Offchain.MessageSend(c.Request.Context(), TraceIDFrom(c), &req)
+		if err != nil {
+			if res != nil { // FAILED 留痕行透传（与网关失败留痕同构；crosschain.Error 即 errcode.Error 别名，crosschainErrCode 对 offchain 业务错误同样适用）
+				FailData(c, crosschainErrCode(err), err.Error(), res)
+				return
+			}
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, res)
+	}
+}
+
+func messageListHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var q offchain.MessageQuery
+		if !bindOptionalBody(c, &q) {
+			return
+		}
+		q.Normalize()
+		records, total, stats, err := deps.Offchain.MessageList(c.Request.Context(), TraceIDFrom(c), q)
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, gin.H{"records": records, "total": total, "page": q.Page, "page_size": q.PageSize, "stats": stats})
+	}
+}

@@ -54,6 +54,8 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/session/open", sessionOpenHandler(deps))
 		api.POST("/session/close", sessionCloseHandler(deps))
 		api.POST("/session/list", sessionListHandler(deps))
+		api.POST("/message/send", messageSendHandler(deps))
+		api.POST("/message/list", messageListHandler(deps))
 	}
 	return r, nil
 }
