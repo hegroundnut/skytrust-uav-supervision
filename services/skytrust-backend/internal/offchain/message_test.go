@@ -9,6 +9,7 @@ import (
 
 	"skytrust-backend/internal/errcode"
 	"skytrust-backend/internal/model"
+	"skytrust-backend/internal/timex"
 )
 
 // openTestSession 夹具：seed 节点 + 开会话，返回 sessionID。
@@ -212,5 +213,37 @@ func TestMessageSendDegradedAndRecoveredNormalization(t *testing.T) {
 	}
 	if sess.Status != "ACTIVE" {
 		t.Fatalf("status after recovered send = %s", sess.Status)
+	}
+}
+
+// TestMessageSeqUniqueIndex 终审加固：(session_id, seq) 复合唯一索引在 DB 层强制生效，
+// 直接插入重复 seq 必须被拒绝；业务路径下一条消息正常取得 seq 2。
+func TestMessageSeqUniqueIndex(t *testing.T) {
+	svc := newTestSvc(t)
+	ctx := context.Background()
+	sid := openTestSession(t, svc)
+	res, err := svc.MessageSend(ctx, "TRACE-T", &MessageSendRequest{
+		SessionID: sid, MsgType: "HEARTBEAT",
+		SourceNode: "UAV-A-001-NODE", TargetNode: "MGR",
+	})
+	if err != nil || res.Message.Seq != 1 {
+		t.Fatalf("res = %+v err = %v", res, err)
+	}
+	// 绕过业务层直插同 (session_id, seq) 的重复行 → 唯一索引必须拒绝
+	dupErr := svc.db.Create(&model.OffchainMessage{
+		SessionID: sid, MessageID: model.GenMessageID(), MsgType: "HEARTBEAT",
+		SourceNode: "UAV-A-001-NODE", TargetNode: "MGR", Seq: 1,
+		Status: "SUCCESS", Path: "[]", Timestamp: timex.NowT(), LatencyMs: 1,
+	}).Error
+	if dupErr == nil {
+		t.Fatalf("duplicate (session_id=%s, seq=1) insert must fail", sid)
+	}
+	// 业务路径不受影响：下一条消息 seq 递增为 2
+	res2, err := svc.MessageSend(ctx, "TRACE-T", &MessageSendRequest{
+		SessionID: sid, MsgType: "HEARTBEAT",
+		SourceNode: "UAV-A-001-NODE", TargetNode: "MGR",
+	})
+	if err != nil || res2.Message.Seq != 2 {
+		t.Fatalf("res2 = %+v err = %v", res2, err)
 	}
 }

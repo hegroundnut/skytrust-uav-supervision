@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 
 	"skytrust-backend/internal/errcode"
 	"skytrust-backend/internal/model"
@@ -135,7 +136,52 @@ func (s *Service) MessageSend(ctx context.Context, traceID string, req *MessageS
 	msg.Path = string(pathJSON)
 	msg.Evidence = string(evJSON)
 	if err := s.db.WithContext(ctx).Create(&msg).Error; err != nil {
-		return nil, errcode.NewError(errcode.Internal, "save message: %v", err)
+		if !strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			return nil, errcode.NewError(errcode.Internal, "save message: %v", err)
+		}
+		// (session_id, seq) 唯一索引冲突：并发写抢先占位 → 重读 max 重算 seq 及全部
+		// seq 派生字段（抖动时延 seq%JitterMod、SM3 规范哈希、签名/evidence），单次重试。
+		if rerr := s.db.WithContext(ctx).Model(&model.OffchainMessage{}).
+			Where("session_id = ?", sess.SessionID).
+			Select("COALESCE(MAX(seq), 0)").Row().Scan(&maxSeq); rerr != nil {
+			return nil, errcode.NewError(errcode.Internal, "max seq: %v", rerr)
+		}
+		seq = maxSeq.Int64 + 1
+		msg.Seq = seq
+		details, totalLatency, err = PathLatency(adj, path, seq)
+		if err != nil {
+			return nil, errcode.NewError(errcode.Internal, "path latency: %v", err)
+		}
+		sm3, err = s.cs.HashCanonical(map[string]any{
+			"session_id": sess.SessionID, "seq": seq, "msg_type": req.MsgType,
+			"source_node": req.SourceNode, "target_node": req.TargetNode,
+			"payload": req.Payload, "timestamp": tsStr,
+		})
+		if err != nil {
+			return nil, errcode.NewError(errcode.Internal, "sm3: %v", err)
+		}
+		msg.SM3Hash = sm3
+		if proxy {
+			sig, err = s.cs.SM9SignUserID(srcNode.SM9Identity, []byte(sm3))
+			if err != nil {
+				return nil, errcode.NewError(errcode.Internal, "proxy sign: %v", err)
+			}
+		} else if ok, verr := s.cs.SM9VerifyUserID(srcNode.SM9Identity, []byte(sm3), sig); verr != nil || !ok {
+			// 调用方签名绑定旧 seq 的 SM3——seq 变更后验签必失败，与首发验签语义一致
+			return failRow("sm9 signature verification failed", errcode.SessionAuth)
+		}
+		evJSON, err = json.Marshal(map[string]any{
+			"sm9_identity": srcNode.SM9Identity, "signature": sig, "proxy_signed": proxy,
+			"path_detail": details,
+		})
+		if err != nil {
+			return nil, errcode.NewError(errcode.Internal, "evidence json: %v", err)
+		}
+		msg.LatencyMs = totalLatency
+		msg.Evidence = string(evJSON)
+		if err := s.db.WithContext(ctx).Create(&msg).Error; err != nil {
+			return nil, errcode.NewError(errcode.Internal, "save message: %v", err)
+		}
 	}
 	// 会话同步：CurrentPath = 实际路由；RECOVERED → ACTIVE（恢复完成自动回归）
 	if err := s.db.WithContext(ctx).Model(sess).Update("current_path", string(pathJSON)).Error; err != nil {

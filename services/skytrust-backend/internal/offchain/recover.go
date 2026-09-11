@@ -38,8 +38,10 @@ func (s *Service) PathSwitch(ctx context.Context, traceID string, req *PathSwitc
 	originalJSON := sess.CurrentPath
 	var riskScore float64
 	var lastDetect model.WormholeEvent
+	detectFound := false
 	if err := s.db.WithContext(ctx).Where("session_id = ? AND action = ?", sess.SessionID, "DETECT").
 		Order("created_at DESC, event_id DESC").First(&lastDetect).Error; err == nil {
+		detectFound = true
 		riskScore = lastDetect.RiskScore
 		if lastDetect.OriginalPath != "" {
 			originalJSON = lastDetect.OriginalPath
@@ -99,8 +101,19 @@ func (s *Service) PathSwitch(ctx context.Context, traceID string, req *PathSwitc
 	if err := s.transition(ctx, traceID, sess, "RECOVERED", req.Operator, "path switched"); err != nil {
 		return nil, err // 4002
 	}
+	// RECOVER 事件节点归属：继承最近 DETECT 事件的 X/Y（与 risk_score/original_path 同源），
+	// 保证攻防闭环中 RECOVER 指向真实涉事节点；无 DETECT（如人工降级）或字段为空时回退默认常量。
+	nodeX, nodeY := NodeXID, NodeYID
+	if detectFound {
+		if lastDetect.NodeX != "" {
+			nodeX = lastDetect.NodeX
+		}
+		if lastDetect.NodeY != "" {
+			nodeY = lastDetect.NodeY
+		}
+	}
 	event := model.WormholeEvent{
-		EventID: model.GenEventID(), SessionID: sess.SessionID, NodeX: NodeXID, NodeY: NodeYID,
+		EventID: model.GenEventID(), SessionID: sess.SessionID, NodeX: nodeX, NodeY: nodeY,
 		RiskScore: riskScore, Action: "RECOVER",
 		OriginalPath: originalJSON, NewPath: string(newJSON), RecoveryLatencyMs: recovery,
 	}

@@ -26,11 +26,11 @@ type OffchainSession struct {
 
 type OffchainMessage struct {
 	MessageID  string     `gorm:"primaryKey;size:64" json:"message_id"`
-	SessionID  string     `gorm:"size:64;index" json:"session_id"`
+	SessionID  string     `gorm:"size:64;index;uniqueIndex:idx_session_seq" json:"session_id"`
 	MsgType    string     `gorm:"size:32;index" json:"msg_type"`
 	SourceNode string     `gorm:"size:64" json:"source_node"`
 	TargetNode string     `gorm:"size:64" json:"target_node"`
-	Seq        int64      `json:"seq"`
+	Seq        int64      `gorm:"uniqueIndex:idx_session_seq" json:"seq"`
 	Timestamp  timex.Time `json:"timestamp"`
 	SM3Hash    string     `gorm:"size:64" json:"sm3_hash"`
 	LatencyMs  int64      `json:"latency_ms"`

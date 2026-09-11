@@ -99,7 +99,6 @@ func (s *Service) SessionOpen(ctx context.Context, traceID string, req *SessionO
 		return nil, errcode.NewError(errcode.SessionAuth, "%v", err)
 	}
 	sess.Status = "AUTHENTICATED"
-	s.logAudit(traceID, src, "STATE_TRANSITION", "SESSION", sess.SessionID, map[string]any{"from": "INIT", "to": "AUTHENTICATED"})
 	if err := statemachine.SessionMachine.Assert(sess.Status, "ACTIVE"); err != nil {
 		return nil, errcode.NewError(errcode.SessionAuth, "%v", err)
 	}
@@ -107,6 +106,7 @@ func (s *Service) SessionOpen(ctx context.Context, traceID string, req *SessionO
 	if err := s.db.WithContext(ctx).Create(&sess).Error; err != nil {
 		return nil, errcode.NewError(errcode.Internal, "create session: %v", err)
 	}
+	s.logAudit(traceID, src, "STATE_TRANSITION", "SESSION", sess.SessionID, map[string]any{"from": "INIT", "to": "AUTHENTICATED"})
 	s.logAudit(traceID, src, "STATE_TRANSITION", "SESSION", sess.SessionID, map[string]any{"from": "AUTHENTICATED", "to": "ACTIVE"})
 	s.logAudit(traceID, src, "SESSION_OPEN", "SESSION", sess.SessionID, map[string]any{
 		"uav_id": req.UAVID, "mission_id": req.MissionID, "pass_id": req.PassID, "path": path,

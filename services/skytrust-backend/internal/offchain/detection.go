@@ -3,7 +3,10 @@ package offchain
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"math"
+
+	"gorm.io/gorm"
 
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/errcode"
@@ -110,6 +113,9 @@ func (s *Service) RiskEvaluate(ctx context.Context, traceID string, req *RiskEva
 	var latest model.OffchainMessage
 	err = s.db.WithContext(ctx).Where("session_id = ? AND status = ?", sess.SessionID, "SUCCESS").
 		Order("seq DESC").First(&latest).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errcode.NewError(errcode.Internal, "query latest message: %v", err)
+	}
 	hasMsg := err == nil
 	if hasMsg {
 		observed = latest.LatencyMs

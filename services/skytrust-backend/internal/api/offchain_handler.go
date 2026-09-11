@@ -10,7 +10,7 @@ func topologyGetHandler(deps *Deps) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		view, err := deps.Offchain.TopologyGet(c.Request.Context(), TraceIDFrom(c))
 		if err != nil {
-			FailErr(c, err)
+			Fail(c, crosschainErrCode(err), err.Error())
 			return
 		}
 		OK(c, view)
