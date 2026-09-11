@@ -31,9 +31,23 @@ func (s *Service) PathSwitch(ctx context.Context, traceID string, req *PathSwitc
 		return nil, errcode.NewError(errcode.SessionAuth,
 			"session %s status %s: only DEGRADED can switch path", sess.SessionID, sess.Status)
 	}
+	// P3-15：original_path（受损路径）与 risk_score 继承最近一次 DETECT 事件——该事件在检测时刻
+	// 快照了当时的 CurrentPath。DEGRADED 期间发送消息会按实时拓扑重算并覆盖 CurrentPath（天然绕过
+	// ISOLATED 的 X/Y），故 CurrentPath 不再是受损路径的可靠来源；以其为准会让 RECOVER 事件丢失受损
+	// 路径证据。无 DETECT 事件（如人工降级）时回退当前 CurrentPath。
+	originalJSON := sess.CurrentPath
+	var riskScore float64
+	var lastDetect model.WormholeEvent
+	if err := s.db.WithContext(ctx).Where("session_id = ? AND action = ?", sess.SessionID, "DETECT").
+		Order("created_at DESC, event_id DESC").First(&lastDetect).Error; err == nil {
+		riskScore = lastDetect.RiskScore
+		if lastDetect.OriginalPath != "" {
+			originalJSON = lastDetect.OriginalPath
+		}
+	}
 	var original []string
-	if err := json.Unmarshal([]byte(sess.CurrentPath), &original); err != nil || len(original) < 2 {
-		return nil, errcode.NewError(errcode.Param, "session %s path corrupt: %q", sess.SessionID, sess.CurrentPath)
+	if err := json.Unmarshal([]byte(originalJSON), &original); err != nil || len(original) < 2 {
+		return nil, errcode.NewError(errcode.Param, "session %s path corrupt: %q", sess.SessionID, originalJSON)
 	}
 	var nodes []model.NetworkNode
 	if err := s.db.WithContext(ctx).Find(&nodes).Error; err != nil {
@@ -78,10 +92,6 @@ func (s *Service) PathSwitch(ctx context.Context, traceID string, req *PathSwitc
 	if err != nil {
 		return nil, errcode.NewError(errcode.Internal, "path json: %v", err)
 	}
-	origJSON, err := json.Marshal(original)
-	if err != nil {
-		return nil, errcode.NewError(errcode.Internal, "path json: %v", err)
-	}
 	if err := s.db.WithContext(ctx).Model(sess).Update("current_path", string(newJSON)).Error; err != nil {
 		return nil, errcode.NewError(errcode.Internal, "save path: %v", err)
 	}
@@ -89,17 +99,10 @@ func (s *Service) PathSwitch(ctx context.Context, traceID string, req *PathSwitc
 	if err := s.transition(ctx, traceID, sess, "RECOVERED", req.Operator, "path switched"); err != nil {
 		return nil, err // 4002
 	}
-	// RECOVER 事件：risk_score 继承最近一次 DETECT（无则 0）
-	var riskScore float64
-	var lastDetect model.WormholeEvent
-	if err := s.db.WithContext(ctx).Where("session_id = ? AND action = ?", sess.SessionID, "DETECT").
-		Order("created_at DESC, event_id DESC").First(&lastDetect).Error; err == nil {
-		riskScore = lastDetect.RiskScore
-	}
 	event := model.WormholeEvent{
 		EventID: model.GenEventID(), SessionID: sess.SessionID, NodeX: NodeXID, NodeY: NodeYID,
 		RiskScore: riskScore, Action: "RECOVER",
-		OriginalPath: string(origJSON), NewPath: string(newJSON), RecoveryLatencyMs: recovery,
+		OriginalPath: originalJSON, NewPath: string(newJSON), RecoveryLatencyMs: recovery,
 	}
 	if err := s.db.WithContext(ctx).Create(&event).Error; err != nil {
 		return nil, errcode.NewError(errcode.Internal, "save recover event: %v", err)
