@@ -93,3 +93,48 @@ func TestNodeListEndpoint(t *testing.T) {
 		t.Fatalf("paged = %v", d)
 	}
 }
+
+func TestSessionOpenEndpoint(t *testing.T) {
+	r := setupFullTestRouter(t)
+	if resp := postJSON(t, r, "/api/demo/init", map[string]any{}); resp["code"].(float64) != 0 {
+		t.Fatalf("demo init: %v", resp)
+	}
+	resp := postJSON(t, r, "/api/session/open", map[string]any{"uav_id": "UAV-A-001", "mission_id": "MISSION-2026-001"})
+	if resp["code"].(float64) != 0 {
+		t.Fatalf("open: %v", resp)
+	}
+	d := resp["data"].(map[string]any)
+	if d["session"].(map[string]any)["status"] != "ACTIVE" {
+		t.Fatalf("session = %v", d["session"])
+	}
+	if len(d["path"].([]any)) != 6 {
+		t.Fatalf("path = %v", d["path"])
+	}
+	auth := d["auth"].(map[string]any)
+	if auth["verified"] != true || auth["nonce"] == "" || auth["signature"] == "" {
+		t.Fatalf("auth = %v", auth)
+	}
+	if lst := postJSON(t, r, "/api/session/list", map[string]any{}); lst["data"].(map[string]any)["total"].(float64) != 1 {
+		t.Fatalf("list = %v", lst["data"])
+	}
+	if resp := postJSON(t, r, "/api/session/open", map[string]any{}); resp["code"].(float64) != 6002 {
+		t.Fatalf("missing uav = %v", resp)
+	}
+}
+
+func TestSessionCloseEndpoint(t *testing.T) {
+	r := setupFullTestRouter(t)
+	postJSON(t, r, "/api/demo/init", map[string]any{})
+	open := postJSON(t, r, "/api/session/open", map[string]any{"uav_id": "UAV-A-001"})
+	sid := open["data"].(map[string]any)["session"].(map[string]any)["session_id"].(string)
+	resp := postJSON(t, r, "/api/session/close", map[string]any{"session_id": sid, "operator": "OP-1", "reason": "done"})
+	if resp["code"].(float64) != 0 || resp["data"].(map[string]any)["status"] != "CLOSED" {
+		t.Fatalf("close = %v", resp)
+	}
+	if resp := postJSON(t, r, "/api/session/close", map[string]any{"session_id": sid, "operator": "OP-1"}); resp["code"].(float64) != 4002 {
+		t.Fatalf("reclose = %v", resp)
+	}
+	if resp := postJSON(t, r, "/api/session/close", map[string]any{"session_id": "SESS-none", "operator": "OP-1"}); resp["code"].(float64) != 6002 {
+		t.Fatalf("missing = %v", resp)
+	}
+}

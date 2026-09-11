@@ -48,3 +48,51 @@ func nodeListHandler(deps *Deps) gin.HandlerFunc {
 		OK(c, gin.H{"records": records, "total": total, "page": q.Page, "page_size": q.PageSize})
 	}
 }
+
+func sessionOpenHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req offchain.SessionOpenRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			Fail(c, ErrParam, "参数错误: "+err.Error())
+			return
+		}
+		res, err := deps.Offchain.SessionOpen(c.Request.Context(), TraceIDFrom(c), &req)
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, res)
+	}
+}
+
+func sessionCloseHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req offchain.SessionCloseRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			Fail(c, ErrParam, "参数错误: "+err.Error())
+			return
+		}
+		sess, err := deps.Offchain.SessionClose(c.Request.Context(), TraceIDFrom(c), &req)
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, sess)
+	}
+}
+
+func sessionListHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var q offchain.SessionQuery
+		if !bindOptionalBody(c, &q) {
+			return
+		}
+		q.Normalize()
+		records, total, err := deps.Offchain.SessionList(c.Request.Context(), TraceIDFrom(c), q)
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, gin.H{"records": records, "total": total, "page": q.Page, "page_size": q.PageSize})
+	}
+}
