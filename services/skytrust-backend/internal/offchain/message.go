@@ -72,6 +72,12 @@ func (s *Service) MessageSend(ctx context.Context, traceID string, req *MessageS
 	}
 	failRow := func(reason string, code int) (*MessageSendResult, error) {
 		ev, _ := json.Marshal(map[string]any{"reason": reason})
+		// FAILED 留痕行形状统一在此收敛：seq 冲突重试路径可能在 SUCCESS 形状装配完成后才进入
+		// 本闭包，须复位为与首发失败行完全一致的字段形状（Status/LatencyMs/Path 取初始值），
+		// 否则验签失败的消息会以 SUCCESS 落库、计入 message/list 成功统计。首发调用点均为 no-op。
+		msg.Status = "FAILED"
+		msg.LatencyMs = 0
+		msg.Path = "[]"
 		msg.Evidence = string(ev)
 		if err := s.db.WithContext(ctx).Create(&msg).Error; err != nil {
 			return nil, errcode.NewError(errcode.Internal, "save failed message: %v", err)
