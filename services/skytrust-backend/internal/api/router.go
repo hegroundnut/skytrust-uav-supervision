@@ -48,6 +48,7 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/pass/list", passListHandler(deps))
 		api.POST("/pass/verify", passVerifyHandler(deps))
 		api.POST("/pass/revoke", passRevokeHandler(deps))
+		api.POST("/topology/get", topologyGetHandler(deps))
 	}
 	return r, nil
 }
