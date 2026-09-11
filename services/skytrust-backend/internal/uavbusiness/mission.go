@@ -11,6 +11,7 @@ import (
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/errcode"
 	"skytrust-backend/internal/model"
+	"skytrust-backend/internal/statemachine"
 	"skytrust-backend/internal/timex"
 )
 
@@ -221,4 +222,155 @@ func (s *Service) ListMission(ctx context.Context, traceID string, f MissionList
 		return nil, 0, crosschain.NewError(errcode.Internal, "find: %v", err)
 	}
 	return out, total, nil
+}
+
+// transitionMission 任务状态迁移统一出口（Global Constraint 7）：Assert → 落库 → 审计。
+// 非法迁移映射 3004。
+func (s *Service) transitionMission(traceID, actor string, m *model.Mission, to, trigger string) error {
+	from := m.Status
+	if err := statemachine.MissionMachine.Assert(from, to); err != nil {
+		return crosschain.NewError(errcode.MissionState, "%v", err)
+	}
+	if err := s.db.Model(m).Update("status", to).Error; err != nil {
+		return crosschain.NewError(errcode.Internal, "persist mission status: %v", err)
+	}
+	m.Status = to
+	s.logAudit(traceID, actor, "STATE_TRANSITION", "MISSION", m.MissionID,
+		map[string]any{"from": from, "to": to, "trigger": trigger})
+	return nil
+}
+
+// withdrawMission 跨链失败撤回：SUBMITTED→DRAFT（合法迁移，任务可修改后重报）。
+// 撤回自身失败只审计不掩盖原始跨链错误。
+func (s *Service) withdrawMission(traceID, actor string, m *model.Mission) {
+	if err := s.transitionMission(traceID, actor, m, "DRAFT", "SUBMIT_FAILED_WITHDRAW"); err != nil {
+		s.logAudit(traceID, actor, "WITHDRAW_FAILED", "MISSION", m.MissionID, map[string]any{"error": err.Error()})
+	}
+}
+
+// SubmitMission 任务提交（实施文档 §9.2 步骤5-7）：DRAFT→SUBMITTED → 建申请 →
+// fabric 源链业务交易 → 网关 MISSION_APPLICATION 跨链（fabric→fisco-bcos）。
+// 任一跨域环节失败：申请 FAILED + 任务撤回 DRAFT + 透传错误（强制原则 4/5）。
+func (s *Service) SubmitMission(ctx context.Context, traceID, missionID, operator string) (*model.MissionApplication, *model.CrosschainTx, error) {
+	if missionID == "" || operator == "" {
+		return nil, nil, crosschain.NewError(errcode.Param, "mission_id/operator 必填")
+	}
+	m, err := s.QueryMission(ctx, traceID, missionID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := statemachine.MissionMachine.Assert(m.Status, "SUBMITTED"); err != nil {
+		return nil, nil, crosschain.NewError(errcode.MissionState, "%v", err)
+	}
+	// 复核 UAV 与航路（创建后环境可能变化）
+	uav, err := s.QueryUAV(ctx, traceID, m.UAVID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if uav.Status != "VERIFIED" && uav.Status != "ACTIVE" {
+		return nil, nil, crosschain.NewError(errcode.InvalidUAV, "UAV %s 状态 %q 不可提交任务", uav.UAVID, uav.Status)
+	}
+	if uav.OperatorID != operator || m.OperatorID != operator {
+		return nil, nil, crosschain.NewError(errcode.InvalidUAV, "operator %s 与任务/UAV 归属不符", operator)
+	}
+	var segIDs []string
+	if err := json.Unmarshal([]byte(m.RouteSegments), &segIDs); err != nil {
+		return nil, nil, crosschain.NewError(errcode.Internal, "unmarshal route_segments: %v", err)
+	}
+	var routes []model.RouteSegment
+	if err := s.db.Where("route_id IN ?", segIDs).Find(&routes).Error; err != nil {
+		return nil, nil, crosschain.NewError(errcode.Internal, "routes lookup: %v", err)
+	}
+	byID := make(map[string]model.RouteSegment, len(routes))
+	for _, r := range routes {
+		byID[r.RouteID] = r
+	}
+	for _, rid := range segIDs {
+		r, ok := byID[rid]
+		if !ok {
+			return nil, nil, crosschain.NewError(errcode.RouteConflict, "航路 %q 不存在", rid)
+		}
+		if r.CorridorStatus != "OPEN" {
+			return nil, nil, crosschain.NewError(errcode.RouteConflict, "航路 %q 走廊状态 %q 不可提交", rid, r.CorridorStatus)
+		}
+	}
+	if err := s.transitionMission(traceID, operator, m, "SUBMITTED", "SUBMIT"); err != nil {
+		return nil, nil, err
+	}
+	// 建申请（运营方 SM9 身份签名）
+	appID := model.GenApplicationID()
+	appCanon := map[string]any{
+		"application_id": appID, "mission_id": m.MissionID, "mission_sm3_hash": m.SM3Hash,
+	}
+	acb, err := crypto.CanonicalJSON(appCanon)
+	if err != nil {
+		return nil, nil, crosschain.NewError(errcode.Internal, "canonicalize application: %v", err)
+	}
+	appSig, err := s.cs.SM9SignUserID(crypto.SM9IdentityOf(operator), acb)
+	if err != nil {
+		return nil, nil, crosschain.NewError(errcode.Internal, "SM9 sign application: %v", err)
+	}
+	app := &model.MissionApplication{
+		ApplicationID: appID, MissionID: m.MissionID,
+		SM3Hash: m.SM3Hash, Signature: appSig,
+		SourceChain: "fabric", Status: "PENDING",
+	}
+	if err := s.db.Create(app).Error; err != nil {
+		return nil, nil, crosschain.NewError(errcode.Internal, "create application: %v", err)
+	}
+	// 源链业务交易（fabric: operator_business/SubmitApplication）
+	src, ok := s.gw.Chain("fabric")
+	if !ok {
+		s.failApplication(traceID, operator, app, m)
+		return app, nil, crosschain.NewError(errcode.CrosschainSend, "source chain fabric unavailable")
+	}
+	rc, err := src.SubmitTx(ctx, "operator_business", "SubmitApplication", map[string]any{
+		"application_id": appID, "mission_id": m.MissionID, "sm3_hash": m.SM3Hash,
+	})
+	if err != nil {
+		s.failApplication(traceID, operator, app, m)
+		return app, nil, crosschain.NewError(errcode.CrosschainSend, "source submit: %v", err)
+	}
+	if rc.Status != 0 {
+		s.failApplication(traceID, operator, app, m)
+		return app, nil, crosschain.NewError(errcode.CrosschainSend, "source submit failed on chain (status=%d)", rc.Status)
+	}
+	app.SourceTxID = rc.TxID
+	app.Status = "SENT"
+	if err := s.db.Model(app).Updates(map[string]any{"source_tx_id": app.SourceTxID, "status": app.Status}).Error; err != nil {
+		return app, nil, crosschain.NewError(errcode.Internal, "persist application SENT: %v", err)
+	}
+	// 网关跨链 fabric→fisco-bcos
+	payload := map[string]any{
+		"mission_id": m.MissionID, "application_id": appID,
+		"operator_id": operator, "uav_id": m.UAVID, "mission_type": m.MissionType,
+		"start_time": timex.FormatTime(m.StartTime), "end_time": timex.FormatTime(m.EndTime),
+		"route_segments": segIDs, "sm3_hash": m.SM3Hash,
+	}
+	tx, err := s.sendCrosschain(ctx, traceID, crosschain.MsgMissionApplication, appID,
+		"fabric", "fisco-bcos", payload, crypto.SM9IdentityOf(operator), app.SourceTxID)
+	if err != nil {
+		s.failApplication(traceID, operator, app, m)
+		return app, tx, err
+	}
+	app.Status = "RELAYED"
+	if err := s.db.Model(app).Update("status", app.Status).Error; err != nil {
+		return app, tx, crosschain.NewError(errcode.Internal, "persist application RELAYED: %v", err)
+	}
+	s.logAudit(traceID, operator, "MISSION_SUBMIT", "MISSION_APPLICATION", appID,
+		map[string]any{"mission_id": m.MissionID, "cross_tx_id": tx.CrossTxID, "status": "RELAYED",
+			"source_tx_id": app.SourceTxID, "target_chain_tx_id": tx.TargetChainTxID})
+	return app, tx, nil
+}
+
+// failApplication 申请置 FAILED + 任务撤回 DRAFT（跨域环节失败的统一善后）。
+func (s *Service) failApplication(traceID, operator string, app *model.MissionApplication, m *model.Mission) {
+	app.Status = "FAILED"
+	if err := s.db.Model(app).Update("status", "FAILED").Error; err != nil {
+		s.logAudit(traceID, operator, "PERSIST_FAILED", "MISSION_APPLICATION", app.ApplicationID, map[string]any{"error": err.Error()})
+	}
+	var fresh model.Mission
+	if err := s.db.Where("mission_id = ?", m.MissionID).First(&fresh).Error; err == nil {
+		s.withdrawMission(traceID, operator, &fresh)
+	}
 }

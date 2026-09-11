@@ -31,6 +31,13 @@ func NewGateway(db *gorm.DB, cs *crypto.Service, chains map[string]chainadapter.
 	return &Gateway{db: db, cs: cs, chains: chains, audit: auditSvc}
 }
 
+// Chain 按名返回链适配器（供业务服务发起本源链业务交易；跨域通信仍仅经 Send——
+// "业务链不直连"原则禁止的是 fabric↔fisco-bcos 互通，不禁止业务方写自己的源链）。
+func (g *Gateway) Chain(name string) (chainadapter.ChainAdapter, bool) {
+	a, ok := g.chains[name]
+	return a, ok
+}
+
 // SendRequest 跨链发送请求。Signature 必填（对 CanonicalBytes(Envelope) 的 SM9 签名，
 // Base64）；SM3Hash 可选（提供则做一致性比对）；SourceChainTxID 可选（提供则验证源链
 // 交易，为空由网关代提交源链）。

@@ -66,3 +66,42 @@ func TestMissionEndpoints(t *testing.T) {
 		t.Fatalf("list: %v", l)
 	}
 }
+
+func TestMissionSubmitEndpoint(t *testing.T) {
+	r, err := NewRouter(validTestDeps(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	post := func(path string, body map[string]any) map[string]any { return postJSON(t, r, path, body) }
+	seedUAVEnvHTTP(t, post)
+	create := post("/api/mission/create", map[string]any{
+		"operator_id": "Operator-O1", "uav_id": "UAV-O1-001", "mission_type": "POWER_INSPECTION",
+		"start_time": "2026-09-12 09:00:00", "end_time": "2026-09-12 11:00:00",
+		"route_segments": []string{"R101", "R205"}, "altitude_min": 60, "altitude_max": 120,
+		"payload_type": "CAMERA",
+	})
+	if create["code"].(float64) != 0 {
+		t.Fatalf("create: %v", create)
+	}
+	sub := post("/api/mission/submit", map[string]any{"mission_id": "MISSION-2026-001", "operator": "Operator-O1"})
+	if sub["code"].(float64) != 0 {
+		t.Fatalf("submit: %v", sub)
+	}
+	d := sub["data"].(map[string]any)
+	app := d["application"].(map[string]any)
+	cx := d["crosschain"].(map[string]any)
+	if app["status"] != "RELAYED" || cx["status"] != "SUCCESS" {
+		t.Fatalf("app=%v cx=%v", app["status"], cx["status"])
+	}
+	if cx["source_chain_tx_id"] != app["source_tx_id"] {
+		t.Errorf("source tx mismatch: %v vs %v", cx["source_chain_tx_id"], app["source_tx_id"])
+	}
+	again := post("/api/mission/submit", map[string]any{"mission_id": "MISSION-2026-001", "operator": "Operator-O1"})
+	if again["code"].(float64) != 3004 {
+		t.Fatalf("resubmit: want 3004, got %v", again["code"])
+	}
+	q := post("/api/mission/query", map[string]any{"mission_id": "MISSION-2026-001"})
+	if q["data"].(map[string]any)["status"] != "SUBMITTED" {
+		t.Fatalf("mission status = %v", q["data"].(map[string]any)["status"])
+	}
+}

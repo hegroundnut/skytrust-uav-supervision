@@ -97,3 +97,26 @@ func missionListHandler(deps *Deps) gin.HandlerFunc {
 		OK(c, gin.H{"records": records, "total": total, "page": f.Page, "page_size": f.PageSize})
 	}
 }
+
+type missionSubmitReq struct {
+	MissionID string `json:"mission_id" binding:"required"`
+	Operator  string `json:"operator" binding:"required"`
+}
+
+// missionSubmitHandler POST /api/mission/submit —— data={application,crosschain}；
+// 跨链失败时任务已撤回 DRAFT，FailData 携带 {application,crosschain} 留痕。
+func missionSubmitHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req missionSubmitReq
+		if err := c.ShouldBindJSON(&req); err != nil {
+			Fail(c, ErrParam, "参数错误: "+err.Error())
+			return
+		}
+		app, tx, err := deps.Business.SubmitMission(c.Request.Context(), TraceIDFrom(c), req.MissionID, req.Operator)
+		if err != nil {
+			FailData(c, crosschainErrCode(err), err.Error(), gin.H{"application": app, "crosschain": tx})
+			return
+		}
+		OK(c, gin.H{"application": app, "crosschain": tx})
+	}
+}

@@ -38,6 +38,7 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/mission/create", missionCreateHandler(deps))
 		api.POST("/mission/query", missionQueryHandler(deps))
 		api.POST("/mission/list", missionListHandler(deps))
+		api.POST("/mission/submit", missionSubmitHandler(deps))
 	}
 	return r, nil
 }

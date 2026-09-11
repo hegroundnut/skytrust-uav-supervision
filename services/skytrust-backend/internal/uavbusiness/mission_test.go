@@ -5,6 +5,12 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"skytrust-backend/internal/chainadapter"
+	"skytrust-backend/internal/chainadapter/sim"
+	"skytrust-backend/internal/crosschain"
+	"skytrust-backend/internal/errcode"
+	"skytrust-backend/internal/model"
 )
 
 // seedMissionEnv 主数据 + 一台 VERIFIED UAV + R101(OPEN)/R205(OPEN)/R300(CLOSED)。
@@ -141,5 +147,95 @@ func TestQueryListMission(t *testing.T) {
 	pg, total, err := svc.ListMission(ctx, "TRACE-T", MissionListFilter{Page: 2, PageSize: 1})
 	if err != nil || total != 2 || len(pg) != 1 {
 		t.Fatalf("list paged: %d/%d err=%v", len(pg), total, err)
+	}
+}
+
+func TestSubmitMissionSuccess(t *testing.T) {
+	svc, db := testSvcFull(t)
+	seedMissionEnv(t, svc)
+	ctx := context.Background()
+	m, err := svc.CreateMission(ctx, "TRACE-T", baseMissionInput())
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	app, tx, err := svc.SubmitMission(ctx, "TRACE-T", m.MissionID, "Operator-O1")
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
+	if app.Status != "RELAYED" || app.MissionID != m.MissionID || app.SourceChain != "fabric" {
+		t.Fatalf("app = %+v", app)
+	}
+	if !strings.HasPrefix(app.SourceTxID, "FABRIC-") {
+		t.Errorf("source tx = %q", app.SourceTxID)
+	}
+	if len(app.SM3Hash) != 64 || app.Signature == "" {
+		t.Errorf("app crypto fields: %+v", app)
+	}
+	if tx.Status != "SUCCESS" || tx.MessageType != crosschain.MsgMissionApplication {
+		t.Fatalf("tx = %+v", tx)
+	}
+	if tx.SourceChainTxID != app.SourceTxID {
+		t.Errorf("gateway must verify business source tx: %q vs %q", tx.SourceChainTxID, app.SourceTxID)
+	}
+	if tx.SourceChainTxID == "" || tx.RegReceiveTxID == "" || tx.RegRelayTxID == "" || tx.TargetChainTxID == "" {
+		t.Errorf("four tx ids: %+v", tx)
+	}
+	got, err := svc.QueryMission(ctx, "TRACE-T", m.MissionID)
+	if err != nil || got.Status != "SUBMITTED" {
+		t.Fatalf("mission status = %v err=%v", got.Status, err)
+	}
+	// 再提交 → 3004
+	if _, _, err := svc.SubmitMission(ctx, "TRACE-T", m.MissionID, "Operator-O1"); codeOf(err) != 3004 {
+		t.Fatalf("resubmit: want 3004, got %v", err)
+	}
+	var cnt int64
+	db.Model(&model.AuditLog{}).Where("target_id = ? AND action = ?", app.ApplicationID, "MISSION_SUBMIT").Count(&cnt)
+	if cnt != 1 {
+		t.Errorf("want 1 MISSION_SUBMIT audit row, got %d", cnt)
+	}
+}
+
+func TestSubmitMissionFailWithdrawsAndRetries(t *testing.T) {
+	sims := defaultTestSims()
+	svc, _ := testSvcWith(t, sims)
+	seedMissionEnv(t, svc)
+	// 故障注入时序偏差说明：简报原文在构造期注入 RegisterReceive 故障，但 seedMissionEnv
+	// 内的 RegisterUAV 同样经 chainmaker RegisterReceive，会先行消耗该次注入（seed 中止、
+	// UAV 停留 REGISTERED）。sim 无运行期注入入口、Gateway.chains 为 crosschain 包私有，
+	// 故铺环境后重建网关换装带故障的 chainmaker——注入点、故障语义与全部断言同简报。
+	adapters := map[string]chainadapter.ChainAdapter{
+		"fabric":     sims["fabric"],
+		"chainmaker": sim.New("chainmaker", sim.WithFailNext("RegisterReceive", 1)),
+		"fisco-bcos": sims["fisco-bcos"],
+	}
+	svc.gw = crosschain.NewGateway(svc.db, svc.cs, adapters, svc.audit)
+	ctx := context.Background()
+	m, err := svc.CreateMission(ctx, "TRACE-T", baseMissionInput())
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	app, tx, err := svc.SubmitMission(ctx, "TRACE-T", m.MissionID, "Operator-O1")
+	if codeOf(err) != errcode.CrosschainSend {
+		t.Fatalf("want 2001, got %v", err)
+	}
+	if app.Status != "FAILED" || tx.Status != "FAILED" {
+		t.Fatalf("app=%s tx=%s", app.Status, tx.Status)
+	}
+	// 撤回：SUBMITTED→DRAFT，可修改重报
+	got, err := svc.QueryMission(ctx, "TRACE-T", m.MissionID)
+	if err != nil || got.Status != "DRAFT" {
+		t.Fatalf("withdrawn mission status = %v err=%v", got.Status, err)
+	}
+	// 链已恢复 → 重报成功（新 application_id，幂等键不同）
+	app2, tx2, err := svc.SubmitMission(ctx, "TRACE-T", m.MissionID, "Operator-O1")
+	if err != nil {
+		t.Fatalf("retry submit: %v", err)
+	}
+	if app2.ApplicationID == app.ApplicationID || app2.Status != "RELAYED" || tx2.Status != "SUCCESS" {
+		t.Fatalf("retry: app=%+v tx=%s", app2, tx2.Status)
+	}
+	got, _ = svc.QueryMission(ctx, "TRACE-T", m.MissionID)
+	if got.Status != "SUBMITTED" {
+		t.Fatalf("after retry status = %q", got.Status)
 	}
 }
