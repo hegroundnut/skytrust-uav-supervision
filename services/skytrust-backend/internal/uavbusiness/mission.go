@@ -154,7 +154,7 @@ func (s *Service) CreateMission(ctx context.Context, traceID string, in MissionI
 	}
 	m := &model.Mission{
 		MissionID: missionID, OperatorID: in.OperatorID, UAVID: in.UAVID,
-		MissionType: in.MissionType, StartTime: start, EndTime: end,
+		MissionType: in.MissionType, StartTime: timex.New(start), EndTime: timex.New(end),
 		RouteSegments: string(segJSON), AltitudeMin: in.AltitudeMin, AltitudeMax: in.AltitudeMax,
 		Zones: string(zoneJSON), PayloadType: in.PayloadType,
 		MissionCiphertext: cipher, MaskedValue: masked,
@@ -344,7 +344,7 @@ func (s *Service) SubmitMission(ctx context.Context, traceID, missionID, operato
 	payload := map[string]any{
 		"mission_id": m.MissionID, "application_id": appID,
 		"operator_id": operator, "uav_id": m.UAVID, "mission_type": m.MissionType,
-		"start_time": timex.FormatTime(m.StartTime), "end_time": timex.FormatTime(m.EndTime),
+		"start_time": timex.FormatTime(m.StartTime.Time), "end_time": timex.FormatTime(m.EndTime.Time),
 		"route_segments": segIDs, "sm3_hash": m.SM3Hash,
 	}
 	tx, err := s.sendCrosschain(ctx, traceID, crosschain.MsgMissionApplication, appID,

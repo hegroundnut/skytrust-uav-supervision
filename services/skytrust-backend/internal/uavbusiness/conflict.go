@@ -16,7 +16,7 @@ import (
 // missionOverlap 三维重叠判定（实施文档 §9.3）：时间 ∧ 航路 ∧ 高度同时重叠才算冲突。
 // 返回重叠航段列表与是否冲突。纯函数，可单测。
 func missionOverlap(a, b *model.Mission) ([]string, bool) {
-	if !a.StartTime.Before(b.EndTime) || !b.StartTime.Before(a.EndTime) {
+	if !a.StartTime.Before(b.EndTime.Time) || !b.StartTime.Before(a.EndTime.Time) {
 		return nil, false
 	}
 	var segA, segB []string

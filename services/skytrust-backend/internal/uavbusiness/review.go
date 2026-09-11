@@ -73,7 +73,7 @@ func (s *Service) SubmitReview(ctx context.Context, traceID string, in ReviewInp
 	rev := &model.ReviewRecord{
 		ReviewID: model.GenReviewID(), ApplicationID: app.ApplicationID,
 		Result: in.Result, RulesHit: string(rulesJSON), Comment: in.Comment,
-		Reviewer: in.Reviewer, ReviewTime: timex.Now(),
+		Reviewer: in.Reviewer, ReviewTime: timex.NowT(),
 	}
 	if err := s.db.Create(rev).Error; err != nil {
 		return nil, m, nil, crosschain.NewError(errcode.Internal, "create review: %v", err)

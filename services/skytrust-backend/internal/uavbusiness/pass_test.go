@@ -44,7 +44,7 @@ func TestIssuePassSuccess(t *testing.T) {
 	if p.MissionID != m.MissionID || p.UAVID != m.UAVID || p.Route != m.RouteSegments {
 		t.Errorf("pass fields not copied from mission: %+v", p)
 	}
-	if !p.ValidFrom.Equal(m.StartTime) || !p.ValidTo.Equal(m.EndTime) {
+	if !p.ValidFrom.Equal(m.StartTime.Time) || !p.ValidTo.Equal(m.EndTime.Time) {
 		t.Errorf("window should default to mission window: %v ~ %v", p.ValidFrom, p.ValidTo)
 	}
 	if len(p.SM3Hash) != 64 || p.Signature == "" {
@@ -108,8 +108,8 @@ func TestIssuePassGuards(t *testing.T) {
 	if err != nil {
 		t.Fatalf("custom window: %v", err)
 	}
-	if timex.FormatTime(p.ValidFrom) != "2026-09-12 09:30:00.000" {
-		t.Errorf("valid_from = %q", timex.FormatTime(p.ValidFrom))
+	if timex.FormatTime(p.ValidFrom.Time) != "2026-09-12 09:30:00.000" {
+		t.Errorf("valid_from = %q", timex.FormatTime(p.ValidFrom.Time))
 	}
 	// 同 pass_id 再签发（已 VALID）→ 3002
 	if _, _, err := svc.IssuePass(ctx, "TRACE-T", PassIssueInput{PassID: p.PassID, MissionID: m.MissionID, Issuer: "FISCO-ADMIN"}); codeOf(err) != errcode.PassInvalid {
@@ -211,7 +211,7 @@ func TestVerifyPassLifecycle(t *testing.T) {
 	}
 	// 裸 GENERATING 记录 → 未生效 reason
 	raw := model.FlightPass{PassID: "PASS-2026-099", MissionID: m.MissionID, UAVID: m.UAVID,
-		Route: m.RouteSegments, ValidFrom: timex.Now(), ValidTo: timex.Now().Add(time.Hour), Status: "GENERATING"}
+		Route: m.RouteSegments, ValidFrom: timex.NowT(), ValidTo: timex.New(timex.Now().Add(time.Hour)), Status: "GENERATING"}
 	if err := db.Create(&raw).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -323,5 +323,34 @@ func TestQueryAndListPass(t *testing.T) {
 	}
 	if d, _, _ := svc.ListPass(ctx, "TRACE-T", PassListFilter{Page: 0, PageSize: 0}); len(d) != 2 {
 		t.Errorf("defaults must normalize: %d", len(d))
+	}
+}
+
+// TestPassSignatureStableAcrossReload SM3/SM9 签名跨 DB 读回字节稳定关卡（Task 13b 风险5）。
+// 简报测试构造适配（全部断言逐字保留）：① 移除显式 seedParties —— 磁盘上
+// approvedMission→submittedMission→seedMissionEnv 内部已调 seedParties，重复调用会因
+// Manufacturer-M1/Operator-O1 重复注册直接 Fatalf；② approvedMission 磁盘签名为单返回值
+// (t, svc) → *model.Mission，非简报的 (m, _) 双返回；③ 磁盘 IssuePass 强制 Issuer 非空
+// （否则 6002），简报构造缺省该字段，按同文件其余测试惯例补 Issuer: "FISCO-ADMIN"。
+func TestPassSignatureStableAcrossReload(t *testing.T) {
+	svc, _ := testSvcFull(t)
+	m := approvedMission(t, svc)
+	ctx := context.Background()
+	vf, vt := nowWindow()
+	p, _, err := svc.IssuePass(ctx, "TRACE-T", PassIssueInput{MissionID: m.MissionID, Issuer: "FISCO-ADMIN", ValidFrom: vf, ValidTo: vt})
+	if err != nil {
+		t.Fatalf("issue: %v", err)
+	}
+	// 从 DB 读回后重算 canonical 必须字节一致 → VerifyPass 仍 valid
+	back, err := svc.QueryPass(ctx, "TRACE-T", p.PassID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if timex.FormatTime(back.ValidFrom.Time) != timex.FormatTime(p.ValidFrom.Time) {
+		t.Fatalf("valid_from drift: %v vs %v", back.ValidFrom, p.ValidFrom)
+	}
+	valid, reasons, _, err := svc.VerifyPass(ctx, "TRACE-T", p.PassID)
+	if err != nil || !valid {
+		t.Fatalf("verify after reload: valid=%v reasons=%v err=%v", valid, reasons, err)
 	}
 }

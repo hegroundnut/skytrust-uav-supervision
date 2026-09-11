@@ -59,8 +59,8 @@ func (s *Service) genPassID(year int) (string, error) {
 func passCanonical(p *model.FlightPass) map[string]any {
 	return map[string]any{
 		"pass_id": p.PassID, "mission_id": p.MissionID, "uav_id": p.UAVID,
-		"route": p.Route, "valid_from": timex.FormatTime(p.ValidFrom),
-		"valid_to": timex.FormatTime(p.ValidTo),
+		"route": p.Route, "valid_from": timex.FormatTime(p.ValidFrom.Time),
+		"valid_to": timex.FormatTime(p.ValidTo.Time),
 	}
 }
 
@@ -87,7 +87,7 @@ func (s *Service) IssuePass(ctx context.Context, traceID string, in PassIssueInp
 		return nil, nil, crosschain.NewError(errcode.MissionState,
 			"任务 %q 状态 %q 不可签发许可（需 APPROVED）", m.MissionID, m.Status)
 	}
-	vf, vt := m.StartTime, m.EndTime
+	vf, vt := m.StartTime.Time, m.EndTime.Time
 	if in.ValidFrom != "" {
 		if vf, err = timex.ParseTime(in.ValidFrom); err != nil {
 			return nil, nil, crosschain.NewError(errcode.Param, "valid_from 格式非法（应为 2006-01-02 15:04:05[.000]）: %v", err)
@@ -119,7 +119,7 @@ func (s *Service) IssuePass(ctx context.Context, traceID string, in PassIssueInp
 	case err == gorm.ErrRecordNotFound:
 		p = model.FlightPass{
 			PassID: passID, MissionID: m.MissionID, UAVID: m.UAVID,
-			Route: m.RouteSegments, ValidFrom: vf, ValidTo: vt, Status: "GENERATING",
+			Route: m.RouteSegments, ValidFrom: timex.New(vf), ValidTo: timex.New(vt), Status: "GENERATING",
 		}
 		cb, cerr := crypto.CanonicalJSON(passCanonical(&p))
 		if cerr != nil {
@@ -146,7 +146,7 @@ func (s *Service) IssuePass(ctx context.Context, traceID string, in PassIssueInp
 	}
 	s.logAudit(traceID, in.Issuer, "PASS_ISSUE", "PASS", p.PassID,
 		map[string]any{"mission_id": p.MissionID, "uav_id": p.UAVID, "cross_tx_id": tx.CrossTxID,
-			"window": []string{timex.FormatTime(p.ValidFrom), timex.FormatTime(p.ValidTo)}})
+			"window": []string{timex.FormatTime(p.ValidFrom.Time), timex.FormatTime(p.ValidTo.Time)}})
 	return &p, tx, nil
 }
 
@@ -158,8 +158,8 @@ func (s *Service) sendFlightPassCrosschain(ctx context.Context, traceID string, 
 	}
 	payload := map[string]any{
 		"pass_id": p.PassID, "mission_id": p.MissionID, "uav_id": p.UAVID,
-		"route": segIDs, "valid_from": timex.FormatTime(p.ValidFrom),
-		"valid_to": timex.FormatTime(p.ValidTo), "sm3_hash": p.SM3Hash, "issuer": issuer,
+		"route": segIDs, "valid_from": timex.FormatTime(p.ValidFrom.Time),
+		"valid_to": timex.FormatTime(p.ValidTo.Time), "sm3_hash": p.SM3Hash, "issuer": issuer,
 	}
 	sourceTxID := s.prevFailedSourceTxID(crosschain.MsgFlightPass, p.PassID)
 	return s.sendCrosschain(ctx, traceID, crosschain.MsgFlightPass, p.PassID,
@@ -228,13 +228,13 @@ func (s *Service) VerifyPass(ctx context.Context, traceID, passID string) (bool,
 		return false, nil, nil, err
 	}
 	now := timex.Now()
-	if p.Status == "VALID" && now.After(p.ValidTo) {
+	if p.Status == "VALID" && now.After(p.ValidTo.Time) {
 		_ = s.transitionPass(traceID, "SYSTEM", p, "EXPIRED", "AUTO_EXPIRE")
 	}
 	reasons := []string{}
 	switch p.Status {
 	case "VALID":
-		if now.Before(p.ValidFrom) {
+		if now.Before(p.ValidFrom.Time) {
 			reasons = append(reasons, "未到生效时间")
 		}
 		cb, cerr := crypto.CanonicalJSON(passCanonical(p))
