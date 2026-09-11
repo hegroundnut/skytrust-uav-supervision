@@ -33,6 +33,14 @@ func Open(dbPath string) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	if dbPath == ":memory:" {
+		// database/sql 对 :memory: 的每个连接是独立数据库；单连接池保证同一库并序列化并发访问
+		sqlDB, err := db.DB()
+		if err != nil {
+			return nil, err
+		}
+		sqlDB.SetMaxOpenConns(1)
+	}
 	return db, nil
 }
 

@@ -55,6 +55,14 @@ func Run(addr string) error {
 	if err != nil {
 		return err
 	}
+	autopilotMs := cfg.OffchainAutopilotMs
+	if autopilotMs == 0 {
+		autopilotMs = 2000 // 生产接线默认开启后台流量（P3-9）；OFFCHAIN_AUTOPILOT_MS 设负值 = 显式关闭
+	}
+	if ap := offchain.NewAutopilot(off, autopilotMs); ap != nil {
+		ap.Start()
+		defer ap.Stop()
+	}
 	log.Printf("skytrust-backend listening on %s (chain_mode=%s)", cfg.ServerAddr, cfg.ChainMode)
 	return r.Run(cfg.ServerAddr)
 }
