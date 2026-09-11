@@ -164,3 +164,19 @@ func riskEvaluateHandler(deps *Deps) gin.HandlerFunc {
 		OK(c, res)
 	}
 }
+
+func pathSwitchHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req offchain.PathSwitchRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			Fail(c, ErrParam, "参数错误: "+err.Error())
+			return
+		}
+		res, err := deps.Offchain.PathSwitch(c.Request.Context(), TraceIDFrom(c), &req)
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, res)
+	}
+}

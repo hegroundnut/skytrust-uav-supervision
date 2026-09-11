@@ -302,3 +302,55 @@ func TestRiskEvaluateEndpointErrors(t *testing.T) {
 		t.Fatalf("missing sid = %v", resp)
 	}
 }
+
+func TestPathSwitchEndpoint(t *testing.T) {
+	r := setupFullTestRouter(t)
+	postJSON(t, r, "/api/demo/init", map[string]any{})
+	open := postJSON(t, r, "/api/session/open", map[string]any{"uav_id": "UAV-A-001"})
+	sid := open["data"].(map[string]any)["session"].(map[string]any)["session_id"].(string)
+	for i := 0; i < 2; i++ {
+		postJSON(t, r, "/api/message/send", map[string]any{
+			"session_id": sid, "msg_type": "HEARTBEAT",
+			"source_node": "UAV-A-001-NODE", "target_node": "MGR",
+		})
+	}
+	postJSON(t, r, "/api/wormhole/toggle", map[string]any{"enabled": true})
+	postJSON(t, r, "/api/message/send", map[string]any{
+		"session_id": sid, "msg_type": "POSITION_UPDATE",
+		"source_node": "UAV-A-001-NODE", "target_node": "MGR",
+	})
+	if resp := postJSON(t, r, "/api/risk/evaluate", map[string]any{"session_id": sid}); resp["data"].(map[string]any)["verdict"] != "DETECT" {
+		t.Fatalf("evaluate = %v", resp)
+	}
+	resp := postJSON(t, r, "/api/path/switch", map[string]any{"session_id": sid, "operator": "OP-1"})
+	if resp["code"].(float64) != 0 {
+		t.Fatalf("switch: %v", resp)
+	}
+	d := resp["data"].(map[string]any)
+	if d["session"].(map[string]any)["status"] != "RECOVERED" {
+		t.Fatalf("session = %v", d["session"])
+	}
+	if d["event"].(map[string]any)["action"] != "RECOVER" || d["recovery_latency_ms"].(float64) <= 0 {
+		t.Fatalf("event/recovery = %v", d)
+	}
+	if len(d["new_path"].([]any)) != 6 {
+		t.Fatalf("new path = %v", d["new_path"])
+	}
+	// 恢复后再 switch → 4002；重新开洞 → 4001（ISOLATED 不可上线）
+	if resp := postJSON(t, r, "/api/path/switch", map[string]any{"session_id": sid, "operator": "OP-1"}); resp["code"].(float64) != 4002 {
+		t.Fatalf("re-switch = %v", resp)
+	}
+	if resp := postJSON(t, r, "/api/wormhole/toggle", map[string]any{"enabled": true}); resp["code"].(float64) != 4001 {
+		t.Fatalf("re-enable isolated = %v", resp)
+	}
+	// 恢复后发送 → 会话回归 ACTIVE
+	if resp := postJSON(t, r, "/api/message/send", map[string]any{
+		"session_id": sid, "msg_type": "ROUTE_STATUS",
+		"source_node": "UAV-A-001-NODE", "target_node": "MGR",
+	}); resp["code"].(float64) != 0 {
+		t.Fatalf("post-recovery send = %v", resp)
+	}
+	if lst := postJSON(t, r, "/api/session/list", map[string]any{"status": "ACTIVE"}); lst["data"].(map[string]any)["total"].(float64) != 1 {
+		t.Fatalf("active sessions = %v", lst["data"])
+	}
+}
