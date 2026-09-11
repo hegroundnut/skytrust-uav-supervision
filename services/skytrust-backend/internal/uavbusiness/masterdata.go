@@ -44,13 +44,40 @@ func (s *Service) RegisterManufacturer(ctx context.Context, traceID string, in M
 	return m, nil
 }
 
-// ListManufacturers 按 ID 升序返回全部厂商。
-func (s *Service) ListManufacturers(ctx context.Context, traceID string) ([]model.Manufacturer, error) {
-	var out []model.Manufacturer
-	if err := s.db.Order("manufacturer_id ASC").Find(&out).Error; err != nil {
-		return nil, crosschain.NewError(errcode.Internal, "find: %v", err)
+// ManufacturerListFilter 厂商列表过滤 + 分页参数。
+type ManufacturerListFilter struct {
+	Status   string
+	Page     int
+	PageSize int
+}
+
+// ListManufacturers 按 status 过滤（空串 = 不过滤），manufacturer_id 升序分页，返回记录与命中总数。
+func (s *Service) ListManufacturers(ctx context.Context, traceID string, f ManufacturerListFilter) ([]model.Manufacturer, int64, error) {
+	if f.Page <= 0 {
+		f.Page = 1
 	}
-	return out, nil
+	if f.PageSize <= 0 {
+		f.PageSize = 20
+	}
+	if f.PageSize > 200 {
+		f.PageSize = 200
+	}
+	q := s.db.Model(&model.Manufacturer{})
+	if f.Status != "" {
+		q = q.Where("status = ?", f.Status)
+	}
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, crosschain.NewError(errcode.Internal, "count: %v", err)
+	}
+	var out []model.Manufacturer
+	if err := q.Order("manufacturer_id ASC").
+		Offset((f.Page - 1) * f.PageSize).
+		Limit(f.PageSize).
+		Find(&out).Error; err != nil {
+		return nil, 0, crosschain.NewError(errcode.Internal, "find: %v", err)
+	}
+	return out, total, nil
 }
 
 // ---------- 运营方 ----------
@@ -94,13 +121,40 @@ func (s *Service) RegisterOperator(ctx context.Context, traceID string, in Opera
 	return o, nil
 }
 
-// ListOperators 按 ID 升序返回全部运营方。
-func (s *Service) ListOperators(ctx context.Context, traceID string) ([]model.Operator, error) {
-	var out []model.Operator
-	if err := s.db.Order("operator_id ASC").Find(&out).Error; err != nil {
-		return nil, crosschain.NewError(errcode.Internal, "find: %v", err)
+// OperatorListFilter 运营方列表过滤 + 分页参数。
+type OperatorListFilter struct {
+	Status   string
+	Page     int
+	PageSize int
+}
+
+// ListOperators 按 status 过滤（空串 = 不过滤），operator_id 升序分页，返回记录与命中总数。
+func (s *Service) ListOperators(ctx context.Context, traceID string, f OperatorListFilter) ([]model.Operator, int64, error) {
+	if f.Page <= 0 {
+		f.Page = 1
 	}
-	return out, nil
+	if f.PageSize <= 0 {
+		f.PageSize = 20
+	}
+	if f.PageSize > 200 {
+		f.PageSize = 200
+	}
+	q := s.db.Model(&model.Operator{})
+	if f.Status != "" {
+		q = q.Where("status = ?", f.Status)
+	}
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, crosschain.NewError(errcode.Internal, "count: %v", err)
+	}
+	var out []model.Operator
+	if err := q.Order("operator_id ASC").
+		Offset((f.Page - 1) * f.PageSize).
+		Limit(f.PageSize).
+		Find(&out).Error; err != nil {
+		return nil, 0, crosschain.NewError(errcode.Internal, "find: %v", err)
+	}
+	return out, total, nil
 }
 
 // ---------- 航线 ----------
@@ -151,18 +205,42 @@ func (s *Service) CreateRoute(ctx context.Context, traceID string, in RouteInput
 	return r, nil
 }
 
-// ListRoutes 按 zone/corridor_status 过滤（空串 = 不过滤），route_id 升序。
-func (s *Service) ListRoutes(ctx context.Context, traceID string, zone, corridorStatus string) ([]model.RouteSegment, error) {
-	q := s.db.Model(&model.RouteSegment{})
-	if zone != "" {
-		q = q.Where("zone = ?", zone)
+// RouteListFilter 航线列表过滤 + 分页参数。
+type RouteListFilter struct {
+	Zone           string
+	CorridorStatus string
+	Page           int
+	PageSize       int
+}
+
+// ListRoutes 按 zone/corridor_status 过滤（空串 = 不过滤），route_id 升序分页，返回记录与命中总数。
+func (s *Service) ListRoutes(ctx context.Context, traceID string, f RouteListFilter) ([]model.RouteSegment, int64, error) {
+	if f.Page <= 0 {
+		f.Page = 1
 	}
-	if corridorStatus != "" {
-		q = q.Where("corridor_status = ?", corridorStatus)
+	if f.PageSize <= 0 {
+		f.PageSize = 20
+	}
+	if f.PageSize > 200 {
+		f.PageSize = 200
+	}
+	q := s.db.Model(&model.RouteSegment{})
+	if f.Zone != "" {
+		q = q.Where("zone = ?", f.Zone)
+	}
+	if f.CorridorStatus != "" {
+		q = q.Where("corridor_status = ?", f.CorridorStatus)
+	}
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, crosschain.NewError(errcode.Internal, "count: %v", err)
 	}
 	var out []model.RouteSegment
-	if err := q.Order("route_id ASC").Find(&out).Error; err != nil {
-		return nil, crosschain.NewError(errcode.Internal, "find: %v", err)
+	if err := q.Order("route_id ASC").
+		Offset((f.Page - 1) * f.PageSize).
+		Limit(f.PageSize).
+		Find(&out).Error; err != nil {
+		return nil, 0, crosschain.NewError(errcode.Internal, "find: %v", err)
 	}
-	return out, nil
+	return out, total, nil
 }

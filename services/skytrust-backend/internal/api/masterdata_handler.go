@@ -32,14 +32,35 @@ func manufacturerRegisterHandler(deps *Deps) gin.HandlerFunc {
 	}
 }
 
+type manufacturerListReq struct {
+	Status   string `json:"status"`
+	Page     int    `json:"page"`
+	PageSize int    `json:"page_size"`
+}
+
 func manufacturerListHandler(deps *Deps) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		list, err := deps.Business.ListManufacturers(c.Request.Context(), TraceIDFrom(c))
+		var req manufacturerListReq
+		if !bindOptionalBody(c, &req) { // 全字段可选：空体合法；格式错→6002
+			return
+		}
+		f := uavbusiness.ManufacturerListFilter{Status: req.Status, Page: req.Page, PageSize: req.PageSize}
+		// 归一化后回显（与 List* 内部规则一致）
+		if f.Page <= 0 {
+			f.Page = 1
+		}
+		if f.PageSize <= 0 {
+			f.PageSize = 20
+		}
+		if f.PageSize > 200 {
+			f.PageSize = 200
+		}
+		list, total, err := deps.Business.ListManufacturers(c.Request.Context(), TraceIDFrom(c), f)
 		if err != nil {
 			Fail(c, crosschainErrCode(err), err.Error())
 			return
 		}
-		OK(c, gin.H{"records": list, "total": len(list)})
+		OK(c, gin.H{"records": list, "total": total, "page": f.Page, "page_size": f.PageSize})
 	}
 }
 
@@ -71,14 +92,35 @@ func operatorRegisterHandler(deps *Deps) gin.HandlerFunc {
 	}
 }
 
+type operatorListReq struct {
+	Status   string `json:"status"`
+	Page     int    `json:"page"`
+	PageSize int    `json:"page_size"`
+}
+
 func operatorListHandler(deps *Deps) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		list, err := deps.Business.ListOperators(c.Request.Context(), TraceIDFrom(c))
+		var req operatorListReq
+		if !bindOptionalBody(c, &req) { // 全字段可选：空体合法；格式错→6002
+			return
+		}
+		f := uavbusiness.OperatorListFilter{Status: req.Status, Page: req.Page, PageSize: req.PageSize}
+		// 归一化后回显（与 List* 内部规则一致）
+		if f.Page <= 0 {
+			f.Page = 1
+		}
+		if f.PageSize <= 0 {
+			f.PageSize = 20
+		}
+		if f.PageSize > 200 {
+			f.PageSize = 200
+		}
+		list, total, err := deps.Business.ListOperators(c.Request.Context(), TraceIDFrom(c), f)
 		if err != nil {
 			Fail(c, crosschainErrCode(err), err.Error())
 			return
 		}
-		OK(c, gin.H{"records": list, "total": len(list)})
+		OK(c, gin.H{"records": list, "total": total, "page": f.Page, "page_size": f.PageSize})
 	}
 }
 
@@ -114,6 +156,8 @@ func routeCreateHandler(deps *Deps) gin.HandlerFunc {
 type routeListReq struct {
 	Zone           string `json:"zone"`
 	CorridorStatus string `json:"corridor_status"`
+	Page           int    `json:"page"`
+	PageSize       int    `json:"page_size"`
 }
 
 func routeListHandler(deps *Deps) gin.HandlerFunc {
@@ -122,11 +166,22 @@ func routeListHandler(deps *Deps) gin.HandlerFunc {
 		if !bindOptionalBody(c, &req) { // 全字段可选：空体合法；格式错→6002
 			return
 		}
-		list, err := deps.Business.ListRoutes(c.Request.Context(), TraceIDFrom(c), req.Zone, req.CorridorStatus)
+		f := uavbusiness.RouteListFilter{Zone: req.Zone, CorridorStatus: req.CorridorStatus, Page: req.Page, PageSize: req.PageSize}
+		// 归一化后回显（与 List* 内部规则一致）
+		if f.Page <= 0 {
+			f.Page = 1
+		}
+		if f.PageSize <= 0 {
+			f.PageSize = 20
+		}
+		if f.PageSize > 200 {
+			f.PageSize = 200
+		}
+		list, total, err := deps.Business.ListRoutes(c.Request.Context(), TraceIDFrom(c), f)
 		if err != nil {
 			Fail(c, crosschainErrCode(err), err.Error())
 			return
 		}
-		OK(c, gin.H{"records": list, "total": len(list)})
+		OK(c, gin.H{"records": list, "total": total, "page": f.Page, "page_size": f.PageSize})
 	}
 }

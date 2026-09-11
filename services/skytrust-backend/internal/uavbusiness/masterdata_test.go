@@ -57,9 +57,16 @@ func TestRegisterManufacturerDuplicate(t *testing.T) {
 	if codeOf(err) != errcode.Param {
 		t.Fatalf("missing name: want 6002, got %v", err)
 	}
-	list, err := svc.ListManufacturers(ctx, "TRACE-T")
-	if err != nil || len(list) != 1 {
-		t.Fatalf("list: %d err=%v", len(list), err)
+	if _, err := svc.RegisterManufacturer(ctx, "TRACE-T", ManufacturerInput{ManufacturerID: "Manufacturer-S", Name: "厂商S", Status: "SUSPENDED"}); err != nil {
+		t.Fatalf("register suspended: %v", err)
+	}
+	list, total, err := svc.ListManufacturers(ctx, "TRACE-T", ManufacturerListFilter{Status: "ACTIVE"})
+	if err != nil || len(list) != 1 || total != 1 {
+		t.Fatalf("status filter: %d/%d err=%v", len(list), total, err)
+	}
+	all, totalAll, err := svc.ListManufacturers(ctx, "TRACE-T", ManufacturerListFilter{})
+	if err != nil || len(all) != 2 || totalAll != 2 {
+		t.Fatalf("list all: %d/%d err=%v", len(all), totalAll, err)
 	}
 }
 
@@ -77,9 +84,16 @@ func TestRegisterOperatorDefaults(t *testing.T) {
 	if codeOf(err) != errcode.Param {
 		t.Fatalf("duplicate: want 6002, got %v", err)
 	}
-	list, err := svc.ListOperators(ctx, "TRACE-T")
-	if err != nil || len(list) != 1 {
-		t.Fatalf("list: %d err=%v", len(list), err)
+	if _, err := svc.RegisterOperator(ctx, "TRACE-T", OperatorInput{OperatorID: "Operator-S", Name: "运营S", Status: "SUSPENDED"}); err != nil {
+		t.Fatalf("register suspended: %v", err)
+	}
+	list, total, err := svc.ListOperators(ctx, "TRACE-T", OperatorListFilter{Status: "ACTIVE"})
+	if err != nil || len(list) != 1 || total != 1 {
+		t.Fatalf("status filter: %d/%d err=%v", len(list), total, err)
+	}
+	all, totalAll, err := svc.ListOperators(ctx, "TRACE-T", OperatorListFilter{})
+	if err != nil || len(all) != 2 || totalAll != 2 {
+		t.Fatalf("list all: %d/%d err=%v", len(all), totalAll, err)
 	}
 }
 
@@ -123,20 +137,34 @@ func TestListRoutesFilters(t *testing.T) {
 	mk("R901", "Zone-A", "OPEN")
 	mk("R902", "Zone-A", "CLOSED")
 	mk("R903", "Zone-B", "OPEN")
-	all, err := svc.ListRoutes(ctx, "TRACE-T", "", "")
-	if err != nil || len(all) != 3 {
-		t.Fatalf("all: %d err=%v", len(all), err)
+	all, totalAll, err := svc.ListRoutes(ctx, "TRACE-T", RouteListFilter{})
+	if err != nil || len(all) != 3 || totalAll != 3 {
+		t.Fatalf("all: %d/%d err=%v", len(all), totalAll, err)
 	}
-	za, err := svc.ListRoutes(ctx, "TRACE-T", "Zone-A", "")
-	if err != nil || len(za) != 2 {
-		t.Fatalf("zone: %d err=%v", len(za), err)
+	za, totalZA, err := svc.ListRoutes(ctx, "TRACE-T", RouteListFilter{Zone: "Zone-A"})
+	if err != nil || len(za) != 2 || totalZA != 2 {
+		t.Fatalf("zone: %d/%d err=%v", len(za), totalZA, err)
 	}
-	open, err := svc.ListRoutes(ctx, "TRACE-T", "", "OPEN")
-	if err != nil || len(open) != 2 {
-		t.Fatalf("status: %d err=%v", len(open), err)
+	open, totalOpen, err := svc.ListRoutes(ctx, "TRACE-T", RouteListFilter{CorridorStatus: "OPEN"})
+	if err != nil || len(open) != 2 || totalOpen != 2 {
+		t.Fatalf("status: %d/%d err=%v", len(open), totalOpen, err)
 	}
-	both, err := svc.ListRoutes(ctx, "TRACE-T", "Zone-A", "CLOSED")
-	if err != nil || len(both) != 1 || both[0].RouteID != "R902" {
-		t.Fatalf("both: %+v err=%v", both, err)
+	both, totalBoth, err := svc.ListRoutes(ctx, "TRACE-T", RouteListFilter{Zone: "Zone-A", CorridorStatus: "CLOSED"})
+	if err != nil || len(both) != 1 || totalBoth != 1 || both[0].RouteID != "R902" {
+		t.Fatalf("both: %+v/%d err=%v", both, totalBoth, err)
+	}
+	// 分页：每页 1 条 → 长度 1、总数仍 2；第 2 页偏移取到 R902
+	pg, pgTotal, err := svc.ListRoutes(ctx, "TRACE-T", RouteListFilter{Zone: "Zone-A", Page: 1, PageSize: 1})
+	if err != nil || len(pg) != 1 || pgTotal != 2 || pg[0].RouteID != "R901" {
+		t.Fatalf("page1: %+v/%d err=%v", pg, pgTotal, err)
+	}
+	pg2, pg2Total, err := svc.ListRoutes(ctx, "TRACE-T", RouteListFilter{Zone: "Zone-A", Page: 2, PageSize: 1})
+	if err != nil || len(pg2) != 1 || pg2Total != 2 || pg2[0].RouteID != "R902" {
+		t.Fatalf("page2: %+v/%d err=%v", pg2, pg2Total, err)
+	}
+	// PageSize 超上限 → 截断至 200，不报错
+	capped, cappedTotal, err := svc.ListRoutes(ctx, "TRACE-T", RouteListFilter{Page: 1, PageSize: 500})
+	if err != nil || len(capped) != 3 || cappedTotal != 3 {
+		t.Fatalf("pagesize cap: %d/%d err=%v", len(capped), cappedTotal, err)
 	}
 }
