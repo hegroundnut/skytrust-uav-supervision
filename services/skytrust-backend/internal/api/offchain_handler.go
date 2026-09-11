@@ -132,3 +132,19 @@ func messageListHandler(deps *Deps) gin.HandlerFunc {
 		OK(c, gin.H{"records": records, "total": total, "page": q.Page, "page_size": q.PageSize, "stats": stats})
 	}
 }
+
+func wormholeToggleHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req offchain.WormholeToggleRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			Fail(c, ErrParam, "参数错误: "+err.Error())
+			return
+		}
+		res, err := deps.Offchain.WormholeToggle(c.Request.Context(), TraceIDFrom(c), &req)
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, res)
+	}
+}

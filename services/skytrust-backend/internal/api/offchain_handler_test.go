@@ -206,3 +206,36 @@ func TestMessageListEndpointWithStats(t *testing.T) {
 		t.Fatalf("filter = %v", resp["data"])
 	}
 }
+
+func TestWormholeToggleEndpoint(t *testing.T) {
+	r := setupFullTestRouter(t)
+	postJSON(t, r, "/api/demo/init", map[string]any{})
+	// 缺 enabled → 6002
+	if resp := postJSON(t, r, "/api/wormhole/toggle", map[string]any{}); resp["code"].(float64) != 6002 {
+		t.Fatalf("missing enabled = %v", resp)
+	}
+	// false 必须能绑定（*bool 陷阱回归）
+	if resp := postJSON(t, r, "/api/wormhole/toggle", map[string]any{"enabled": false}); resp["code"].(float64) != 0 {
+		t.Fatalf("enabled=false = %v", resp)
+	}
+	// ON
+	resp := postJSON(t, r, "/api/wormhole/toggle", map[string]any{"enabled": true, "operator": "ATTACKER-SIM"})
+	if resp["code"].(float64) != 0 {
+		t.Fatalf("toggle on: %v", resp)
+	}
+	d := resp["data"].(map[string]any)
+	if d["wormhole_enabled"] != true || len(d["nodes_affected"].([]any)) != 4 {
+		t.Fatalf("data = %v", d)
+	}
+	// 拓扑可见：wormhole_enabled=true，边 5+3=8
+	topo := postJSON(t, r, "/api/topology/get", map[string]any{})
+	td := topo["data"].(map[string]any)
+	if td["wormhole_enabled"] != true || len(td["edges"].([]any)) != 8 {
+		t.Fatalf("topo = %v", td)
+	}
+	// OFF
+	resp = postJSON(t, r, "/api/wormhole/toggle", map[string]any{"enabled": false})
+	if resp["code"].(float64) != 0 || resp["data"].(map[string]any)["wormhole_enabled"] != false {
+		t.Fatalf("toggle off = %v", resp)
+	}
+}
