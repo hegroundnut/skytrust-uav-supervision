@@ -26,17 +26,17 @@ type Executor struct {
 
 // registry 11 类实验注册表（唯一真源）。裁定记录：spec 文字"10 组实验"为名义值，
 // 以分解 4(系统一)+3(系统二)+1(压力)+4(系统三) = 11 类为准。
-// MESSAGE_FLOW/RISK_SCAN/STRESS 由 Task 4 替换、S3 四类由 Task 5 替换（届时删除 newPending）。
+// S3 四类由 Task 5 替换（届时删除 newPending）。
 var registry = map[string]func() *Executor{
 	// 系统一（本任务）
 	"CROSSCHAIN_LOOP": newCrosschainLoop,
 	"SM3_INTEGRITY":   newSM3Integrity,
 	"SM9_VERIFY":      newSM9Verify,
 	"CONFLICT_DETECT": newConflictDetect,
-	// 系统二（Task 4 替换；占位声明 scenario 集合供 Validate）
-	"MESSAGE_FLOW": newPending("NORMAL", "ATTACK", "DEFENSE"),
-	"RISK_SCAN":    newPending(),
-	"STRESS":       newPending(),
+	// 系统二（本任务实装）
+	"MESSAGE_FLOW": newMessageFlow,
+	"RISK_SCAN":    newRiskScan,
+	"STRESS":       newStress,
 	// 系统三（Task 5 替换）
 	"TRACE_BATCH":          newPending(),
 	"INSPECT_UNAUTHORIZED": newPending(),

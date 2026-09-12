@@ -96,10 +96,22 @@ func TestRunRequestValidate(t *testing.T) {
 }
 
 // TestRunRejectsAndSetupFailure 校验失败 → 6002 且不落行；Setup 失败 → FAILED 行 +
-// {"setup_error":1} + 6001 + EXPERIMENT_RUN 审计（P5-R3；占位类型 MESSAGE_FLOW 触发）。
+// {"setup_error":1} + 6001 + EXPERIMENT_RUN 审计（P5-R3；controller 裁定：11 类全部
+// 实装后无天然 setup 失败，改由测试专用探针类型 SETUP_FAIL_PROBE 触发）。
 func TestRunRejectsAndSetupFailure(t *testing.T) {
 	svc := newTestSvc(t)
 	ctx := context.Background()
+	// controller 裁定（Task 4）：MESSAGE_FLOW 实装后 NORMAL setup 会成功，占位触发失效。
+	// 注册测试专用探针（Setup 恒败），用后即删，不影响 ValidTypes 与其他测试。
+	registry["SETUP_FAIL_PROBE"] = func() *Executor {
+		return &Executor{
+			Scenarios: []string{"PROBE"},
+			Setup: func(ctx context.Context, s *Service, run *model.ExperimentRun) (*RunContext, error) {
+				return nil, errcode.NewError(errcode.Experiment, "probe setup failure")
+			},
+		}
+	}
+	defer delete(registry, "SETUP_FAIL_PROBE")
 	if _, err := svc.Run(ctx, "TRACE-T", &RunRequest{ExperimentType: "BOGUS", Count: 5}); codeOf(err) != errcode.Param {
 		t.Fatalf("bogus type: want 6002, got %v", err)
 	}
@@ -112,7 +124,7 @@ func TestRunRejectsAndSetupFailure(t *testing.T) {
 		t.Fatalf("validation failures must not create rows, got %d", cnt)
 	}
 
-	run, err := svc.Run(ctx, "TRACE-T", &RunRequest{ExperimentType: "MESSAGE_FLOW", Scenario: "NORMAL", Count: 3})
+	run, err := svc.Run(ctx, "TRACE-T", &RunRequest{ExperimentType: "SETUP_FAIL_PROBE", Scenario: "PROBE", Count: 3})
 	if codeOf(err) != errcode.Experiment {
 		t.Fatalf("setup failure: want 6001, got %v", err)
 	}
