@@ -241,3 +241,52 @@ func TestInspectCiphertextHandler(t *testing.T) {
 		t.Fatalf("conclusion = %v", conc)
 	}
 }
+
+func TestRegulatoryAuditHandlersHTTP(t *testing.T) {
+	r := setupFullTestRouter(t)
+	// 空体 list → code 0 + 空列表契约字段
+	empty := postJSON(t, r, "/api/regulatory/audit/list", nil)
+	if empty["code"].(float64) != 0 {
+		t.Fatalf("empty list: %v", empty)
+	}
+	d := empty["data"].(map[string]any)
+	if d["total"].(float64) != 0 || d["page"].(float64) != 1 || d["page_size"].(float64) != 20 {
+		t.Fatalf("list contract: %v", d)
+	}
+	// 造一条 INSPECT 审计（走真实授权+核验闭环的最小路径：apply→review→inspect）
+	postJSON(t, r, "/api/demo/init", map[string]any{})
+	postJSON(t, r, "/api/mission/create", map[string]any{
+		"operator_id": "Operator-A", "uav_id": "UAV-A-001", "mission_type": "SURVEY",
+		"start_time": "2026-09-12 09:00:00", "end_time": "2026-09-12 10:00:00",
+		"route_segments": []string{"R101"}, "altitude_max": 100, "payload_type": "CAMERA",
+		"description": "审计联测",
+	})
+	postJSON(t, r, "/api/authorize/apply", map[string]any{
+		"authorization_id": "AUTH-2026-001",
+		"regulator_id": "REG-01", "scope": []string{"MISSION"},
+		"target_type": "MISSION", "target_id": "MISSION-2026-001", "reason": "审计联测",
+	})
+	postJSON(t, r, "/api/authorize/review", map[string]any{
+		"authorization_id": "AUTH-2026-001", "decision": "APPROVE", "reviewer_id": "REG-ADMIN",
+	})
+	postJSON(t, r, "/api/inspect/ciphertext", map[string]any{
+		"mission_id": "MISSION-2026-001", "authorization_id": "AUTH-2026-001", "regulator_id": "REG-01",
+	})
+	// list 过滤：INSPECT ≥1 条，AUTH_APPROVE ≥1 条
+	got := postJSON(t, r, "/api/regulatory/audit/list", map[string]any{"action": "INSPECT"})
+	gd := got["data"].(map[string]any)
+	if gd["total"].(float64) < 1 {
+		t.Fatalf("INSPECT audits: %v", gd)
+	}
+	ap := postJSON(t, r, "/api/regulatory/audit/list", map[string]any{"action": "AUTH_APPROVE"})
+	if ap["data"].(map[string]any)["total"].(float64) < 1 {
+		t.Fatalf("AUTH_APPROVE audits: %v", ap)
+	}
+	// export → csv content 以表头开头
+	exp := postJSON(t, r, "/api/regulatory/audit/export", map[string]any{})
+	ed := exp["data"].(map[string]any)
+	if ed["format"] != "csv" || ed["rows"].(float64) < 2 ||
+		!strings.HasPrefix(ed["content"].(string), "audit_id,") {
+		t.Fatalf("export: %v", ed)
+	}
+}

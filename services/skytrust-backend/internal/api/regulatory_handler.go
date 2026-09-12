@@ -125,3 +125,33 @@ func inspectCiphertextHandler(deps *Deps) gin.HandlerFunc {
 		OK(c, res)
 	}
 }
+
+func regAuditListHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var q regulatory.RegAuditQuery
+		if !bindOptionalBody(c, &q) {
+			return
+		}
+		records, total, err := deps.Regulatory.RegAuditList(c.Request.Context(), &q)
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, gin.H{"records": records, "total": total, "page": q.Page, "page_size": q.PageSize})
+	}
+}
+
+func regAuditExportHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var q regulatory.RegAuditQuery
+		if !bindOptionalBody(c, &q) {
+			return
+		}
+		content, rows, err := deps.Regulatory.RegAuditExport(c.Request.Context(), &q)
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, gin.H{"format": "csv", "content": string(content), "rows": rows})
+	}
+}
