@@ -56,7 +56,7 @@ cd services/skytrust-backend && go run ./cmd/server
   }
   ```
 
-**共 60 个端点**（分组：health×2 / chain×1 / crypto×4 / demo×2 / audit×2 / crosschain×3 / masterdata×6 / uav×5 / mission×4 / review×2 / conflict×2 / pass×5 / offchain×12 / regulatory×10）：
+**共 64 个端点**（分组：health×2 / chain×1 / crypto×4 / demo×2 / audit×2 / crosschain×3 / masterdata×6 / uav×5 / mission×4 / review×2 / conflict×2 / pass×5 / offchain×12 / regulatory×10 / experiment×4）：
 
 | 分组 | 端点 | 说明 |
 | --- | --- | --- |
@@ -120,6 +120,10 @@ cd services/skytrust-backend && go run ./cmd/server
 | regulatory | `POST /api/regulatory/audit/list` | 监管审计分页查询（alert_id / authorization_id / action / operator_id 过滤） |
 | regulatory | `POST /api/regulatory/audit/export` | 监管审计 CSV 导出（表头 audit_id,…,created_at） |
 | regulatory | `POST /api/dashboard/summary` | 监管驾驶舱聚合（告警状态/类型分布+高危未结案、授权、会话、虫洞事件计数、最新 5 条告警） |
+| experiment | `POST /api/experiment/run` | 运行实验（11 类：跨链回路/完整性/验签/冲突/消息流三场景/风险扫描/压力/批量追踪/授权核验/告警批量） |
+| experiment | `POST /api/experiment/result` | 实验结果查询（成功率/时延分位/失败原因） |
+| experiment | `POST /api/experiment/list` | 实验列表（分页） |
+| experiment | `POST /api/experiment/export` | 实验结果 CSV 导出 |
 
 ### 关键错误码
 
@@ -414,7 +418,8 @@ services/skytrust-backend/
 ├── cmd/
 │   └── server/            # 服务入口 main.go（go run ./cmd/server）
 ├── internal/
-│   ├── api/               # 路由、中间件、统一响应/错误码别名、60 端点 handler、api.Deps
+│   ├── api/               # 路由、中间件、统一响应/错误码别名、64 端点 handler、api.Deps
+│   ├── apidoc/            # Apifox 文档渲染：Schema 推断 / OpenAPI 3.0.3 构建 / 场景文档 / 确定性渲染 + 端点表（64 行）/ 场景表（24 个）
 │   ├── audit/             # 审计服务（query / export CSV）
 │   ├── chainadapter/      # 链适配接口（ChainAdapter / ChainStatusProvider）
 │   │   └── sim/           # 模拟链：fabric / chainmaker / fisco-bcos（延迟/故障注入）
@@ -423,13 +428,14 @@ services/skytrust-backend/
 │   ├── crypto/            # SM3 摘要 + SM9 签名/验签/加解密（含规范化序列化）
 │   ├── demo/              # 演示数据 seeding（demo/init、demo/reset）
 │   ├── errcode/           # 全局业务错误码常量（单一事实源）
+│   ├── experiment/        # 实验引擎：11 类执行器注册表（registry）+ 统计器（成功率/p50/p95/max）+ Run 编排 + 结果查询/CSV 导出
 │   ├── model/             # 20 张 GORM 模型 + AutoMigrate + ID 生成器
 │   ├── offchain/          # 系统二：链下可信网络（拓扑/Dijkstra 路由、时延仿真、会话、消息引擎、虫洞攻防、autopilot）
 │   ├── regulatory/        # 系统三：安全告警（6 类+状态机）、7 级身份追踪、监管授权（ChainMaker 上链）、SM9 密文核验、监管审计、驾驶舱
 │   ├── statemachine/      # 状态机（UAV / 任务 / 许可 / 跨链 9 态 / 会话 / 告警）
 │   ├── timex/             # 统一时间格式（Asia/Shanghai，双格式解析）
 │   └── uavbusiness/       # 系统一业务服务：主数据 / 无人机 / 任务 / 审核 / 冲突 / 许可
-├── tests/                 # 端到端黑盒测试（真实 HTTP）
+├── tests/                 # 端到端黑盒测试（真实 HTTP）+ 验收套件（acceptance/，TC1/TC2/TC3 各 8 例，独立 :memory: 服务器）+ Apifox 回放录制（apifox_replay_test.go）
 ├── go.mod
 └── go.sum
 ```
@@ -440,7 +446,7 @@ services/skytrust-backend/
 - **Plan 2（跨链网关 + 系统一）**：✅ 完成 —— 13 步跨链协议引擎（9 态状态机 / 幂等 / 重试 / 成败均留痕）、系统一 27 端点（crosschain×3 + 主数据×6 + 无人机×5 + 任务×4 + 审核×2 + 冲突×2 + 许可×5）、系统一端到端验证。
 - **Plan 3（系统二·链下可信网络）**：✅ 完成 —— 链下拓扑与 Dijkstra 可信路由、确定性时延仿真（通告/实测/地理下限）、会话域（SM9 挑战认证 + 状态机全程 Assert）、消息引擎（seq/SM3/SM9/失败留痕/性能统计）、虫洞攻击开关（隐藏隧道 + 虚假短路径）、5 维风险评分与隔离（阈值 0.7 + 身份一票否决）、可信路径重算恢复、事件留痕、autopilot 后台流量、系统二端到端验证。
 - **Plan 4（系统三·密文监管）**：✅ 完成 —— 6 类安全告警与线性状态机、7 级跨链身份追踪（伪名→设备地址→许可→SM9→无人机→运营方→厂商，断链即断点 5001，亚秒实测）、监管授权（scope×目标×有效窗，APPROVE 写 ChainMaker regulatory_authorization，惰性过期）、SM9 密文核验（未授权仅封缄 5002/5003/5004 且留痕，授权后临时解密视图不落库 + SM3/SM9 双验证 + 航路/载荷一致性自动告警去重 + 结论 audit_hash 写 audit_record）、监管审计查询/CSV 导出、驾驶舱聚合、系统三端到端验证（10 端点）。
-- **Plan 5（实验 + 验收 + Apifox 文档）**：待实施
+- **Plan 5（实验 + 验收 + Apifox 文档）**：✅ 完成 —— 11 类实验引擎（注册表 + 统计器成功率/p50/p95/max + Run 编排）、experiment 四端点、TC1×8+TC2×8+TC3×8 验收套件（24 例独立 :memory:）、apidoc 渲染核心（Schema 推断/OpenAPI 3.0.3/场景文档/确定性渲染）+ 端点表 64 行/场景表 24 个、Apifox 回放录制套件（24 场景 + 64 端点样例 + [] 探针）与 docs/apifox 产物入库。
 - **Plan 6（真实三链切换 ChainMaker→Fabric→FISCO）**：待实施
 
 ## Apifox 文档
