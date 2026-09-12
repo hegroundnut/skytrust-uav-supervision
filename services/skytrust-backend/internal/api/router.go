@@ -60,6 +60,9 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/risk/evaluate", riskEvaluateHandler(deps))
 		api.POST("/path/switch", pathSwitchHandler(deps))
 		api.POST("/event/list", eventListHandler(deps))
+		api.POST("/alert/raise", alertRaiseHandler(deps))
+		api.POST("/alert/list", alertListHandler(deps))
+		api.POST("/alert/status", alertStatusHandler(deps))
 	}
 	return r, nil
 }

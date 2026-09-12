@@ -16,6 +16,7 @@ import (
 	"skytrust-backend/internal/demo"
 	"skytrust-backend/internal/model"
 	"skytrust-backend/internal/offchain"
+	"skytrust-backend/internal/regulatory"
 	"skytrust-backend/internal/uavbusiness"
 )
 
@@ -51,7 +52,8 @@ func validTestDeps(t *testing.T) *Deps {
 	gw := crosschain.NewGateway(db, cs, adapters, auditSvc)
 	biz := uavbusiness.New(db, cs, gw, auditSvc)
 	off := offchain.New(db, cs, auditSvc)
-	return &Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: demo.NewSeeder(db, cs, chains), Audit: auditSvc, Gateway: gw, Business: biz, Offchain: off}
+	reg := regulatory.New(db, cs, gw, auditSvc)
+	return &Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: demo.NewSeeder(db, cs, chains), Audit: auditSvc, Gateway: gw, Business: biz, Offchain: off, Regulatory: reg}
 }
 
 func TestHealthPing(t *testing.T) {
@@ -170,5 +172,13 @@ func TestNewRouterRequiresOffchain(t *testing.T) {
 	deps.Offchain = nil
 	if _, err := NewRouter(deps); err == nil {
 		t.Fatal("NewRouter must reject nil Offchain")
+	}
+}
+
+func TestNewRouterRequiresRegulatory(t *testing.T) {
+	deps := validTestDeps(t)
+	deps.Regulatory = nil
+	if _, err := NewRouter(deps); err == nil {
+		t.Fatal("NewRouter must reject nil Regulatory")
 	}
 }

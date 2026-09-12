@@ -18,6 +18,7 @@ import (
 	"skytrust-backend/internal/demo"
 	"skytrust-backend/internal/model"
 	"skytrust-backend/internal/offchain"
+	"skytrust-backend/internal/regulatory"
 	"skytrust-backend/internal/uavbusiness"
 )
 
@@ -51,10 +52,11 @@ func bootServer(t *testing.T) *httptest.Server {
 	gw := crosschain.NewGateway(db, cs, adapters, auditSvc)
 	biz := uavbusiness.New(db, cs, gw, auditSvc)
 	off := offchain.New(db, cs, auditSvc)
+	reg := regulatory.New(db, cs, gw, auditSvc)
 	r, err := api.NewRouter(&api.Deps{
 		DB: db, Crypto: cs, SimChains: chains,
 		Seeder: demo.NewSeeder(db, cs, chains), Audit: auditSvc,
-		Gateway: gw, Business: biz, Offchain: off,
+		Gateway: gw, Business: biz, Offchain: off, Regulatory: reg,
 	})
 	if err != nil {
 		t.Fatal(err)

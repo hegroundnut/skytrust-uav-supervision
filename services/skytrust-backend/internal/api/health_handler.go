@@ -11,6 +11,7 @@ import (
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/demo"
 	"skytrust-backend/internal/offchain"
+	"skytrust-backend/internal/regulatory"
 	"skytrust-backend/internal/uavbusiness"
 )
 
@@ -26,6 +27,8 @@ type Deps struct {
 	Gateway   *crosschain.Gateway
 	Business  *uavbusiness.Service
 	Offchain  *offchain.Service
+
+	Regulatory *regulatory.Service
 }
 
 // Validate 构造期校验（B1）：接线遗漏在启动时暴露，而非运行期 panic。
@@ -56,6 +59,9 @@ func (d *Deps) Validate() error {
 	}
 	if d.Offchain == nil {
 		return errors.New("deps: Offchain is required")
+	}
+	if d.Regulatory == nil {
+		return errors.New("deps: Regulatory is required")
 	}
 	return nil
 }
