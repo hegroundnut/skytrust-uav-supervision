@@ -1,0 +1,837 @@
+{
+  "count": 24,
+  "description": "24 个验收场景（TC1-01..TC3-08），与 tests/acceptance/ 判定同源。步骤 body 中 ${ref} 引用前序步骤 capture 的运行时值；${now-1h}/${now+1h} 为动态时间占位符。",
+  "name": "云巡信链验收与演示场景",
+  "scenarios": [
+    {
+      "id": "TC1-01",
+      "name": "三链在线",
+      "system": "system1",
+      "steps": [
+        {
+          "path": "/api/chain/status",
+          "body": {},
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC1-02",
+      "name": "正常任务申请跨链中继",
+      "system": "system1",
+      "steps": [
+        {
+          "path": "/api/mission/create",
+          "body": {
+            "altitude_max": 120,
+            "altitude_min": 60,
+            "description": "巡线走廊Zone-A全线巡检",
+            "end_time": "2026-09-12 11:00:00",
+            "mission_type": "POWER_INSPECTION",
+            "operator_id": "Operator-A",
+            "payload_type": "CAMERA",
+            "route_segments": [
+              "R101",
+              "R205",
+              "R306"
+            ],
+            "start_time": "2026-09-12 09:00:00",
+            "uav_id": "UAV-A-001"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/mission/submit",
+          "body": {
+            "mission_id": "MISSION-2026-001",
+            "operator": "Operator-A"
+          },
+          "expect_code": 0,
+          "capture": {
+            "tc1_app": "data.application.application_id"
+          }
+        }
+      ]
+    },
+    {
+      "id": "TC1-03",
+      "name": "SM3 完整性篡改检测",
+      "system": "system1",
+      "steps": [
+        {
+          "path": "/api/crypto/sm9/sign",
+          "body": {
+            "payload": {
+              "altitude_max": 120,
+              "mission_id": "MISSION-2026-001",
+              "operator_id": "Operator-A"
+            },
+            "sm9_identity": "SM9-ID-UAV-A-001"
+          },
+          "expect_code": 0,
+          "capture": {
+            "tc1_sig": "data.signature"
+          }
+        },
+        {
+          "path": "/api/crypto/sm3",
+          "body": {
+            "payload": {
+              "altitude_max": 120,
+              "mission_id": "MISSION-2026-001",
+              "operator_id": "Operator-A"
+            }
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/crypto/sm3",
+          "body": {
+            "payload": {
+              "altitude_max": 200,
+              "mission_id": "MISSION-2026-001",
+              "operator_id": "Operator-A"
+            }
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/crypto/sm9/verify",
+          "body": {
+            "payload": {
+              "altitude_max": 200,
+              "mission_id": "MISSION-2026-001",
+              "operator_id": "Operator-A"
+            },
+            "signature": "${tc1_sig}",
+            "sm9_identity": "SM9-ID-UAV-A-001"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC1-04",
+      "name": "SM9 验签拒伪",
+      "system": "system1",
+      "steps": [
+        {
+          "path": "/api/crypto/sm9/sign",
+          "body": {
+            "payload": {
+              "serial_no": "SN-A001",
+              "uav_id": "UAV-A-001"
+            },
+            "sm9_identity": "SM9-ID-UAV-A-001"
+          },
+          "expect_code": 0,
+          "capture": {
+            "tc1_sig2": "data.signature"
+          }
+        },
+        {
+          "path": "/api/crypto/sm9/verify",
+          "body": {
+            "payload": {
+              "serial_no": "SN-A001",
+              "uav_id": "UAV-A-001"
+            },
+            "signature": "${tc1_sig2}",
+            "sm9_identity": "SM9-ID-UAV-B-001"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/crosschain/send",
+          "body": {
+            "business_id": "TC1-04-BAD",
+            "final_target_chain": "fabric",
+            "message_type": "MISSION_REVIEW_RESULT",
+            "payload": {
+              "application_id": "APP-TC1-04-BAD",
+              "mission_id": "MISSION-2026-001",
+              "result": "APPROVED",
+              "review_id": "TC1-04-BAD",
+              "reviewer": "FISCO-ADMIN"
+            },
+            "signature": "QUFBQUFBQUFBQQ==",
+            "sm9_identity": "SM9-ID-FISCO-ADMIN",
+            "source_chain": "fisco-bcos"
+          },
+          "expect_code": 1002,
+          "capture": {
+            "tc1_bad_tx": "data.cross_tx_id"
+          }
+        },
+        {
+          "path": "/api/crosschain/query",
+          "body": {
+            "cross_tx_id": "${tc1_bad_tx}"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC1-05",
+      "name": "多运营商冲突检测",
+      "system": "system1",
+      "steps": [
+        {
+          "path": "/api/review/submit",
+          "body": {
+            "application_id": "${tc1_app}",
+            "comment": "同意执行",
+            "result": "APPROVED",
+            "reviewer": "FISCO-ADMIN",
+            "rules_hit": [
+              "R-ALT-001"
+            ]
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/mission/create",
+          "body": {
+            "altitude_max": 120,
+            "altitude_min": 80,
+            "end_time": "2026-09-12 12:00:00",
+            "mission_id": "MISSION-B-002",
+            "mission_type": "POWER_INSPECTION",
+            "operator_id": "Operator-B",
+            "payload_type": "CAMERA",
+            "route_segments": [
+              "R205"
+            ],
+            "start_time": "2026-09-12 10:00:00",
+            "uav_id": "UAV-B-001"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/mission/submit",
+          "body": {
+            "mission_id": "MISSION-B-002",
+            "operator": "Operator-B"
+          },
+          "expect_code": 0,
+          "capture": {
+            "tc1_bapp": "data.application.application_id"
+          }
+        },
+        {
+          "path": "/api/conflict/detect",
+          "body": {
+            "mission_id": "MISSION-B-002"
+          },
+          "expect_code": 0,
+          "capture": {
+            "tc1_cfl": "data.conflicts.0.conflict_id"
+          }
+        },
+        {
+          "path": "/api/mission/query",
+          "body": {
+            "mission_id": "MISSION-B-002"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/mission/query",
+          "body": {
+            "mission_id": "MISSION-2026-001"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC1-06",
+      "name": "冲突协调后放行",
+      "system": "system1",
+      "steps": [
+        {
+          "path": "/api/conflict/resolve",
+          "body": {
+            "conflict_id": "${tc1_cfl}",
+            "operator": "Operator-B",
+            "resolution": "时间窗后移30分钟"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/review/submit",
+          "body": {
+            "application_id": "${tc1_bapp}",
+            "comment": "协调后同意执行",
+            "result": "APPROVED",
+            "reviewer": "FISCO-ADMIN",
+            "rules_hit": [
+              "R-ALT-001"
+            ]
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/mission/query",
+          "body": {
+            "mission_id": "MISSION-B-002"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/mission/query",
+          "body": {
+            "mission_id": "MISSION-2026-001"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC1-07",
+      "name": "许可签发与验证",
+      "system": "system1",
+      "steps": [
+        {
+          "path": "/api/pass/issue",
+          "body": {
+            "issuer": "FISCO-ADMIN",
+            "mission_id": "MISSION-2026-001",
+            "valid_from": "${now-1h}",
+            "valid_to": "${now+1h}"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/pass/verify",
+          "body": {
+            "pass_id": "PASS-2026-001"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC1-08",
+      "name": "跨链批量吞吐",
+      "system": "system1",
+      "steps": [
+        {
+          "path": "/api/experiment/run",
+          "body": {
+            "count": 100,
+            "experiment_type": "CROSSCHAIN_LOOP"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/experiment/list",
+          "body": {},
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC2-01",
+      "name": "会话建立与SM9认证",
+      "system": "system2",
+      "steps": [
+        {
+          "path": "/api/session/open",
+          "body": {
+            "uav_id": "UAV-A-001"
+          },
+          "expect_code": 0,
+          "capture": {
+            "s1": "data.session.session_id"
+          }
+        }
+      ]
+    },
+    {
+      "id": "TC2-02",
+      "name": "吊销许可拒绝",
+      "system": "system2",
+      "steps": [
+        {
+          "path": "/api/pass/revoke",
+          "body": {
+            "operator": "FISCO-ADMIN",
+            "pass_id": "PASS-2026-001",
+            "reason": "任务结束"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/pass/verify",
+          "body": {
+            "pass_id": "PASS-2026-001"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC2-03",
+      "name": "正常持续交互",
+      "system": "system2",
+      "steps": [
+        {
+          "path": "/api/message/send",
+          "body": {
+            "msg_type": "HEARTBEAT",
+            "session_id": "${s1}",
+            "source_node": "UAV-A-001-NODE",
+            "target_node": "MGR"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/message/send",
+          "body": {
+            "msg_type": "HEARTBEAT",
+            "session_id": "${s1}",
+            "source_node": "UAV-A-001-NODE",
+            "target_node": "MGR"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/message/list",
+          "body": {
+            "session_id": "${s1}"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC2-04",
+      "name": "虫洞隧道部署",
+      "system": "system2",
+      "steps": [
+        {
+          "path": "/api/topology/get",
+          "body": {},
+          "expect_code": 0
+        },
+        {
+          "path": "/api/wormhole/toggle",
+          "body": {
+            "enabled": true,
+            "operator": "ATTACKER-SIM"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/topology/get",
+          "body": {},
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC2-05",
+      "name": "虫洞检测与隔离",
+      "system": "system2",
+      "steps": [
+        {
+          "path": "/api/session/open",
+          "body": {
+            "uav_id": "UAV-A-001"
+          },
+          "expect_code": 0,
+          "capture": {
+            "s2": "data.session.session_id"
+          }
+        },
+        {
+          "path": "/api/message/send",
+          "body": {
+            "msg_type": "POSITION_UPDATE",
+            "session_id": "${s2}",
+            "source_node": "UAV-A-001-NODE",
+            "target_node": "MGR"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/risk/evaluate",
+          "body": {
+            "session_id": "${s2}"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/node/list",
+          "body": {
+            "node_type": "ATTACKER"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/event/list",
+          "body": {
+            "session_id": "${s2}"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC2-06",
+      "name": "自动规避切换",
+      "system": "system2",
+      "steps": [
+        {
+          "path": "/api/path/switch",
+          "body": {
+            "operator": "OP-1",
+            "session_id": "${s2}"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC2-07",
+      "name": "交互恢复",
+      "system": "system2",
+      "steps": [
+        {
+          "path": "/api/message/send",
+          "body": {
+            "msg_type": "ROUTE_STATUS",
+            "session_id": "${s2}",
+            "source_node": "UAV-A-001-NODE",
+            "target_node": "MGR"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/session/list",
+          "body": {
+            "status": "ACTIVE"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC2-08",
+      "name": "攻防对比实验",
+      "system": "system2",
+      "steps": [
+        {
+          "path": "/api/demo/reset",
+          "body": {},
+          "expect_code": 0
+        },
+        {
+          "path": "/api/demo/init",
+          "body": {},
+          "expect_code": 0
+        },
+        {
+          "path": "/api/experiment/run",
+          "body": {
+            "count": 100,
+            "experiment_type": "MESSAGE_FLOW",
+            "scenario": "NORMAL"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/experiment/run",
+          "body": {
+            "count": 100,
+            "experiment_type": "MESSAGE_FLOW",
+            "scenario": "ATTACK"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/experiment/run",
+          "body": {
+            "count": 100,
+            "experiment_type": "MESSAGE_FLOW",
+            "scenario": "DEFENSE"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/experiment/list",
+          "body": {},
+          "expect_code": 0
+        },
+        {
+          "path": "/api/experiment/export",
+          "body": {},
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC3-01",
+      "name": "匿名告警登记",
+      "system": "system3",
+      "steps": [
+        {
+          "path": "/api/mission/create",
+          "body": {
+            "altitude_max": 120,
+            "altitude_min": 60,
+            "description": "巡线走廊Zone-A全线巡检",
+            "end_time": "2026-09-12 11:00:00",
+            "mission_type": "POWER_INSPECTION",
+            "operator_id": "Operator-A",
+            "payload_type": "CAMERA",
+            "route_segments": [
+              "R101",
+              "R205",
+              "R306"
+            ],
+            "start_time": "2026-09-12 09:00:00",
+            "uav_id": "UAV-A-001"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/mission/submit",
+          "body": {
+            "mission_id": "MISSION-2026-001",
+            "operator": "Operator-A"
+          },
+          "expect_code": 0,
+          "capture": {
+            "tc3_app": "data.application.application_id"
+          }
+        },
+        {
+          "path": "/api/review/submit",
+          "body": {
+            "application_id": "${tc3_app}",
+            "comment": "同意执行",
+            "result": "APPROVED",
+            "reviewer": "FISCO-ADMIN",
+            "rules_hit": [
+              "R-ALT-001"
+            ]
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/pass/issue",
+          "body": {
+            "issuer": "FISCO-ADMIN",
+            "mission_id": "MISSION-2026-001",
+            "valid_from": "${now-1h}",
+            "valid_to": "${now+1h}"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/alert/raise",
+          "body": {
+            "alert_id": "ALERT-2026-001",
+            "event_type": "ROUTE_DEVIATION",
+            "mission_id": "MISSION-2026-001",
+            "operator": "REG-01",
+            "risk_level": "HIGH",
+            "source_system": "MANUAL",
+            "uav_pseudonym": "PSEUDO-UAV-83921"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/alert/list",
+          "body": {},
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC3-02",
+      "name": "亚秒七级身份追踪",
+      "system": "system3",
+      "steps": [
+        {
+          "path": "/api/trace/identity",
+          "body": {
+            "alert_id": "ALERT-2026-001",
+            "operator": "REG-01"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC3-03",
+      "name": "断链留痕",
+      "system": "system3",
+      "steps": [
+        {
+          "path": "/api/trace/identity",
+          "body": {
+            "operator": "REG-01",
+            "pseudo": "PSEUDO-UNKNOWN-999"
+          },
+          "expect_code": 5001
+        },
+        {
+          "path": "/api/audit/query",
+          "body": {
+            "action": "TRACE_IDENTITY_BROKEN"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC3-04",
+      "name": "未授权核验封缄",
+      "system": "system3",
+      "steps": [
+        {
+          "path": "/api/inspect/ciphertext",
+          "body": {
+            "mission_id": "MISSION-2026-001",
+            "regulator_id": "REG-01"
+          },
+          "expect_code": 5002
+        },
+        {
+          "path": "/api/audit/query",
+          "body": {
+            "action": "INSPECT_UNAUTHORIZED"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC3-05",
+      "name": "授权闭环与密文核验",
+      "system": "system3",
+      "steps": [
+        {
+          "path": "/api/authorize/apply",
+          "body": {
+            "authorization_id": "AUTH-2026-001",
+            "reason": "核查告警 ALERT-2026-001",
+            "regulator_id": "REG-01",
+            "scope": [
+              "MISSION",
+              "ROUTE",
+              "PAYLOAD",
+              "IDENTITY"
+            ],
+            "target_id": "MISSION-2026-001",
+            "target_type": "MISSION"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/authorize/review",
+          "body": {
+            "authorization_id": "AUTH-2026-001",
+            "comment": "同意",
+            "decision": "APPROVE",
+            "reviewer_id": "REG-ADMIN"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/inspect/ciphertext",
+          "body": {
+            "authorization_id": "AUTH-2026-001",
+            "mission_id": "MISSION-2026-001",
+            "payload_type": "CAMERA",
+            "regulator_id": "REG-01",
+            "trajectory": "NORMAL"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC3-06",
+      "name": "航路偏航核验",
+      "system": "system3",
+      "steps": [
+        {
+          "path": "/api/inspect/ciphertext",
+          "body": {
+            "authorization_id": "AUTH-2026-001",
+            "mission_id": "MISSION-2026-001",
+            "regulator_id": "REG-01",
+            "trajectory": "DEVIATION"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/alert/list",
+          "body": {
+            "source_system": "SYSTEM3"
+          },
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC3-07",
+      "name": "审计上链与导出",
+      "system": "system3",
+      "steps": [
+        {
+          "path": "/api/inspect/ciphertext",
+          "body": {
+            "authorization_id": "AUTH-2026-001",
+            "mission_id": "MISSION-2026-001",
+            "regulator_id": "REG-01",
+            "trajectory": "NORMAL"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/regulatory/audit/list",
+          "body": {
+            "action": "INSPECT"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/regulatory/audit/export",
+          "body": {},
+          "expect_code": 0
+        }
+      ]
+    },
+    {
+      "id": "TC3-08",
+      "name": "批量追踪吞吐",
+      "system": "system3",
+      "steps": [
+        {
+          "path": "/api/experiment/run",
+          "body": {
+            "count": 100,
+            "experiment_type": "TRACE_BATCH"
+          },
+          "expect_code": 0,
+          "capture": {
+            "tc3_run": "data.run_id"
+          }
+        },
+        {
+          "path": "/api/experiment/result",
+          "body": {
+            "run_id": "${tc3_run}"
+          },
+          "expect_code": 0
+        }
+      ]
+    }
+  ]
+}

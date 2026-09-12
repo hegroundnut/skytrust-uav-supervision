@@ -442,3 +442,15 @@ services/skytrust-backend/
 - **Plan 4（系统三·密文监管）**：✅ 完成 —— 6 类安全告警与线性状态机、7 级跨链身份追踪（伪名→设备地址→许可→SM9→无人机→运营方→厂商，断链即断点 5001，亚秒实测）、监管授权（scope×目标×有效窗，APPROVE 写 ChainMaker regulatory_authorization，惰性过期）、SM9 密文核验（未授权仅封缄 5002/5003/5004 且留痕，授权后临时解密视图不落库 + SM3/SM9 双验证 + 航路/载荷一致性自动告警去重 + 结论 audit_hash 写 audit_record）、监管审计查询/CSV 导出、驾驶舱聚合、系统三端到端验证（10 端点）。
 - **Plan 5（实验 + 验收 + Apifox 文档）**：待实施
 - **Plan 6（真实三链切换 ChainMaker→Fabric→FISCO）**：待实施
+
+## Apifox 文档
+
+- `docs/apifox/skytrust-backend.openapi.json`（仓库根）：OpenAPI 3.0.3，64 个全 POST 端点，含录制请求样例与 success/business_error 双响应样例（`x-error-sample-source: recorded|static` 标注来源）——Apifox「导入数据 → OpenAPI/Swagger」直接导入。
+- `docs/apifox/skytrust-test-scenarios.json`：24 个验收/演示场景（TC1-01..TC3-08），每步含 body 与预期 code；`${ref}` 为运行时捕获引用（前序步骤 capture），`${now-1h}`/`${now+1h}` 为动态时间占位符（timex 格式）。
+- 重新生成（在 `services/skytrust-backend` 下执行；产物含时间戳/trace_id，重生成字节变化属正常快照语义）：
+
+  ```bash
+  APIFOX_GEN=1 go test ./tests/ -run 'TestApifox' -count=1
+  ```
+
+- 回放即文档测试：`TestApifoxReplayScenarios`（24 场景单服务器顺序回放）与 `TestApifoxEndpointSamples`（64 端点故事序样例 + `[]` 探针）断言每步信封 code——文档样例与真实行为永久同步。
