@@ -4,7 +4,6 @@ import (
 	"context"
 	"sort"
 
-	"skytrust-backend/internal/errcode"
 	"skytrust-backend/internal/model"
 )
 
@@ -26,7 +25,6 @@ type Executor struct {
 
 // registry 11 类实验注册表（唯一真源）。裁定记录：spec 文字"10 组实验"为名义值，
 // 以分解 4(系统一)+3(系统二)+1(压力)+4(系统三) = 11 类为准。
-// S3 四类由 Task 5 替换（届时删除 newPending）。
 var registry = map[string]func() *Executor{
 	// 系统一（本任务）
 	"CROSSCHAIN_LOOP": newCrosschainLoop,
@@ -37,23 +35,11 @@ var registry = map[string]func() *Executor{
 	"MESSAGE_FLOW": newMessageFlow,
 	"RISK_SCAN":    newRiskScan,
 	"STRESS":       newStress,
-	// 系统三（Task 5 替换）
-	"TRACE_BATCH":          newPending(),
-	"INSPECT_UNAUTHORIZED": newPending(),
-	"INSPECT_AUTHORIZED":   newPending(),
-	"ALERT_BATCH":          newPending(),
-}
-
-// newPending 未实现类型占位：Setup 即失败 → FAILED 行 + 6001（Validate 已可全量生效）。
-func newPending(scenarios ...string) func() *Executor {
-	return func() *Executor {
-		return &Executor{
-			Scenarios: scenarios,
-			Setup: func(ctx context.Context, s *Service, run *model.ExperimentRun) (*RunContext, error) {
-				return nil, errcode.NewError(errcode.Experiment, "experiment %s not implemented yet", run.ExperimentType)
-			},
-		}
-	}
+	// 系统三（本任务实装——至此 11 类全部真实，占位器删除）
+	"TRACE_BATCH":          newTraceBatch,
+	"INSPECT_UNAUTHORIZED": newInspectUnauthorized,
+	"INSPECT_AUTHORIZED":   newInspectAuthorized,
+	"ALERT_BATCH":          newAlertBatch,
 }
 
 // ValidTypes 11 个合法 experiment_type（排序；供校验文案与 Apifox 文档）。
