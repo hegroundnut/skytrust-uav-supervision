@@ -79,3 +79,38 @@ func TestAlertStatusHandler(t *testing.T) {
 		t.Fatalf("illegal jump: %v", bad)
 	}
 }
+
+func TestTraceIdentityHandler(t *testing.T) {
+	r := setupFullTestRouter(t)
+	if resp := postJSON(t, r, "/api/demo/init", map[string]any{}); resp["code"].(float64) != 0 {
+		t.Fatalf("demo init: %v", resp)
+	}
+	resp := postJSON(t, r, "/api/trace/identity", map[string]any{
+		"pseudo": "PSEUDO-UAV-83921", "operator": "REG-01",
+	})
+	// demo 数据无 PASS-2026-001 许可行 → 断点在第 3 级，5001 + 部分结果透传
+	if resp["code"].(float64) != 5001 {
+		t.Fatalf("want 5001, got %v", resp)
+	}
+	d := resp["data"].(map[string]any)
+	if d["break_level"].(float64) != 3 || d["resolved"] != false {
+		t.Fatalf("trace data = %v", d)
+	}
+	levels := d["levels"].([]any)
+	if len(levels) != 7 {
+		t.Fatalf("levels = %d", len(levels))
+	}
+	l1 := levels[0].(map[string]any)
+	if l1["status"] != "RESOLVED" || l1["value"] != "PSEUDO-UAV-83921" || l1["source"] != "CHAINMAKER_INDEX" {
+		t.Fatalf("L1 = %v", l1)
+	}
+	l3 := levels[2].(map[string]any)
+	if l3["status"] != "BROKEN" || l3["reason"] == "" {
+		t.Fatalf("L3 = %v", l3)
+	}
+	// 入口全缺 → 6002
+	bad := postJSON(t, r, "/api/trace/identity", map[string]any{"operator": "REG-01"})
+	if bad["code"].(float64) != 6002 {
+		t.Fatalf("no entry: %v", bad)
+	}
+}

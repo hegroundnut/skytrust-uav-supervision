@@ -63,6 +63,7 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/alert/raise", alertRaiseHandler(deps))
 		api.POST("/alert/list", alertListHandler(deps))
 		api.POST("/alert/status", alertStatusHandler(deps))
+		api.POST("/trace/identity", traceIdentityHandler(deps))
 	}
 	return r, nil
 }

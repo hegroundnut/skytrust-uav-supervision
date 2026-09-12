@@ -53,3 +53,23 @@ func alertStatusHandler(deps *Deps) gin.HandlerFunc {
 		OK(c, ev)
 	}
 }
+
+func traceIdentityHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req regulatory.TraceRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			Fail(c, ErrParam, "参数错误: "+err.Error())
+			return
+		}
+		res, err := deps.Regulatory.TraceIdentity(c.Request.Context(), TraceIDFrom(c), &req)
+		if err != nil {
+			if res != nil { // 5001 断链透传部分结果（P4-2）
+				FailData(c, crosschainErrCode(err), err.Error(), res)
+				return
+			}
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, res)
+	}
+}
