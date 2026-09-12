@@ -73,3 +73,35 @@ func traceIdentityHandler(deps *Deps) gin.HandlerFunc {
 		OK(c, res)
 	}
 }
+
+func authorizeApplyHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req regulatory.AuthApplyRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			Fail(c, ErrParam, "参数错误: "+err.Error())
+			return
+		}
+		auth, err := deps.Regulatory.ApplyAuthorization(c.Request.Context(), TraceIDFrom(c), &req)
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, auth)
+	}
+}
+
+func authorizeReviewHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req regulatory.AuthReviewRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			Fail(c, ErrParam, "参数错误: "+err.Error())
+			return
+		}
+		res, err := deps.Regulatory.ReviewAuthorization(c.Request.Context(), TraceIDFrom(c), &req)
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, res)
+	}
+}
