@@ -6,7 +6,9 @@
 
 - **基础平台（Plan 1）**：统一响应/错误码、健康检查、SM3/SM9 国密能力、多链适配（模拟 fabric / chainmaker / fisco-bcos）、演示数据预置、审计日志查询与导出；
 - **跨链网关（Plan 2）**：13 步跨链协议引擎——监管链非旁路、业务链不直连（fabric 与 fisco-bcos 之间必经 chainmaker 中转）、两跳四段 TxID 全程留痕、幂等去重（2004）、传输级重试、SM3/SM9 成败均留痕（`verify_result = PASS|FAIL_SM3|FAIL_SM9`）；
-- **系统一·任务申请跨域协同（Plan 2）**：主数据 → 无人机注册跨链证明 → 任务创建（SM9 加密 + 脱敏）→ 提交（源链交易 + MISSION_APPLICATION 跨链）→ 监管审核（MISSION_REVIEW_RESULT 跨链）→ 三维冲突协调 → 飞行许可签发/验证/吊销（FLIGHT_PASS / PASS_REVOKE 跨链）。
+- **系统一·任务申请跨域协同（Plan 2）**：主数据 → 无人机注册跨链证明 → 任务创建（SM9 加密 + 脱敏）→ 提交（源链交易 + MISSION_APPLICATION 跨链）→ 监管审核（MISSION_REVIEW_RESULT 跨链）→ 三维冲突协调 → 飞行许可签发/验证/吊销（FLIGHT_PASS / PASS_REVOKE 跨链）；
+- **系统二·链下可信网络（Plan 3）**：亚秒级 Dijkstra 可信路由与确定性时延仿真、SM9 挑战认证会话、消息引擎（seq/SM3/SM9/失败也留痕）、虫洞攻击仿真与 5 维风险检测、节点隔离与可信路径重算恢复；
+- **系统三·跨域可信监管（Plan 4）**：6 类安全告警与线性状态机、7 级跨链身份亚秒追踪（断链即断点留痕，禁止拼造）、监管授权（scope×目标×有效窗 + ChainMaker 上链）、SM9 密文核验（未授权仅返回封缄——密文状态/摘要/脱敏值；授权后按 scope 解密临时视图 + SM3/SM9 双验证 + 航路/载荷一致性自动告警，核验结论 audit_hash 上链）、监管审计查询/CSV 导出与驾驶舱聚合。
 
 ## 启动方式
 
@@ -54,7 +56,7 @@ cd services/skytrust-backend && go run ./cmd/server
   }
   ```
 
-**共 50 个端点**（分组：health×2 / chain×1 / crypto×4 / demo×2 / audit×2 / crosschain×3 / masterdata×6 / uav×5 / mission×4 / review×2 / conflict×2 / pass×5 / offchain×12）：
+**共 60 个端点**（分组：health×2 / chain×1 / crypto×4 / demo×2 / audit×2 / crosschain×3 / masterdata×6 / uav×5 / mission×4 / review×2 / conflict×2 / pass×5 / offchain×12 / regulatory×10）：
 
 | 分组 | 端点 | 说明 |
 | --- | --- | --- |
@@ -108,6 +110,16 @@ cd services/skytrust-backend && go run ./cmd/server
 | offchain | `POST /api/risk/evaluate` | 5 维虫洞风险评分（identity/adjacency/latency/challenge/path，阈值 0.7）；DETECT/BLOCK → 隔离 X/Y + 会话降级 |
 | offchain | `POST /api/path/switch` | 可信路径重算（仅 DEGRADED；new_path 空=自动 Dijkstra）→ RECOVERED + RECOVER 事件（recovery_latency_ms 实测） |
 | offchain | `POST /api/event/list` | 虫洞事件分页列表（session_id / action(DETECT\|ISOLATE\|RECOVER) 过滤） |
+| regulatory | `POST /api/alert/raise` | 安全告警登记（6 类 event_type 枚举；支持显式 alert_id；WORMHOLE_ALERT 可关联系统二事件派生证据哈希） |
+| regulatory | `POST /api/alert/list` | 告警分页列表（event_type / status / risk_level / source_system / mission_id 过滤） |
+| regulatory | `POST /api/alert/status` | 告警状态迁移（OPEN→IDENTIFIED→TRACED→REVIEWED→RESOLVED→ARCHIVED 线性状态机，非法迁移→6002） |
+| regulatory | `POST /api/trace/identity` | 7 级跨链身份追踪（伪名/设备地址/告警编号入口，逐链溯源+单级耗时；断链→5001+断点留痕） |
+| regulatory | `POST /api/authorize/apply` | 监管授权申请（scope 多选 + 目标 + 有效窗；audit_hash=SM3 规范化；→PENDING，不上链） |
+| regulatory | `POST /api/authorize/review` | 授权审批（APPROVE→ChainMaker regulatory_authorization 上链成功→AUTHORIZED，上链失败 2001 停留 PENDING 可重试；DENY→本地 DENIED 不上链） |
+| regulatory | `POST /api/inspect/ciphertext` | 密文核验（未授权/过期/scope 违规→5002/5004/5003 仅返回封缄；授权→SM9 解密临时视图（不落库）+ SM3/SM9 双验证 + 航路/载荷一致性结论上链 audit_record） |
+| regulatory | `POST /api/regulatory/audit/list` | 监管审计分页查询（alert_id / authorization_id / action / operator_id 过滤） |
+| regulatory | `POST /api/regulatory/audit/export` | 监管审计 CSV 导出（表头 audit_id,…,created_at） |
+| regulatory | `POST /api/dashboard/summary` | 监管驾驶舱聚合（告警状态/类型分布+高危未结案、授权、会话、虫洞事件计数、最新 5 条告警） |
 
 ### 关键错误码
 
@@ -130,6 +142,10 @@ cd services/skytrust-backend && go run ./cmd/server
 | 4002 | SessionAuth | 会话认证失败 / 会话状态迁移非法（状态机拒绝） |
 | 4003 | NodeIdentity | 节点不存在 / node_type 非法 / SM9 身份格式非法 |
 | 4004 | PathUnreachable | 可信拓扑中无可达路径（Dijkstra 不可达） |
+| 5001 | TraceBroken | 身份追踪断链（`data` 携带 break_level 与 7 级明细，断点级之后标 BROKEN+原因，禁止拼造） |
+| 5002 | NoAuth | 密文访问未授权（无授权号/不存在/PENDING/DENIED；`data` 仅封缄：ciphertext_status/sm3_hash/masked_value） |
+| 5003 | AuthScope | 授权 scope 或目标违规（scope 缺 ROUTE/PAYLOAD、授权目标与任务不匹配） |
+| 5004 | AuthExpired | 授权已过期或尚未生效（valid_from/valid_to 窗口检查；过期惰性置 EXPIRED） |
 | 6002 | Param | 参数非法 / 资源不存在 |
 | 9001 | Internal | 内部错误 |
 
@@ -306,9 +322,76 @@ cd services/skytrust-backend && go run ./cmd/server
 
 `POST /api/event/list` 请求 `{"session_id":"SESS-3f8a1c92d4e5","action":"","page":1,"page_size":20}`，响应 `data`：`{"records":[<RECOVER>,<ISOLATE>,<DETECT>],"total":3,"page":1,"page_size":20}`（按时间倒序）。
 
+## 系统三业务流程（密文监管闭环）
+
+系统三 = 跨域可信监管：告警 → 7 级身份追踪 → 监管授权 → SM9 密文核验 → 审计/驾驶舱。核心不变量：**密文三分离**（ciphertext 永不出库、masked_value 脱敏展示、decrypted_view 仅授权响应临时生成不落库）；**未授权尝试也留痕**（5002 + INSPECT_UNAUTHORIZED 审计）；**追踪断链即断点**（5001，禁止拼造缺失层级）；**授权与核验结论均写 ChainMaker 监管链**（chain_tx_id 回填）。
+
+**演示流程：**
+
+1. 系统一主线就绪：`demo/init` → `mission/create`（description 走 SM9 加密 + 脱敏）→ `mission/submit` → `review/submit` APPROVED → `pass/issue`（PASS-2026-001，与 seed 身份映射 IDM-DEMO-0001 一致）；
+2. `alert/raise` 登记告警（演示用显式 `ALERT-2026-001`；6 类枚举：ROUTE_DEVIATION / INVALID_PASS / UNKNOWN_NODE_ACCESS / MISSION_MISMATCH / WORMHOLE_ALERT / IDENTITY_ANOMALY；WORMHOLE_ALERT 传 `wormhole_event_id` 时证据哈希取系统二事件的规范化 SM3）；
+3. `alert/status` 沿线性状态机推进（OPEN→IDENTIFIED→TRACED→REVIEWED→RESOLVED→ARCHIVED，跨级/回退→6002）；
+4. `trace/identity` 以告警编号（或伪名/设备地址）为入口做 7 级追踪：伪名→设备地址→许可→SM9 身份→无人机→运营方→厂商；L1-L4 来源 CHAINMAKER_INDEX、L5-L6 FABRIC_DETAIL、L7 FISCO_BCOS_DETAIL；亚秒完成（`trace_latency_ms` 实测），任一级断链→5001 + `break_level` + 后续级标 BROKEN；
+5. `inspect/ciphertext` 未授权核验 → 5002，`data` 仅 `sealed`（ciphertext_status:"SEALED" / sm3_hash / masked_value / has_ciphertext），且审计留痕 INSPECT_UNAUTHORIZED；
+6. `authorize/apply`（演示用显式 `AUTH-2026-001`；scope=MISSION/ROUTE/PAYLOAD/IDENTITY/EVIDENCE 多选；target=MISSION|UAV|ALERT；窗口缺省 now~now+24h；ALERT 目标可省 reason 自动生成）→ PENDING；
+7. `authorize/review` APPROVE → ChainMaker `regulatory_authorization/RecordAuthorization` 上链成功 → AUTHORIZED + chain_tx_id（上链失败 2001 停留 PENDING 可重试）；DENY → 本地 DENIED 不上链；非 PENDING 复审 → 6002；
+8. `inspect/ciphertext` 授权核验：目标匹配 + 窗口内 + scope 覆盖请求项（轨迹核偏需 ROUTE、载荷核验需 PAYLOAD，缺→5003）→ SM9 解密生成 `decrypted_view`（临时）+ SM3 摘要复算 `digest_match` + SM9 验签 `signature_valid` + 航路/载荷一致性结论；偏航（demo DEVIATION 轨迹 vs 批准航段）→ ROUTE_DEVIATION + 自动 HIGH 告警（SYSTEM3；同任务同类型未结案告警去重复用）；载荷申报≠登记或类型-载荷不兼容 → MISSION_MISMATCH + 自动 MEDIUM 告警；
+9. 核验结论 `audit_hash`（SM3 规范化）写 ChainMaker `audit_record/RecordInspection`（失败→2001，错误信封仍只含 sealed，明文绝不透传）+ 本地 RegulatoryAudit（INSPECT）落库；
+10. `regulatory/audit/list` / `regulatory/audit/export` 复盘监管侧全操作（AUTH_APPLY/AUTH_APPROVE/AUTH_DENY/INSPECT/INSPECT_UNAUTHORIZED/…）；
+11. `dashboard/summary` 驾驶舱聚合：告警 6 状态计数 + 高危未结案 + 类型分布、授权计数（过期 = EXPIRED ∪ AUTHORIZED∧valid_to<now，惰性只读）、会话/虫洞事件计数、最新 5 条告警。
+
+**端点请求/响应样例**（统一信封 `{code,message,data,trace_id,timestamp}`，下列仅展示 `data`；`…` 为运行时生成值示意）：
+
+`POST /api/alert/raise` 请求 `{"alert_id":"ALERT-2026-001","mission_id":"MISSION-2026-001","uav_pseudonym":"PSEUDO-UAV-83921","event_type":"ROUTE_DEVIATION","risk_level":"HIGH","source_system":"MANUAL","operator":"REG-01"}`，响应 `data`：`{"alert_id":"ALERT-2026-001","mission_id":"MISSION-2026-001","uav_pseudonym":"PSEUDO-UAV-83921","event_type":"ROUTE_DEVIATION","risk_level":"HIGH","evidence_hash":"<64hex>","source_system":"MANUAL","status":"OPEN","created_at":"…","updated_at":"…"}`。枚举违规（如 `event_type:"FOO"`）→ `code=6002`。
+
+`POST /api/alert/status` 请求 `{"alert_id":"ALERT-2026-001","to_status":"IDENTIFIED","operator":"REG-01","reason":"初判成立"}`，响应 `data`：更新后的告警行（`status:"IDENTIFIED"`）。非法迁移（OPEN→REVIEWED）→ `code=6002`。
+
+`POST /api/trace/identity` 请求 `{"alert_id":"ALERT-2026-001","operator":"REG-01"}`（三选一入口：`pseudo` / `device_address` / `alert_id`），成功响应 `data`：
+
+```json
+{"entry":"ALERT-2026-001","entry_type":"ALERT_ID","pseudonym":"PSEUDO-UAV-83921","resolved":true,"break_level":0,
+ "levels":[
+  {"level":1,"name":"PSEUDO","value":"PSEUDO-UAV-83921","source":"CHAINMAKER_INDEX","latency_ms":0,"status":"RESOLVED"},
+  {"level":2,"name":"DEVICE_ADDRESS","value":"0xADDR83921","source":"CHAINMAKER_INDEX","latency_ms":0,"status":"RESOLVED"},
+  {"level":3,"name":"PASS_ID","value":"PASS-2026-001","source":"CHAINMAKER_INDEX","latency_ms":0,"status":"RESOLVED"},
+  {"level":4,"name":"SM9_IDENTITY","value":"SM9-ID-UAV-A-001","source":"CHAINMAKER_INDEX","latency_ms":0,"status":"RESOLVED"},
+  {"level":5,"name":"UAV_ID","value":"UAV-A-001","source":"FABRIC_DETAIL","latency_ms":0,"status":"RESOLVED"},
+  {"level":6,"name":"OPERATOR_ID","value":"Operator-A","source":"FABRIC_DETAIL","latency_ms":0,"status":"RESOLVED"},
+  {"level":7,"name":"MANUFACTURER_ID","value":"Manufacturer-B","source":"FISCO_BCOS_DETAIL","latency_ms":0,"status":"RESOLVED"}],
+ "trace_latency_ms":1}
+```
+
+断链（未知伪名）→ `code=5001`，`data` 同形：`resolved:false, break_level:1`，L1 `status:"BROKEN"`+`reason`，L2-L7 `status:"BROKEN"`+`reason:"skipped: break at level 1"`。
+
+`POST /api/authorize/apply` 请求 `{"authorization_id":"AUTH-2026-001","regulator_id":"REG-01","scope":["MISSION","ROUTE","PAYLOAD","IDENTITY"],"target_type":"MISSION","target_id":"MISSION-2026-001","reason":"核查告警 ALERT-2026-001"}`，响应 `data`：授权行（`status:"PENDING"`,`audit_hash:"<64hex>"`,窗口缺省 `valid_from=now`,`valid_to=now+24h`）。
+
+`POST /api/authorize/review` 请求 `{"authorization_id":"AUTH-2026-001","decision":"APPROVE","reviewer_id":"REG-ADMIN","comment":"同意"}`，响应 `data`：`{"auth":{…,"status":"AUTHORIZED","chain_tx_id":"CHAINMAKER-…"},"audit":{"audit_id":"AUD-…","action":"AUTH_APPROVE",…},"chain_tx_id":"CHAINMAKER-…"}`。上链失败→`code=2001`（行停留 PENDING）；非 PENDING 复审→`code=6002`。
+
+`POST /api/inspect/ciphertext` 未授权请求 `{"mission_id":"MISSION-2026-001","regulator_id":"REG-01"}` → `code=5002`，`data`：`{"authorized":false,"sealed":{"mission_id":"MISSION-2026-001","ciphertext_status":"SEALED","sm3_hash":"<64hex>","masked_value":"巡线走廊****","has_ciphertext":true}}`（无 `decrypted_view` 键）。
+
+`POST /api/inspect/ciphertext` 授权请求 `{"mission_id":"MISSION-2026-001","authorization_id":"AUTH-2026-001","regulator_id":"REG-01","trajectory":"NORMAL","payload_type":"CAMERA"}` → `code=0`，`data`：
+
+```json
+{"authorized":true,"mission":{"mission_id":"MISSION-2026-001","status":"APPROVED","masked_value":"巡线走廊****",…},
+ "scope":["MISSION","ROUTE","PAYLOAD","IDENTITY"],
+ "decrypted_view":"巡线走廊Zone-A全线巡检",
+ "sealed":{"mission_id":"MISSION-2026-001","ciphertext_status":"OPENED","sm3_hash":"<64hex>","masked_value":"巡线走廊****","has_ciphertext":true},
+ "verification":{"digest_match":true,"signature_valid":true,"audit_hash":"<64hex>"},
+ "conclusion":{"route_verdict":"ROUTE_OK","payload_verdict":"PAYLOAD_OK","raised_alerts":[]},
+ "chain_tx_id":"CHAINMAKER-…","reg_audit_id":"AUD-…"}
+```
+
+`trajectory:"DEVIATION"` → `route_verdict:"ROUTE_DEVIATION"` + `raised_alerts:["ALERT-…"]`（SYSTEM3 自动 HIGH 告警，重复核验去重复用）；scope 缺 ROUTE 而请求 trajectory → `code=5003`；窗口外 → `code=5004`；`audit_record` 上链失败 → `code=2001` 且 `data` 仅 sealed。
+
+`POST /api/regulatory/audit/list` 请求 `{"action":"INSPECT","page":1,"page_size":20}`，响应 `data`：`{"records":[<RegulatoryAudit>],"total":3,"page":1,"page_size":20}`（created_at DESC, audit_id DESC）。
+
+`POST /api/regulatory/audit/export` 请求 `{"action":"INSPECT"}`，响应 `data`：`{"format":"csv","content":"audit_id,alert_id,authorization_id,action,operator_id,target,result,audit_hash,chain_tx_id,created_at\n…","rows":3}`。
+
+`POST /api/dashboard/summary` 请求 `{}`（或空体），响应 `data`：`{"alerts":{"total":2,"open":1,"identified":0,"traced":0,"reviewed":0,"resolved":1,"archived":0,"high_open":1,"by_type":{"ROUTE_DEVIATION":2}},"authorizations":{"total":1,"pending":0,"authorized":1,"denied":0,"expired":0},"sessions":{"total":0,"init":0,"authenticated":0,"active":0,"degraded":0,"recovered":0,"closed":0},"wormhole_events":{"total":0,"detect":0,"isolate":0,"recover":0},"recent_alerts":[<最新5条SecurityEvent>],"generated_at":"…"}`。
+
 ## 测试运行方式
 
-全量回归（171 个顶层测试）：
+全量回归（214 个顶层测试）：
 
 ```bash
 go test ./... -count=1
@@ -331,7 +414,7 @@ services/skytrust-backend/
 ├── cmd/
 │   └── server/            # 服务入口 main.go（go run ./cmd/server）
 ├── internal/
-│   ├── api/               # 路由、中间件、统一响应/错误码别名、50 端点 handler、api.Deps
+│   ├── api/               # 路由、中间件、统一响应/错误码别名、60 端点 handler、api.Deps
 │   ├── audit/             # 审计服务（query / export CSV）
 │   ├── chainadapter/      # 链适配接口（ChainAdapter / ChainStatusProvider）
 │   │   └── sim/           # 模拟链：fabric / chainmaker / fisco-bcos（延迟/故障注入）
@@ -342,6 +425,7 @@ services/skytrust-backend/
 │   ├── errcode/           # 全局业务错误码常量（单一事实源）
 │   ├── model/             # 20 张 GORM 模型 + AutoMigrate + ID 生成器
 │   ├── offchain/          # 系统二：链下可信网络（拓扑/Dijkstra 路由、时延仿真、会话、消息引擎、虫洞攻防、autopilot）
+│   ├── regulatory/        # 系统三：安全告警（6 类+状态机）、7 级身份追踪、监管授权（ChainMaker 上链）、SM9 密文核验、监管审计、驾驶舱
 │   ├── statemachine/      # 状态机（UAV / 任务 / 许可 / 跨链 9 态 / 会话 / 告警）
 │   ├── timex/             # 统一时间格式（Asia/Shanghai，双格式解析）
 │   └── uavbusiness/       # 系统一业务服务：主数据 / 无人机 / 任务 / 审核 / 冲突 / 许可
@@ -355,6 +439,6 @@ services/skytrust-backend/
 - **Plan 1（基础平台）**：✅ 完成 —— 配置、统一响应/错误码、路由与中间件、20 张模型、ID 生成器、状态机、SM3/SM9 加密服务、链适配器 + 三模拟链、演示 seeding、审计服务、端到端验证。
 - **Plan 2（跨链网关 + 系统一）**：✅ 完成 —— 13 步跨链协议引擎（9 态状态机 / 幂等 / 重试 / 成败均留痕）、系统一 27 端点（crosschain×3 + 主数据×6 + 无人机×5 + 任务×4 + 审核×2 + 冲突×2 + 许可×5）、系统一端到端验证。
 - **Plan 3（系统二·链下可信网络）**：✅ 完成 —— 链下拓扑与 Dijkstra 可信路由、确定性时延仿真（通告/实测/地理下限）、会话域（SM9 挑战认证 + 状态机全程 Assert）、消息引擎（seq/SM3/SM9/失败留痕/性能统计）、虫洞攻击开关（隐藏隧道 + 虚假短路径）、5 维风险评分与隔离（阈值 0.7 + 身份一票否决）、可信路径重算恢复、事件留痕、autopilot 后台流量、系统二端到端验证。
-- **Plan 4（系统三·密文监管）**：待实施
+- **Plan 4（系统三·密文监管）**：✅ 完成 —— 6 类安全告警与线性状态机、7 级跨链身份追踪（伪名→设备地址→许可→SM9→无人机→运营方→厂商，断链即断点 5001，亚秒实测）、监管授权（scope×目标×有效窗，APPROVE 写 ChainMaker regulatory_authorization，惰性过期）、SM9 密文核验（未授权仅封缄 5002/5003/5004 且留痕，授权后临时解密视图不落库 + SM3/SM9 双验证 + 航路/载荷一致性自动告警去重 + 结论 audit_hash 写 audit_record）、监管审计查询/CSV 导出、驾驶舱聚合、系统三端到端验证（10 端点）。
 - **Plan 5（实验 + 验收 + Apifox 文档）**：待实施
 - **Plan 6（真实三链切换 ChainMaker→Fabric→FISCO）**：待实施
