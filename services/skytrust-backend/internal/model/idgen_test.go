@@ -74,3 +74,18 @@ func TestGenRegRecordID(t *testing.T) {
 		t.Error("ids must be random")
 	}
 }
+
+func TestGenAlertAuthID(t *testing.T) {
+	a1, a2 := GenAlertID(), GenAlertID()
+	if !ValidateID("ALERT", a1) || !ValidateID("ALERT", a2) || a1 == a2 {
+		t.Fatalf("GenAlertID: %s %s", a1, a2)
+	}
+	u1, u2 := GenAuthID(), GenAuthID()
+	if !ValidateID("AUTH", u1) || !ValidateID("AUTH", u2) || u1 == u2 {
+		t.Fatalf("GenAuthID: %s %s", u1, u2)
+	}
+	// 演示固定 ID 必须通过校验（P4-10）
+	if !ValidateID("ALERT", "ALERT-2026-001") || !ValidateID("AUTH", "AUTH-2026-001") {
+		t.Fatal("demo fixed IDs must pass ValidateID")
+	}
+}
