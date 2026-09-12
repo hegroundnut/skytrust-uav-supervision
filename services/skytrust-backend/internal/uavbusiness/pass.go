@@ -263,8 +263,9 @@ func (s *Service) VerifyPass(ctx context.Context, traceID, passID string) (bool,
 }
 
 // RevokePass 许可吊销（本地先行 Ruling：安全优先，REVOKED 立即生效）。
-// 非 VALID → 3002。随后 PASS_REVOKE 跨链 best-effort：失败也返回 nil error +
-// crosschain_status="FAILED"（审计留痕，链上对账列入 Plan 5 加固清单）。
+// VALID → 迁移 REVOKED + PASS_REVOKE 审计；REVOKED 且吊销跨链仍欠账（存在 FAILED
+// 的 PASS_REVOKE 行且无 SUCCESS 行，P5-R9）→ 重入只补跨链 + PASS_REVOKE_RETRY 审计；
+// 其余非 VALID → 3002。跨链 best-effort：失败返回 nil error + crosschain_status="FAILED"。
 func (s *Service) RevokePass(ctx context.Context, traceID, passID, reason, operator string) (*model.FlightPass, string, *model.CrosschainTx, error) {
 	if passID == "" || reason == "" || operator == "" {
 		return nil, "", nil, crosschain.NewError(errcode.Param, "pass_id/reason/operator 必填")
@@ -273,13 +274,18 @@ func (s *Service) RevokePass(ctx context.Context, traceID, passID, reason, opera
 	if err != nil {
 		return nil, "", nil, err
 	}
-	if p.Status != "VALID" {
+	switch {
+	case p.Status == "VALID":
+		if err := s.transitionPass(traceID, operator, p, "REVOKED", "REVOKE"); err != nil {
+			return p, "", nil, err
+		}
+		s.logAudit(traceID, operator, "PASS_REVOKE", "PASS", p.PassID, map[string]any{"reason": reason})
+	case p.Status == "REVOKED" && s.revokeNeedsResend(p.PassID):
+		// P5-R9：本地吊销已生效但链上未落地——只重发跨链，不重复状态迁移。
+		s.logAudit(traceID, operator, "PASS_REVOKE_RETRY", "PASS", p.PassID, map[string]any{"reason": reason})
+	default:
 		return p, "", nil, crosschain.NewError(errcode.PassInvalid, "许可 %q 状态 %q 不可吊销（仅 VALID）", passID, p.Status)
 	}
-	if err := s.transitionPass(traceID, operator, p, "REVOKED", "REVOKE"); err != nil {
-		return p, "", nil, err
-	}
-	s.logAudit(traceID, operator, "PASS_REVOKE", "PASS", p.PassID, map[string]any{"reason": reason})
 	payload := map[string]any{
 		"pass_id": p.PassID, "mission_id": p.MissionID, "reason": reason, "operator": operator,
 	}
@@ -292,4 +298,17 @@ func (s *Service) RevokePass(ctx context.Context, traceID, passID, reason, opera
 		return p, "FAILED", tx, nil
 	}
 	return p, "SUCCESS", tx, nil
+}
+
+// revokeNeedsResend 该许可的 PASS_REVOKE 跨链是否仍欠账：存在 FAILED 行且无 SUCCESS 行
+//（P5-R9 重入条件；补发成功后 FAILED 行仍在，但 SUCCESS 行使本判定归 false）。
+func (s *Service) revokeNeedsResend(passID string) bool {
+	var failed, ok int64
+	s.db.Model(&model.CrosschainTx{}).
+		Where("message_type = ? AND business_id = ? AND status = ?", crosschain.MsgPassRevoke, passID, "FAILED").
+		Count(&failed)
+	s.db.Model(&model.CrosschainTx{}).
+		Where("message_type = ? AND business_id = ? AND status = ?", crosschain.MsgPassRevoke, passID, "SUCCESS").
+		Count(&ok)
+	return failed > 0 && ok == 0
 }

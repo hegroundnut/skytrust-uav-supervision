@@ -22,6 +22,7 @@ type CrosschainTx struct {
 	ErrorCode        int        `json:"error_code"`
 	LatencyMs        int64      `json:"latency_ms"`
 	IdempotencyKey   string     `gorm:"size:128;uniqueIndex" json:"idempotency_key"`
+	RetryOf          string     `gorm:"size:64;index" json:"retry_of"` // P5-R8：#rN 重试行指向被重试的 cross_tx_id
 	CreatedAt        timex.Time `json:"created_at"`
 	UpdatedAt        timex.Time `json:"updated_at"`
 }

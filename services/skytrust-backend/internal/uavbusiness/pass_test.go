@@ -354,3 +354,58 @@ func TestPassSignatureStableAcrossReload(t *testing.T) {
 		t.Fatalf("verify after reload: valid=%v reasons=%v err=%v", valid, reasons, err)
 	}
 }
+
+// TestRevokePassCrosschainResend P5-R9：本地已 REVOKED 但吊销跨链 FAILED（源链
+// 提交失败 → FAILED 行 source_chain_tx_id 为空 → prevFailedSourceTxID 复用不上，
+// 重入走 P5-R8 网关 #r1 缝）→ 重入只补跨链成功，第三次恢复 3002。
+func TestRevokePassCrosschainResend(t *testing.T) {
+	ctx := context.Background()
+	sims := defaultTestSims()
+	svc, db := testSvcWith(t, sims)
+	m := approvedMission(t, svc)
+	vf, vt := nowWindow()
+	p, _, err := svc.IssuePass(ctx, "TRACE-T", PassIssueInput{MissionID: m.MissionID, Issuer: "FISCO-ADMIN", ValidFrom: vf, ValidTo: vt})
+	if err != nil {
+		t.Fatalf("issue: %v", err)
+	}
+	// 签发成功后再注入：fisco-bcos 首次 CrosschainSubmit（源链代提交）失败
+	sim.WithFailNext("CrosschainSubmit", 1)(sims["fisco-bcos"])
+	got, csStatus, tx, err := svc.RevokePass(ctx, "TRACE-T", p.PassID, "任务提前终止", "FISCO-ADMIN")
+	if err != nil {
+		t.Fatalf("first revoke must not fail locally: %v", err)
+	}
+	if got.Status != "REVOKED" || csStatus != "FAILED" || tx == nil || tx.Status != "FAILED" {
+		t.Fatalf("degraded revoke = %+v %q %+v", got, csStatus, tx)
+	}
+	if tx.SourceChainTxID != "" {
+		t.Fatalf("source submit failed, source tx must be empty: %+v", tx)
+	}
+
+	// 重入：只重发跨链（#r1 新行成功），本地状态不重复迁移
+	got2, csStatus2, tx2, err := svc.RevokePass(ctx, "TRACE-T", p.PassID, "任务提前终止", "FISCO-ADMIN")
+	if err != nil {
+		t.Fatalf("resend revoke: %v", err)
+	}
+	if got2.Status != "REVOKED" || csStatus2 != "SUCCESS" || tx2 == nil || tx2.Status != "SUCCESS" {
+		t.Fatalf("resent revoke = %+v %q %+v", got2, csStatus2, tx2)
+	}
+	if tx2.CrossTxID == tx.CrossTxID || tx2.RetryOf != tx.CrossTxID {
+		t.Fatalf("retry must be a new row referencing the failed one: %+v vs %+v", tx2, tx)
+	}
+	if !strings.HasSuffix(tx2.IdempotencyKey, "#r1") {
+		t.Fatalf("retry key = %q", tx2.IdempotencyKey)
+	}
+
+	// 第三次：已有 SUCCESS 吊销行 → 不再重发，3002
+	if _, _, _, err := svc.RevokePass(ctx, "TRACE-T", p.PassID, "again", "FISCO-ADMIN"); codeOf(err) != errcode.PassInvalid {
+		t.Fatalf("third revoke: want 3002, got %v", err)
+	}
+
+	// 审计：PASS_REVOKE 恰 1（重入不重复写）+ PASS_REVOKE_RETRY 恰 1
+	var revokeCnt, retryCnt int64
+	db.Model(&model.AuditLog{}).Where("action = ?", "PASS_REVOKE").Count(&revokeCnt)
+	db.Model(&model.AuditLog{}).Where("action = ?", "PASS_REVOKE_RETRY").Count(&retryCnt)
+	if revokeCnt != 1 || retryCnt != 1 {
+		t.Fatalf("audit counts revoke=%d retry=%d, want 1/1", revokeCnt, retryCnt)
+	}
+}

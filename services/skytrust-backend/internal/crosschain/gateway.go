@@ -2,6 +2,7 @@ package crosschain
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -77,14 +78,32 @@ func withRetry[T any](fn func() (T, error)) (T, error) {
 
 // Send 执行 13 步协议。成功与失败均落库留痕；重复提交（同幂等键）返回已有记录 + *Error{2004}。
 func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*model.CrosschainTx, error) {
-	// 步 0：幂等检查（spec §6.4）。
-	key := model.IdempotencyKey(req.MessageType, req.BusinessID, req.SourceChainTxID)
+	// 步 0：幂等检查（spec §6.4）。P5-R8：FAILED 行不再锁死幂等键——
+	// 非 FAILED（SUCCESS/在途）重复 → 2004 返回既有行；全 FAILED → 以 #rN 后缀
+	// 另起新行重试（N = scope 内现存行数 = 最大后缀+1），RetryOf 记录最近失败行溯源。
+	// 状态机不变：FAILED 仍是终态，重试是新行不是状态迁移。
+	baseKey := model.IdempotencyKey(req.MessageType, req.BusinessID, req.SourceChainTxID)
+	key, retryOf := baseKey, ""
+	dupScope := func() *gorm.DB {
+		return g.db.Where("idempotency_key = ? OR idempotency_key LIKE ?", baseKey, baseKey+"#r%")
+	}
 	var existing model.CrosschainTx
-	switch err := g.db.Where("idempotency_key = ?", key).First(&existing).Error; {
+	switch err := dupScope().Where("status <> ?", "FAILED").First(&existing).Error; {
 	case err == nil:
 		return &existing, NewError(errcode.IdempotentDup, "duplicate submission, returning existing result: %s", existing.CrossTxID)
 	case err != gorm.ErrRecordNotFound:
 		return nil, NewError(errcode.Internal, "idempotency lookup: %v", err)
+	}
+	var failedCnt int64 // 上一分支未命中 → scope 内只可能存在 FAILED 行
+	if err := dupScope().Model(&model.CrosschainTx{}).Count(&failedCnt).Error; err != nil {
+		return nil, NewError(errcode.Internal, "retry count: %v", err)
+	}
+	if failedCnt > 0 {
+		var last model.CrosschainTx // 最近失败行 = #r 后缀数字最大者（长度降序再字典降序 = 数字降序）
+		if err := dupScope().Order("LENGTH(idempotency_key) DESC, idempotency_key DESC").First(&last).Error; err == nil {
+			retryOf = last.CrossTxID
+		}
+		key = fmt.Sprintf("%s#r%d", baseKey, failedCnt)
 	}
 
 	tx := &model.CrosschainTx{
@@ -97,6 +116,7 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 		Signature:        req.Signature,
 		Status:           "PENDING",
 		IdempotencyKey:   key,
+		RetryOf:          retryOf,
 	}
 	t0 := timex.Now()
 	if err := g.db.Create(tx).Error; err != nil {

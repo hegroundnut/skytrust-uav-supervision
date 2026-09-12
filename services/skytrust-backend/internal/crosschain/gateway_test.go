@@ -162,6 +162,64 @@ func TestSendIdempotentDuplicate(t *testing.T) {
 	}
 }
 
+// TestSendFailedRetryNewRow P5-R8：FAILED 行不锁死幂等键——同键重发以 #rN 新行
+// 成功，RetryOf 溯源；第三次（已有 SUCCESS 行）回到 2004。
+func TestSendFailedRetryNewRow(t *testing.T) {
+	sims := defaultSims()
+	sims[RegChainName] = sim.New(RegChainName, sim.WithFailNext("RegisterReceive", 1))
+	gw, cs, db := testEnv(t, sims)
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-RETRY-1",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, req, crypto.SM9IdentityOf("Operator-A"))
+
+	first, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.CrosschainSend {
+		t.Fatalf("first send: want code 2001, got %v", err)
+	}
+	if first == nil || first.Status != "FAILED" || first.RetryOf != "" {
+		t.Fatalf("first row = %+v", first)
+	}
+
+	second, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if err != nil {
+		t.Fatalf("retry send: %v", err)
+	}
+	if second.Status != "SUCCESS" || second.CrossTxID == first.CrossTxID {
+		t.Fatalf("retry row = %+v", second)
+	}
+	if second.RetryOf != first.CrossTxID {
+		t.Errorf("retry_of = %q, want %q", second.RetryOf, first.CrossTxID)
+	}
+	if !strings.HasSuffix(second.IdempotencyKey, "#r1") ||
+		!strings.HasPrefix(second.IdempotencyKey, first.IdempotencyKey) {
+		t.Errorf("retry key = %q (base %q)", second.IdempotencyKey, first.IdempotencyKey)
+	}
+	re := reload(t, db, second.CrossTxID)
+	if re.Status != "SUCCESS" || re.RetryOf != first.CrossTxID {
+		t.Errorf("persisted retry row = %+v", re)
+	}
+	var cnt int64
+	db.Model(&model.CrosschainTx{}).Where("business_id = ?", "APP-RETRY-1").Count(&cnt)
+	if cnt != 2 {
+		t.Errorf("want 2 rows (FAILED + retry), got %d", cnt)
+	}
+
+	third, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.IdempotentDup {
+		t.Fatalf("third send: want 2004, got %v", err)
+	}
+	if third == nil || third.CrossTxID != second.CrossTxID {
+		t.Fatalf("duplicate must return the SUCCESS row: %+v", third)
+	}
+	db.Model(&model.CrosschainTx{}).Where("business_id = ?", "APP-RETRY-1").Count(&cnt)
+	if cnt != 2 {
+		t.Errorf("third send must not create rows, got %d", cnt)
+	}
+}
+
 func TestSendSM3Mismatch(t *testing.T) {
 	gw, cs, db := testEnv(t, defaultSims())
 	req := &SendRequest{
