@@ -14,6 +14,7 @@ import (
 	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/demo"
+	"skytrust-backend/internal/experiment"
 	"skytrust-backend/internal/model"
 	"skytrust-backend/internal/offchain"
 	"skytrust-backend/internal/regulatory"
@@ -53,7 +54,9 @@ func validTestDeps(t *testing.T) *Deps {
 	biz := uavbusiness.New(db, cs, gw, auditSvc)
 	off := offchain.New(db, cs, auditSvc)
 	reg := regulatory.New(db, cs, gw, auditSvc)
-	return &Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: demo.NewSeeder(db, cs, chains), Audit: auditSvc, Gateway: gw, Business: biz, Offchain: off, Regulatory: reg}
+	seeder := demo.NewSeeder(db, cs, chains)
+	exp := experiment.New(db, cs, gw, biz, off, reg, auditSvc, seeder)
+	return &Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: auditSvc, Gateway: gw, Business: biz, Offchain: off, Regulatory: reg, Experiment: exp}
 }
 
 func TestHealthPing(t *testing.T) {
@@ -180,5 +183,13 @@ func TestNewRouterRequiresRegulatory(t *testing.T) {
 	deps.Regulatory = nil
 	if _, err := NewRouter(deps); err == nil {
 		t.Fatal("NewRouter must reject nil Regulatory")
+	}
+}
+
+func TestNewRouterRequiresExperiment(t *testing.T) {
+	deps := validTestDeps(t)
+	deps.Experiment = nil
+	if _, err := NewRouter(deps); err == nil {
+		t.Fatal("NewRouter must reject nil Experiment")
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/demo"
+	"skytrust-backend/internal/experiment"
 	"skytrust-backend/internal/offchain"
 	"skytrust-backend/internal/regulatory"
 	"skytrust-backend/internal/uavbusiness"
@@ -29,6 +30,7 @@ type Deps struct {
 	Offchain  *offchain.Service
 
 	Regulatory *regulatory.Service
+	Experiment *experiment.Service
 }
 
 // Validate 构造期校验（B1）：接线遗漏在启动时暴露，而非运行期 panic。
@@ -62,6 +64,9 @@ func (d *Deps) Validate() error {
 	}
 	if d.Regulatory == nil {
 		return errors.New("deps: Regulatory is required")
+	}
+	if d.Experiment == nil {
+		return errors.New("deps: Experiment is required")
 	}
 	return nil
 }

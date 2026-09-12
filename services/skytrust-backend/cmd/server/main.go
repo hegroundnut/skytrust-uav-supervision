@@ -13,6 +13,7 @@ import (
 	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/demo"
+	"skytrust-backend/internal/experiment"
 	"skytrust-backend/internal/model"
 	"skytrust-backend/internal/offchain"
 	"skytrust-backend/internal/regulatory"
@@ -53,7 +54,8 @@ func Run(addr string) error {
 	biz := uavbusiness.New(db, cs, gw, auditSvc)
 	off := offchain.New(db, cs, auditSvc)
 	reg := regulatory.New(db, cs, gw, auditSvc)
-	r, err := api.NewRouter(&api.Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: auditSvc, Gateway: gw, Business: biz, Offchain: off, Regulatory: reg})
+	exp := experiment.New(db, cs, gw, biz, off, reg, auditSvc, seeder)
+	r, err := api.NewRouter(&api.Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: auditSvc, Gateway: gw, Business: biz, Offchain: off, Regulatory: reg, Experiment: exp})
 	if err != nil {
 		return err
 	}

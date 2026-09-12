@@ -70,6 +70,10 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/regulatory/audit/list", regAuditListHandler(deps))
 		api.POST("/regulatory/audit/export", regAuditExportHandler(deps))
 		api.POST("/dashboard/summary", dashboardSummaryHandler(deps))
+		api.POST("/experiment/run", experimentRunHandler(deps))
+		api.POST("/experiment/result", experimentResultHandler(deps))
+		api.POST("/experiment/list", experimentListHandler(deps))
+		api.POST("/experiment/export", experimentExportHandler(deps))
 	}
 	return r, nil
 }
