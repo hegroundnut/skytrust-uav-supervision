@@ -7,7 +7,7 @@ import (
 
 // parseAuditFilter 解析审计查询过滤条件（缺省 page=1/page_size=20，
 // Query 内部亦会应用默认值，此处为双保险）。
-func parseAuditFilter(c *gin.Context) audit.QueryFilter {
+func parseAuditFilter(c *gin.Context) (audit.QueryFilter, bool) {
 	var req struct {
 		BusinessID string `json:"business_id"`
 		Action     string `json:"action"`
@@ -15,7 +15,9 @@ func parseAuditFilter(c *gin.Context) audit.QueryFilter {
 		Page       int    `json:"page"`
 		PageSize   int    `json:"page_size"`
 	}
-	_ = c.ShouldBindJSON(&req)
+	if !bindOptionalBody(c, &req) {
+		return audit.QueryFilter{}, false
+	}
 	q := audit.QueryFilter{
 		BusinessID: req.BusinessID,
 		Action:     req.Action,
@@ -29,12 +31,15 @@ func parseAuditFilter(c *gin.Context) audit.QueryFilter {
 	if q.PageSize <= 0 {
 		q.PageSize = 20
 	}
-	return q
+	return q, true
 }
 
 func auditQueryHandler(deps *Deps) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		q := parseAuditFilter(c)
+		q, ok := parseAuditFilter(c)
+		if !ok {
+			return
+		}
 		records, total, err := deps.Audit.Query(q)
 		if err != nil {
 			FailErr(c, err)
@@ -46,7 +51,10 @@ func auditQueryHandler(deps *Deps) gin.HandlerFunc {
 
 func auditExportHandler(deps *Deps) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		q := parseAuditFilter(c)
+		q, ok := parseAuditFilter(c)
+		if !ok {
+			return
+		}
 		records, _, err := deps.Audit.Query(q)
 		if err != nil {
 			FailErr(c, err)
