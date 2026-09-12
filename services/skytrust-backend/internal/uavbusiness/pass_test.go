@@ -2,6 +2,7 @@ package uavbusiness
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -407,5 +408,37 @@ func TestRevokePassCrosschainResend(t *testing.T) {
 	db.Model(&model.AuditLog{}).Where("action = ?", "PASS_REVOKE_RETRY").Count(&retryCnt)
 	if revokeCnt != 1 || retryCnt != 1 {
 		t.Fatalf("audit counts revoke=%d retry=%d, want 1/1", revokeCnt, retryCnt)
+	}
+}
+
+// TestListPassPageSizeCapUnified C7：page_size 两分支归一——>200 封顶 200（不回退 20），<1 默认 20。
+func TestListPassPageSizeCapUnified(t *testing.T) {
+	svc, db := testSvcFull(t)
+	m := approvedMission(t, svc)
+	// 直铺 25 条 GENERATING 记录（绕开签发流程，只测分页契约）
+	for i := 0; i < 25; i++ {
+		row := model.FlightPass{PassID: fmt.Sprintf("PASS-CAP-%03d", i+1), MissionID: m.MissionID,
+			UAVID: m.UAVID, Route: m.RouteSegments,
+			ValidFrom: timex.NowT(), ValidTo: timex.New(timex.Now().Add(time.Hour)), Status: "GENERATING"}
+		if err := db.Create(&row).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	ctx := context.Background()
+	// page_size 9999 → 封顶 200：25 条全量返回（旧单分支行为会回退 20 → 本断言失败）
+	list, total, err := svc.ListPass(ctx, "TRACE-T", PassListFilter{PageSize: 9999})
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if total != 25 || len(list) != 25 {
+		t.Fatalf("cap: total=%d len=%d, want 25/25", total, len(list))
+	}
+	// page_size 0 → 默认 20
+	list, total, err = svc.ListPass(ctx, "TRACE-T", PassListFilter{PageSize: 0})
+	if err != nil {
+		t.Fatalf("list0: %v", err)
+	}
+	if total != 25 || len(list) != 20 {
+		t.Fatalf("default: total=%d len=%d, want 25/20", total, len(list))
 	}
 }

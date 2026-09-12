@@ -209,8 +209,12 @@ func (s *Service) ListPass(ctx context.Context, traceID string, f PassListFilter
 	if page < 1 {
 		page = 1
 	}
-	if size < 1 || size > 200 {
+	// P5-C7：与 audit/gateway 列表契约同源的两分支归一（<1→20 默认；>200→封顶 200）。
+	if size < 1 {
 		size = 20
+	}
+	if size > 200 {
+		size = 200
 	}
 	var list []model.FlightPass
 	if err := q.Order("created_at DESC").Offset((page - 1) * size).Limit(size).Find(&list).Error; err != nil {
@@ -236,6 +240,11 @@ func (s *Service) VerifyPass(ctx context.Context, traceID, passID string) (bool,
 	case "VALID":
 		if now.Before(p.ValidFrom.Time) {
 			reasons = append(reasons, "未到生效时间")
+		}
+		// P5-C8 兜底：顶部 AUTO_EXPIRE 迁移失败被吞时（transitionPass 错误 `_ =`），
+		// VALID+已过窗不得误报有效。正常路径到不了这里（状态已迁 EXPIRED）。
+		if now.After(p.ValidTo.Time) {
+			reasons = append(reasons, "许可已过期")
 		}
 		cb, cerr := crypto.CanonicalJSON(passCanonical(p))
 		if cerr != nil {

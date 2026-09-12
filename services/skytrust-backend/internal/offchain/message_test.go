@@ -247,3 +247,36 @@ func TestMessageSeqUniqueIndex(t *testing.T) {
 		t.Fatalf("res2 = %+v err = %v", res2, err)
 	}
 }
+
+// TestMessageSendProxySignedEvidence A2：Signature 留空 → 平台代签分支——
+// evidence.proxy_signed=true，且代签签名对消息 SM3 哈希可验签（留痕可审计）。
+func TestMessageSendProxySignedEvidence(t *testing.T) {
+	svc := newTestSvc(t)
+	ctx := context.Background()
+	sid := openTestSession(t, svc)
+	res, err := svc.MessageSend(ctx, "TRACE-T", &MessageSendRequest{
+		SessionID: sid, MsgType: "HEARTBEAT",
+		SourceNode: "UAV-A-001-NODE", TargetNode: "MGR",
+		Payload:   map[string]any{"alt": 100},
+		Signature: "",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ev map[string]any
+	if err := json.Unmarshal([]byte(res.Message.Evidence), &ev); err != nil {
+		t.Fatalf("evidence json: %v (%q)", err, res.Message.Evidence)
+	}
+	if ev["proxy_signed"] != true {
+		t.Fatalf("proxy_signed = %v, want true", ev["proxy_signed"])
+	}
+	uid, _ := ev["sm9_identity"].(string)
+	sig, _ := ev["signature"].(string)
+	if uid == "" || sig == "" {
+		t.Fatalf("evidence identity/signature missing: %v", ev)
+	}
+	ok, verr := svc.cs.SM9VerifyUserID(uid, []byte(res.Message.SM3Hash), sig)
+	if verr != nil || !ok {
+		t.Fatalf("proxy signature must verify: ok=%v err=%v", ok, verr)
+	}
+}
