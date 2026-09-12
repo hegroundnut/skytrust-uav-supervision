@@ -290,3 +290,37 @@ func TestRegulatoryAuditHandlersHTTP(t *testing.T) {
 		t.Fatalf("export: %v", ed)
 	}
 }
+
+func TestDashboardSummaryHandler(t *testing.T) {
+	r := setupFullTestRouter(t)
+	postJSON(t, r, "/api/demo/init", map[string]any{})
+	// 造 1 条告警让计数非零
+	raised := postJSON(t, r, "/api/alert/raise", map[string]any{
+		"alert_id": "ALERT-2026-001", "mission_id": "MISSION-DEMO", "uav_pseudonym": "PSEUDO-UAV-83921",
+		"event_type": "UNKNOWN_NODE_ACCESS", "risk_level": "MEDIUM", "source_system": "MANUAL",
+		// 裁定（Task 7 D2）：operator 是 binding:"required"（alert.go:22），缺省 → 6002，本测试必挂。
+		"operator": "REG-01",
+	})
+	if raised["code"].(float64) != 0 {
+		t.Fatalf("raise: %v", raised)
+	}
+	got := postJSON(t, r, "/api/dashboard/summary", nil)
+	if got["code"].(float64) != 0 {
+		t.Fatalf("summary: %v", got)
+	}
+	d := got["data"].(map[string]any)
+	alerts := d["alerts"].(map[string]any)
+	if alerts["total"].(float64) != 1 || alerts["open"].(float64) != 1 {
+		t.Fatalf("alerts: %v", alerts)
+	}
+	if byType := alerts["by_type"].(map[string]any); byType["UNKNOWN_NODE_ACCESS"].(float64) != 1 {
+		t.Fatalf("by_type: %v", byType)
+	}
+	recent := d["recent_alerts"].([]any)
+	if len(recent) != 1 || recent[0].(map[string]any)["alert_id"] != "ALERT-2026-001" {
+		t.Fatalf("recent: %v", recent)
+	}
+	if d["generated_at"].(string) == "" {
+		t.Fatal("generated_at empty")
+	}
+}

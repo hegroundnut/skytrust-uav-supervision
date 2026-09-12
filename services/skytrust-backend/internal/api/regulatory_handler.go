@@ -155,3 +155,14 @@ func regAuditExportHandler(deps *Deps) gin.HandlerFunc {
 		OK(c, gin.H{"format": "csv", "content": string(content), "rows": rows})
 	}
 }
+
+func dashboardSummaryHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		sum, err := deps.Regulatory.DashboardSummary(c.Request.Context())
+		if err != nil {
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, sum)
+	}
+}

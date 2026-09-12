@@ -69,6 +69,7 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/inspect/ciphertext", inspectCiphertextHandler(deps))
 		api.POST("/regulatory/audit/list", regAuditListHandler(deps))
 		api.POST("/regulatory/audit/export", regAuditExportHandler(deps))
+		api.POST("/dashboard/summary", dashboardSummaryHandler(deps))
 	}
 	return r, nil
 }
