@@ -23,8 +23,12 @@ func (q *RegAuditQuery) Normalize() {
 	if q.Page < 1 {
 		q.Page = 1
 	}
-	if q.PageSize < 1 || q.PageSize > 200 {
+	// 裁定（终审 Finding 1）：与 AlertQuery/NodeQuery 契约一致——<1 回退 20，>200 封顶 200（不重置）。
+	if q.PageSize < 1 {
 		q.PageSize = 20
+	}
+	if q.PageSize > 200 {
+		q.PageSize = 200
 	}
 }
 

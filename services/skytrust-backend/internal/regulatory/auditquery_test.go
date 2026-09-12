@@ -68,10 +68,10 @@ func TestRegAuditListFilterPaging(t *testing.T) {
 			t.Fatalf("order violated: %s vs %s", a.AuditID, b.AuditID)
 		}
 	}
-	// Normalize：非法分页参数回退默认
+	// Normalize：page<1 回退 1，page_size>200 封顶 200
 	q := &RegAuditQuery{Page: -1, PageSize: 9999}
 	q.Normalize()
-	if q.Page != 1 || q.PageSize != 20 {
+	if q.Page != 1 || q.PageSize != 200 {
 		t.Fatalf("normalize: %+v", q)
 	}
 }

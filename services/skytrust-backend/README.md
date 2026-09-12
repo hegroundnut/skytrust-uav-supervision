@@ -365,7 +365,7 @@ cd services/skytrust-backend && go run ./cmd/server
 
 `POST /api/authorize/apply` 请求 `{"authorization_id":"AUTH-2026-001","regulator_id":"REG-01","scope":["MISSION","ROUTE","PAYLOAD","IDENTITY"],"target_type":"MISSION","target_id":"MISSION-2026-001","reason":"核查告警 ALERT-2026-001"}`，响应 `data`：授权行（`status:"PENDING"`,`audit_hash:"<64hex>"`,窗口缺省 `valid_from=now`,`valid_to=now+24h`）。
 
-`POST /api/authorize/review` 请求 `{"authorization_id":"AUTH-2026-001","decision":"APPROVE","reviewer_id":"REG-ADMIN","comment":"同意"}`，响应 `data`：`{"auth":{…,"status":"AUTHORIZED","chain_tx_id":"CHAINMAKER-…"},"audit":{"audit_id":"AUD-…","action":"AUTH_APPROVE",…},"chain_tx_id":"CHAINMAKER-…"}`。上链失败→`code=2001`（行停留 PENDING）；非 PENDING 复审→`code=6002`。
+`POST /api/authorize/review` 请求 `{"authorization_id":"AUTH-2026-001","decision":"APPROVE","reviewer_id":"REG-ADMIN","comment":"同意"}`，响应 `data`：`{"auth":{…,"status":"AUTHORIZED"},"audit":{"audit_id":"AUD-…","action":"AUTH_APPROVE",…,"chain_tx_id":"CHAINMAKER-…"},"chain_tx_id":"CHAINMAKER-…"}`。上链失败→`code=2001`（行停留 PENDING）；非 PENDING 复审→`code=6002`。
 
 `POST /api/inspect/ciphertext` 未授权请求 `{"mission_id":"MISSION-2026-001","regulator_id":"REG-01"}` → `code=5002`，`data`：`{"authorized":false,"sealed":{"mission_id":"MISSION-2026-001","ciphertext_status":"SEALED","sm3_hash":"<64hex>","masked_value":"巡线走廊****","has_ciphertext":true}}`（无 `decrypted_view` 键）。
 
