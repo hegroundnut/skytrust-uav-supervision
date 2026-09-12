@@ -395,7 +395,7 @@ cd services/skytrust-backend && go run ./cmd/server
 
 ## 测试运行方式
 
-全量回归（214 个顶层测试）：
+全量回归（274 个顶层测试）：
 
 ```bash
 go test ./... -count=1
