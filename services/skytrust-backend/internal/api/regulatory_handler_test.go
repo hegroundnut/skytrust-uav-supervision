@@ -188,3 +188,56 @@ func TestAuthorizeReviewHandler(t *testing.T) {
 		t.Fatalf("re-review: %v", again)
 	}
 }
+
+func TestInspectCiphertextHandler(t *testing.T) {
+	r := setupFullTestRouter(t)
+	postJSON(t, r, "/api/demo/init", map[string]any{})
+	mc := postJSON(t, r, "/api/mission/create", map[string]any{
+		"operator_id": "Operator-A", "uav_id": "UAV-A-001", "mission_type": "POWER_INSPECTION",
+		"start_time": "2026-09-12 09:00:00", "end_time": "2026-09-12 11:00:00",
+		"route_segments": []string{"R101", "R205", "R306"},
+		"altitude_min": 60, "altitude_max": 120, "payload_type": "CAMERA",
+		"description": "巡线走廊Zone-A全线巡检",
+	})
+	mid := mc["data"].(map[string]any)["mission_id"].(string)
+	// 未授权 → 5002 + sealed（数据在 data 顶层，明文键不存在）
+	un := postJSON(t, r, "/api/inspect/ciphertext", map[string]any{"mission_id": mid, "regulator_id": "REG-01"})
+	if un["code"].(float64) != 5002 {
+		t.Fatalf("unauthorized: %v", un)
+	}
+	ud := un["data"].(map[string]any)
+	if ud["authorized"] != false {
+		t.Fatalf("authorized flag: %v", ud)
+	}
+	if _, leaked := ud["decrypted_view"]; leaked {
+		t.Fatalf("plaintext leaked: %v", ud)
+	}
+	sld := ud["sealed"].(map[string]any)
+	if sld["ciphertext_status"] != "SEALED" || sld["masked_value"] != "巡线走廊****" || sld["has_ciphertext"] != true {
+		t.Fatalf("sealed: %v", sld)
+	}
+	// 授权闭环后 → code 0 + decrypted_view
+	postJSON(t, r, "/api/authorize/apply", map[string]any{
+		"authorization_id": "AUTH-2026-001", "regulator_id": "REG-01",
+		"scope": []string{"MISSION", "ROUTE", "PAYLOAD"}, "target_type": "MISSION",
+		"target_id": mid, "reason": "核查",
+	})
+	postJSON(t, r, "/api/authorize/review", map[string]any{
+		"authorization_id": "AUTH-2026-001", "decision": "APPROVE", "reviewer_id": "REG-ADMIN",
+	})
+	ok := postJSON(t, r, "/api/inspect/ciphertext", map[string]any{
+		"mission_id": mid, "authorization_id": "AUTH-2026-001", "regulator_id": "REG-01",
+		"trajectory": "NORMAL", "payload_type": "CAMERA",
+	})
+	if ok["code"].(float64) != 0 {
+		t.Fatalf("authorized inspect: %v", ok)
+	}
+	od := ok["data"].(map[string]any)
+	if od["authorized"] != true || od["decrypted_view"] != "巡线走廊Zone-A全线巡检" {
+		t.Fatalf("authorized data = %v", od)
+	}
+	conc := od["conclusion"].(map[string]any)
+	if conc["route_verdict"] != "ROUTE_OK" || conc["payload_verdict"] != "PAYLOAD_OK" {
+		t.Fatalf("conclusion = %v", conc)
+	}
+}

@@ -105,3 +105,23 @@ func authorizeReviewHandler(deps *Deps) gin.HandlerFunc {
 		OK(c, res)
 	}
 }
+
+func inspectCiphertextHandler(deps *Deps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req regulatory.InspectRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			Fail(c, ErrParam, "参数错误: "+err.Error())
+			return
+		}
+		res, err := deps.Regulatory.InspectCiphertext(c.Request.Context(), TraceIDFrom(c), &req)
+		if err != nil {
+			if res != nil { // 5002/5003/5004/2001 sealed 透传（P4-6）
+				FailData(c, crosschainErrCode(err), err.Error(), res)
+				return
+			}
+			Fail(c, crosschainErrCode(err), err.Error())
+			return
+		}
+		OK(c, res)
+	}
+}

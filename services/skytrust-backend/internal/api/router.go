@@ -66,6 +66,7 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/trace/identity", traceIdentityHandler(deps))
 		api.POST("/authorize/apply", authorizeApplyHandler(deps))
 		api.POST("/authorize/review", authorizeReviewHandler(deps))
+		api.POST("/inspect/ciphertext", inspectCiphertextHandler(deps))
 	}
 	return r, nil
 }
