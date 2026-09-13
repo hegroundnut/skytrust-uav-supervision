@@ -82,37 +82,49 @@ func (s *Service) DetectConflict(ctx context.Context, traceID, missionID string)
 		if !ok {
 			continue
 		}
-		var existing model.ConflictRecord
-		err := s.db.WithContext(ctx).Where("status = ? AND ((mission_id_a = ? AND mission_id_b = ?) OR (mission_id_a = ? AND mission_id_b = ?))",
-			"OPEN", m.MissionID, c.MissionID, c.MissionID, m.MissionID).First(&existing).Error
-		if err == nil {
-			out = append(out, existing)
-			continue
-		}
-		if err != gorm.ErrRecordNotFound {
-			return nil, crosschain.NewError(errcode.Internal, "existing conflict lookup: %v", err)
-		}
-		suggJSON, err := json.Marshal(map[string]string{
-			"adjust_time":     "时间窗后移30分钟",
-			"adjust_route":    "改走邻近走廊，避开冲突段 " + strings.Join(overlaps, ","),
-			"adjust_altitude": "调整至与对方任务不重叠的高度层",
-		})
-		if err != nil {
-			return nil, crosschain.NewError(errcode.Internal, "marshal suggestion: %v", err)
-		}
-		rec := model.ConflictRecord{
-			ConflictID: model.GenConflictID(), MissionIDA: m.MissionID, MissionIDB: c.MissionID,
-			ConflictType: "ROUTE", Suggestion: string(suggJSON), Status: "OPEN",
-		}
-		if err := s.db.WithContext(ctx).Create(&rec).Error; err != nil {
-			return nil, crosschain.NewError(errcode.Internal, "create conflict: %v", err)
+		// 检测+占用写入同事务（C12）：并发双向检测同一对任务无双预定。
+		var rec model.ConflictRecord
+		created := false
+		if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			var existing model.ConflictRecord
+			err := tx.Where("status = ? AND ((mission_id_a = ? AND mission_id_b = ?) OR (mission_id_a = ? AND mission_id_b = ?))",
+				"OPEN", m.MissionID, c.MissionID, c.MissionID, m.MissionID).First(&existing).Error
+			if err == nil {
+				rec = existing
+				return nil
+			}
+			if err != gorm.ErrRecordNotFound {
+				return crosschain.NewError(errcode.Internal, "existing conflict lookup: %v", err)
+			}
+			suggJSON, err := json.Marshal(map[string]string{
+				"adjust_time":     "时间窗后移30分钟",
+				"adjust_route":    "改走邻近走廊，避开冲突段 " + strings.Join(overlaps, ","),
+				"adjust_altitude": "调整至与对方任务不重叠的高度层",
+			})
+			if err != nil {
+				return crosschain.NewError(errcode.Internal, "marshal suggestion: %v", err)
+			}
+			rec = model.ConflictRecord{
+				ConflictID: model.GenConflictID(), MissionIDA: m.MissionID, MissionIDB: c.MissionID,
+				ConflictType: "ROUTE", Suggestion: string(suggJSON), Status: "OPEN",
+			}
+			if err := tx.Create(&rec).Error; err != nil {
+				return crosschain.NewError(errcode.Internal, "create conflict: %v", err)
+			}
+			created = true
+			return nil
+		}); err != nil {
+			return nil, err
 		}
 		out = append(out, rec)
+		if !created {
+			continue
+		}
 		s.toCoordinating(traceID, "SYSTEM", m)
 		s.toCoordinating(traceID, "SYSTEM", c)
 		s.logAudit(traceID, "SYSTEM", "CONFLICT_DETECT", "CONFLICT", rec.ConflictID,
 			map[string]any{"mission_id_a": rec.MissionIDA, "mission_id_b": rec.MissionIDB,
-				"overlap_segments": overlaps, "suggestion": string(suggJSON)})
+				"overlap_segments": overlaps, "suggestion": rec.Suggestion})
 	}
 	return out, nil
 }

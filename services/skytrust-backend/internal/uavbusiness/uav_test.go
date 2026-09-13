@@ -2,6 +2,7 @@ package uavbusiness
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -236,5 +237,48 @@ func TestRevokeAndQueryListUAV(t *testing.T) {
 	}
 	if _, total2, err := svc.ListUAV(ctx, "TRACE-T", UAVListFilter{Page: 1, PageSize: 500}); err != nil || total2 != 1 {
 		t.Fatalf("list oversized page_size: total=%d err=%v", total2, err)
+	}
+}
+
+// TestRegisterUAVConcurrentDuplicateSerialExactlyOneWins C12：并发同 serial_no 注册
+// 恰一成功；失败侧返回既有重复类业务错误码（6002），不得泄漏为 9001。
+func TestRegisterUAVConcurrentDuplicateSerialExactlyOneWins(t *testing.T) {
+	svc, _ := testSvcFull(t)
+	seedParties(t, svc)
+	const n = 8
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	created := make(chan string, n)
+	errs := make(chan error, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			uav, _, err := svc.RegisterUAV(context.Background(), "TRACE-C12", UAVInput{
+				ManufacturerID: "Manufacturer-M1", OperatorID: "Operator-O1", SerialNo: "SN-C12-001",
+			})
+			if err != nil {
+				errs <- err
+				return
+			}
+			created <- uav.UAVID
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(created)
+	close(errs)
+	wins := 0
+	for range created {
+		wins++
+	}
+	if wins != 1 {
+		t.Fatalf("exactly one concurrent duplicate must win, got %d (errs=%d)", wins, len(errs))
+	}
+	for err := range errs {
+		if codeOf(err) != errcode.Param {
+			t.Fatalf("concurrent duplicate loser must get existing biz code 6002, got %v", err)
+		}
 	}
 }

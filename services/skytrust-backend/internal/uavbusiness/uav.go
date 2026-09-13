@@ -24,19 +24,20 @@ type UAVInput struct {
 
 // genUAVID 自动生成 UAV-<operator 末段大写>-%03d，序号从该 operator 名下数量+1 起
 // 递增探测直至无冲突；operator_id 无 "-" 分段时用 X。
-func (s *Service) genUAVID(operatorID string) (string, error) {
+// db 须传当前事务句柄（C12：生成+查重+插入同事务）。
+func (s *Service) genUAVID(db *gorm.DB, operatorID string) (string, error) {
 	seg := "X"
 	if i := strings.LastIndex(operatorID, "-"); i >= 0 && i < len(operatorID)-1 {
 		seg = operatorID[i+1:]
 	}
 	var cnt int64
-	if err := s.db.Model(&model.UAV{}).Where("operator_id = ?", operatorID).Count(&cnt).Error; err != nil {
+	if err := db.Model(&model.UAV{}).Where("operator_id = ?", operatorID).Count(&cnt).Error; err != nil {
 		return "", err
 	}
 	for n := int(cnt) + 1; n < 1000; n++ {
 		cand := fmt.Sprintf("UAV-%s-%03d", strings.ToUpper(seg), n)
 		var dup int64
-		if err := s.db.Model(&model.UAV{}).Where("uav_id = ?", cand).Count(&dup).Error; err != nil {
+		if err := db.Model(&model.UAV{}).Where("uav_id = ?", cand).Count(&dup).Error; err != nil {
 			return "", err
 		}
 		if dup == 0 {
@@ -105,31 +106,45 @@ func (s *Service) RegisterUAV(ctx context.Context, traceID string, in UAVInput) 
 	if cnt == 0 {
 		return nil, nil, crosschain.NewError(errcode.InvalidUAV, "operator_id %q 不存在", in.OperatorID)
 	}
-	if err := s.db.WithContext(ctx).Model(&model.UAV{}).Where("serial_no = ?", in.SerialNo).Count(&cnt).Error; err != nil {
-		return nil, nil, crosschain.NewError(errcode.Internal, "serial lookup: %v", err)
-	}
-	if cnt > 0 {
-		return nil, nil, crosschain.NewError(errcode.Param, "serial_no %q 已存在", in.SerialNo)
-	}
-	uavID := in.UAVID
-	if uavID == "" {
-		gen, err := s.genUAVID(in.OperatorID)
-		if err != nil {
-			return nil, nil, crosschain.NewError(errcode.Internal, "gen uav_id: %v", err)
+	// 查重+插入同事务（C12）：并发同 serial_no/uav_id 注册恰一成功。
+	var uav *model.UAV
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.UAV{}).Where("serial_no = ?", in.SerialNo).Count(&cnt).Error; err != nil {
+			return crosschain.NewError(errcode.Internal, "serial lookup: %v", err)
 		}
-		uavID = gen
-	} else if err := s.db.WithContext(ctx).Model(&model.UAV{}).Where("uav_id = ?", uavID).Count(&cnt).Error; err != nil {
-		return nil, nil, crosschain.NewError(errcode.Internal, "uav_id lookup: %v", err)
-	} else if cnt > 0 {
-		return nil, nil, crosschain.NewError(errcode.Param, "uav_id %q 已存在", uavID)
-	}
-	uav := &model.UAV{
-		UAVID: uavID, ManufacturerID: in.ManufacturerID, OperatorID: in.OperatorID,
-		Model: in.Model, SerialNo: in.SerialNo,
-		SM9Identity: crypto.SM9IdentityOf(uavID), Status: "UNREGISTERED",
-	}
-	if err := s.db.WithContext(ctx).Create(uav).Error; err != nil {
-		return nil, nil, crosschain.NewError(errcode.Internal, "create uav: %v", err)
+		if cnt > 0 {
+			return crosschain.NewError(errcode.Param, "serial_no %q 已存在", in.SerialNo)
+		}
+		uavID := in.UAVID
+		if uavID == "" {
+			gen, err := s.genUAVID(tx, in.OperatorID)
+			if err != nil {
+				return crosschain.NewError(errcode.Internal, "gen uav_id: %v", err)
+			}
+			uavID = gen
+		} else if err := tx.Model(&model.UAV{}).Where("uav_id = ?", uavID).Count(&cnt).Error; err != nil {
+			return crosschain.NewError(errcode.Internal, "uav_id lookup: %v", err)
+		} else if cnt > 0 {
+			return crosschain.NewError(errcode.Param, "uav_id %q 已存在", uavID)
+		}
+		uav = &model.UAV{
+			UAVID: uavID, ManufacturerID: in.ManufacturerID, OperatorID: in.OperatorID,
+			Model: in.Model, SerialNo: in.SerialNo,
+			SM9Identity: crypto.SM9IdentityOf(uavID), Status: "UNREGISTERED",
+		}
+		if err := tx.Create(uav).Error; err != nil {
+			// 并发窗口：事务内插入撞唯一索引/主键 → 映射为查重失败同码同文案
+			if msg := err.Error(); strings.Contains(msg, "UNIQUE constraint failed") {
+				if strings.Contains(msg, "serial_no") {
+					return crosschain.NewError(errcode.Param, "serial_no %q 已存在", in.SerialNo)
+				}
+				return crosschain.NewError(errcode.Param, "uav_id %q 已存在", uavID)
+			}
+			return crosschain.NewError(errcode.Internal, "create uav: %v", err)
+		}
+		return nil
+	}); err != nil {
+		return nil, nil, err
 	}
 	if err := s.transitionUAV(traceID, in.OperatorID, uav, "REGISTERED", "REGISTER"); err != nil {
 		return uav, nil, err

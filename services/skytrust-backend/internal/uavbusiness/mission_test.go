@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"sync"
 	"testing"
 
 	"skytrust-backend/internal/chainadapter"
@@ -237,5 +238,48 @@ func TestSubmitMissionFailWithdrawsAndRetries(t *testing.T) {
 	got, _ = svc.QueryMission(ctx, "TRACE-T", m.MissionID)
 	if got.Status != "SUBMITTED" {
 		t.Fatalf("after retry status = %q", got.Status)
+	}
+}
+
+// TestCreateMissionConcurrentDuplicateIDExactlyOneWins C18：并发同显式 mission_id
+// 创建恰一成功；失败侧返回既有重复类业务错误码（6002），不得泄漏为 9001。
+func TestCreateMissionConcurrentDuplicateIDExactlyOneWins(t *testing.T) {
+	svc, _ := testSvcFull(t)
+	seedMissionEnv(t, svc)
+	const n = 8
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	created := make(chan string, n)
+	errs := make(chan error, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			in := baseMissionInput()
+			in.MissionID = "MISSION-C18-001"
+			m, err := svc.CreateMission(context.Background(), "TRACE-C18", in)
+			if err != nil {
+				errs <- err
+				return
+			}
+			created <- m.MissionID
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(created)
+	close(errs)
+	wins := 0
+	for range created {
+		wins++
+	}
+	if wins != 1 {
+		t.Fatalf("exactly one concurrent duplicate must win, got %d (errs=%d)", wins, len(errs))
+	}
+	for err := range errs {
+		if codeOf(err) != errcode.Param {
+			t.Fatalf("concurrent duplicate loser must get existing biz code 6002, got %v", err)
+		}
 	}
 }

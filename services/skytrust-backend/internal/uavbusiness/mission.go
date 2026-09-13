@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 
@@ -29,15 +30,17 @@ type MissionInput struct {
 	Description   string // 明文描述 → SM9 加密落库 + 脱敏展示
 }
 
-func (s *Service) genMissionID(year int) (string, error) {
+// genMissionID 自动生成 MISSION-<年>-%03d（count+1 探测）。
+// db 须传当前事务句柄（C18：生成+查重+插入同事务）。
+func (s *Service) genMissionID(db *gorm.DB, year int) (string, error) {
 	var cnt int64
-	if err := s.db.Model(&model.Mission{}).Count(&cnt).Error; err != nil {
+	if err := db.Model(&model.Mission{}).Count(&cnt).Error; err != nil {
 		return "", err
 	}
 	for n := int(cnt) + 1; n < 1000; n++ {
 		cand := fmt.Sprintf("MISSION-%d-%03d", year, n)
 		var dup int64
-		if err := s.db.Model(&model.Mission{}).Where("mission_id = ?", cand).Count(&dup).Error; err != nil {
+		if err := db.Model(&model.Mission{}).Where("mission_id = ?", cand).Count(&dup).Error; err != nil {
 			return "", err
 		}
 		if dup == 0 {
@@ -100,69 +103,81 @@ func (s *Service) CreateMission(ctx context.Context, traceID string, in MissionI
 			zones = append(zones, r.Zone)
 		}
 	}
-	missionID := in.MissionID
-	if missionID == "" {
-		gen, err := s.genMissionID(start.Year())
+	// mission_id 生成/查重+插入同事务（C18）：并发同 mission_id 创建恰一成功。
+	var m *model.Mission
+	var masked string
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		missionID := in.MissionID
+		if missionID == "" {
+			gen, err := s.genMissionID(tx, start.Year())
+			if err != nil {
+				return crosschain.NewError(errcode.Internal, "gen mission_id: %v", err)
+			}
+			missionID = gen
+		} else {
+			var cnt int64
+			if err := tx.Model(&model.Mission{}).Where("mission_id = ?", missionID).Count(&cnt).Error; err != nil {
+				return crosschain.NewError(errcode.Internal, "mission_id lookup: %v", err)
+			}
+			if cnt > 0 {
+				return crosschain.NewError(errcode.Param, "mission_id %q 已存在", missionID)
+			}
+		}
+		segJSON, err := json.Marshal(in.RouteSegments)
 		if err != nil {
-			return nil, crosschain.NewError(errcode.Internal, "gen mission_id: %v", err)
+			return crosschain.NewError(errcode.Internal, "marshal segments: %v", err)
 		}
-		missionID = gen
-	} else {
-		var cnt int64
-		if err := s.db.WithContext(ctx).Model(&model.Mission{}).Where("mission_id = ?", missionID).Count(&cnt).Error; err != nil {
-			return nil, crosschain.NewError(errcode.Internal, "mission_id lookup: %v", err)
-		}
-		if cnt > 0 {
-			return nil, crosschain.NewError(errcode.Param, "mission_id %q 已存在", missionID)
-		}
-	}
-	segJSON, err := json.Marshal(in.RouteSegments)
-	if err != nil {
-		return nil, crosschain.NewError(errcode.Internal, "marshal segments: %v", err)
-	}
-	zoneJSON, err := json.Marshal(zones)
-	if err != nil {
-		return nil, crosschain.NewError(errcode.Internal, "marshal zones: %v", err)
-	}
-	cipher, masked := "", ""
-	if in.Description != "" {
-		c, err := s.cs.SM9Encrypt([]byte(in.Description))
+		zoneJSON, err := json.Marshal(zones)
 		if err != nil {
-			return nil, crosschain.NewError(errcode.Internal, "SM9 encrypt description: %v", err)
+			return crosschain.NewError(errcode.Internal, "marshal zones: %v", err)
 		}
-		cipher = c
-		rs := []rune(in.Description)
-		if len(rs) > 4 {
-			rs = rs[:4]
+		cipher := ""
+		if in.Description != "" {
+			c, err := s.cs.SM9Encrypt([]byte(in.Description))
+			if err != nil {
+				return crosschain.NewError(errcode.Internal, "SM9 encrypt description: %v", err)
+			}
+			cipher = c
+			rs := []rune(in.Description)
+			if len(rs) > 4 {
+				rs = rs[:4]
+			}
+			masked = string(rs) + "****"
 		}
-		masked = string(rs) + "****"
-	}
-	canon := map[string]any{
-		"altitude_max": in.AltitudeMax, "altitude_min": in.AltitudeMin,
-		"end_time": timex.FormatTime(end), "mission_id": missionID,
-		"mission_type": in.MissionType, "operator_id": in.OperatorID,
-		"payload_type": in.PayloadType, "route_segments": in.RouteSegments,
-		"start_time": timex.FormatTime(start), "uav_id": in.UAVID, "zones": zones,
-	}
-	cb, err := crypto.CanonicalJSON(canon)
-	if err != nil {
-		return nil, crosschain.NewError(errcode.Internal, "canonicalize: %v", err)
-	}
-	sig, err := s.cs.SM9SignUserID(crypto.SM9IdentityOf(in.UAVID), cb)
-	if err != nil {
-		return nil, crosschain.NewError(errcode.Internal, "SM9 sign: %v", err)
-	}
-	m := &model.Mission{
-		MissionID: missionID, OperatorID: in.OperatorID, UAVID: in.UAVID,
-		MissionType: in.MissionType, StartTime: timex.New(start), EndTime: timex.New(end),
-		RouteSegments: string(segJSON), AltitudeMin: in.AltitudeMin, AltitudeMax: in.AltitudeMax,
-		Zones: string(zoneJSON), PayloadType: in.PayloadType,
-		MissionCiphertext: cipher, MaskedValue: masked,
-		SM3Hash: crypto.SM3Hex(cb), SM9Identity: crypto.SM9IdentityOf(in.UAVID), Signature: sig,
-		Status: "DRAFT",
-	}
-	if err := s.db.WithContext(ctx).Create(m).Error; err != nil {
-		return nil, crosschain.NewError(errcode.Internal, "create mission: %v", err)
+		canon := map[string]any{
+			"altitude_max": in.AltitudeMax, "altitude_min": in.AltitudeMin,
+			"end_time": timex.FormatTime(end), "mission_id": missionID,
+			"mission_type": in.MissionType, "operator_id": in.OperatorID,
+			"payload_type": in.PayloadType, "route_segments": in.RouteSegments,
+			"start_time": timex.FormatTime(start), "uav_id": in.UAVID, "zones": zones,
+		}
+		cb, err := crypto.CanonicalJSON(canon)
+		if err != nil {
+			return crosschain.NewError(errcode.Internal, "canonicalize: %v", err)
+		}
+		sig, err := s.cs.SM9SignUserID(crypto.SM9IdentityOf(in.UAVID), cb)
+		if err != nil {
+			return crosschain.NewError(errcode.Internal, "SM9 sign: %v", err)
+		}
+		m = &model.Mission{
+			MissionID: missionID, OperatorID: in.OperatorID, UAVID: in.UAVID,
+			MissionType: in.MissionType, StartTime: timex.New(start), EndTime: timex.New(end),
+			RouteSegments: string(segJSON), AltitudeMin: in.AltitudeMin, AltitudeMax: in.AltitudeMax,
+			Zones: string(zoneJSON), PayloadType: in.PayloadType,
+			MissionCiphertext: cipher, MaskedValue: masked,
+			SM3Hash: crypto.SM3Hex(cb), SM9Identity: crypto.SM9IdentityOf(in.UAVID), Signature: sig,
+			Status: "DRAFT",
+		}
+		if err := tx.Create(m).Error; err != nil {
+			// 并发窗口：事务内插入撞主键 → 映射为查重失败同码同文案
+			if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+				return crosschain.NewError(errcode.Param, "mission_id %q 已存在", missionID)
+			}
+			return crosschain.NewError(errcode.Internal, "create mission: %v", err)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 	s.logAudit(traceID, in.OperatorID, "MISSION_CREATE", "MISSION", m.MissionID,
 		map[string]any{"uav_id": m.UAVID, "mission_type": m.MissionType, "route_segments": in.RouteSegments,

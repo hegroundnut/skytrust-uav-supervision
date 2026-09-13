@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"sync"
 	"testing"
 
 	"skytrust-backend/internal/errcode"
@@ -226,5 +227,41 @@ func TestDetectConflictApprovedFlagged(t *testing.T) {
 	}
 	if gb.Status != "COORDINATING" {
 		t.Errorf("B = %q, want COORDINATING", gb.Status)
+	}
+}
+
+// TestDetectConflictConcurrentNoDoubleBooking C12：并发（含双向）检测同一对任务，
+// 无双预定——库中 OPEN 冲突记录恰一条，且全部检测调用无错返回。
+func TestDetectConflictConcurrentNoDoubleBooking(t *testing.T) {
+	svc, db := testSvcFull(t)
+	ma, mb := conflictEnv(t, svc)
+	const n = 8
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	errs := make(chan error, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			<-start
+			id := ma.MissionID
+			if i%2 == 1 {
+				id = mb.MissionID
+			}
+			if _, err := svc.DetectConflict(context.Background(), "TRACE-C12", id); err != nil {
+				errs <- err
+			}
+		}(i)
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		t.Fatalf("concurrent detect: %v", err)
+	}
+	var cnt int64
+	db.Model(&model.ConflictRecord{}).Where("status = ?", "OPEN").Count(&cnt)
+	if cnt != 1 {
+		t.Fatalf("exactly one OPEN conflict row must exist, got %d", cnt)
 	}
 }
