@@ -93,19 +93,19 @@ func (s *Service) RegisterUAV(ctx context.Context, traceID string, in UAVInput) 
 		return nil, nil, crosschain.NewError(errcode.Param, "manufacturer_id/operator_id/serial_no 必填")
 	}
 	var cnt int64
-	if err := s.db.Model(&model.Manufacturer{}).Where("manufacturer_id = ?", in.ManufacturerID).Count(&cnt).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&model.Manufacturer{}).Where("manufacturer_id = ?", in.ManufacturerID).Count(&cnt).Error; err != nil {
 		return nil, nil, crosschain.NewError(errcode.Internal, "manufacturer lookup: %v", err)
 	}
 	if cnt == 0 {
 		return nil, nil, crosschain.NewError(errcode.InvalidUAV, "manufacturer_id %q 不存在", in.ManufacturerID)
 	}
-	if err := s.db.Model(&model.Operator{}).Where("operator_id = ?", in.OperatorID).Count(&cnt).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&model.Operator{}).Where("operator_id = ?", in.OperatorID).Count(&cnt).Error; err != nil {
 		return nil, nil, crosschain.NewError(errcode.Internal, "operator lookup: %v", err)
 	}
 	if cnt == 0 {
 		return nil, nil, crosschain.NewError(errcode.InvalidUAV, "operator_id %q 不存在", in.OperatorID)
 	}
-	if err := s.db.Model(&model.UAV{}).Where("serial_no = ?", in.SerialNo).Count(&cnt).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&model.UAV{}).Where("serial_no = ?", in.SerialNo).Count(&cnt).Error; err != nil {
 		return nil, nil, crosschain.NewError(errcode.Internal, "serial lookup: %v", err)
 	}
 	if cnt > 0 {
@@ -118,7 +118,7 @@ func (s *Service) RegisterUAV(ctx context.Context, traceID string, in UAVInput) 
 			return nil, nil, crosschain.NewError(errcode.Internal, "gen uav_id: %v", err)
 		}
 		uavID = gen
-	} else if err := s.db.Model(&model.UAV{}).Where("uav_id = ?", uavID).Count(&cnt).Error; err != nil {
+	} else if err := s.db.WithContext(ctx).Model(&model.UAV{}).Where("uav_id = ?", uavID).Count(&cnt).Error; err != nil {
 		return nil, nil, crosschain.NewError(errcode.Internal, "uav_id lookup: %v", err)
 	} else if cnt > 0 {
 		return nil, nil, crosschain.NewError(errcode.Param, "uav_id %q 已存在", uavID)
@@ -128,7 +128,7 @@ func (s *Service) RegisterUAV(ctx context.Context, traceID string, in UAVInput) 
 		Model: in.Model, SerialNo: in.SerialNo,
 		SM9Identity: crypto.SM9IdentityOf(uavID), Status: "UNREGISTERED",
 	}
-	if err := s.db.Create(uav).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(uav).Error; err != nil {
 		return nil, nil, crosschain.NewError(errcode.Internal, "create uav: %v", err)
 	}
 	if err := s.transitionUAV(traceID, in.OperatorID, uav, "REGISTERED", "REGISTER"); err != nil {
@@ -147,7 +147,7 @@ func (s *Service) RegisterUAV(ctx context.Context, traceID string, in UAVInput) 
 // QueryUAV 单机查询；不存在 → 1001。
 func (s *Service) QueryUAV(ctx context.Context, traceID, uavID string) (*model.UAV, error) {
 	var uav model.UAV
-	err := s.db.Where("uav_id = ?", uavID).First(&uav).Error
+	err := s.db.WithContext(ctx).Where("uav_id = ?", uavID).First(&uav).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, crosschain.NewError(errcode.InvalidUAV, "uav_id %q 不存在", uavID)
 	}
@@ -177,7 +177,7 @@ func (s *Service) ListUAV(ctx context.Context, traceID string, f UAVListFilter) 
 	if f.PageSize > 200 {
 		f.PageSize = 200
 	}
-	q := s.db.Model(&model.UAV{})
+	q := s.db.WithContext(ctx).Model(&model.UAV{})
 	if f.OperatorID != "" {
 		q = q.Where("operator_id = ?", f.OperatorID)
 	}

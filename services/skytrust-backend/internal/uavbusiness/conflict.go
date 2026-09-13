@@ -71,7 +71,7 @@ func (s *Service) DetectConflict(ctx context.Context, traceID, missionID string)
 		return nil, err
 	}
 	var candidates []model.Mission
-	if err := s.db.Where("mission_id <> ? AND status IN ?", m.MissionID,
+	if err := s.db.WithContext(ctx).Where("mission_id <> ? AND status IN ?", m.MissionID,
 		[]string{"SUBMITTED", "REVIEWING", "COORDINATING", "APPROVED"}).Find(&candidates).Error; err != nil {
 		return nil, crosschain.NewError(errcode.Internal, "candidates: %v", err)
 	}
@@ -83,7 +83,7 @@ func (s *Service) DetectConflict(ctx context.Context, traceID, missionID string)
 			continue
 		}
 		var existing model.ConflictRecord
-		err := s.db.Where("status = ? AND ((mission_id_a = ? AND mission_id_b = ?) OR (mission_id_a = ? AND mission_id_b = ?))",
+		err := s.db.WithContext(ctx).Where("status = ? AND ((mission_id_a = ? AND mission_id_b = ?) OR (mission_id_a = ? AND mission_id_b = ?))",
 			"OPEN", m.MissionID, c.MissionID, c.MissionID, m.MissionID).First(&existing).Error
 		if err == nil {
 			out = append(out, existing)
@@ -104,7 +104,7 @@ func (s *Service) DetectConflict(ctx context.Context, traceID, missionID string)
 			ConflictID: model.GenConflictID(), MissionIDA: m.MissionID, MissionIDB: c.MissionID,
 			ConflictType: "ROUTE", Suggestion: string(suggJSON), Status: "OPEN",
 		}
-		if err := s.db.Create(&rec).Error; err != nil {
+		if err := s.db.WithContext(ctx).Create(&rec).Error; err != nil {
 			return nil, crosschain.NewError(errcode.Internal, "create conflict: %v", err)
 		}
 		out = append(out, rec)
@@ -124,7 +124,7 @@ func (s *Service) ResolveConflict(ctx context.Context, traceID, conflictID, reso
 		return nil, crosschain.NewError(errcode.Param, "conflict_id/resolution/operator 必填")
 	}
 	var rec model.ConflictRecord
-	err := s.db.Where("conflict_id = ?", conflictID).First(&rec).Error
+	err := s.db.WithContext(ctx).Where("conflict_id = ?", conflictID).First(&rec).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, crosschain.NewError(errcode.Param, "conflict_id %q 不存在", conflictID)
 	}
@@ -144,14 +144,14 @@ func (s *Service) ResolveConflict(ctx context.Context, traceID, conflictID, reso
 	rec.Resolution = resolution
 	rec.Operator = operator
 	rec.Status = "RESOLVED"
-	if err := s.db.Model(&rec).Updates(map[string]any{
+	if err := s.db.WithContext(ctx).Model(&rec).Updates(map[string]any{
 		"resolution": resolution, "operator": operator, "status": "RESOLVED",
 	}).Error; err != nil {
 		return nil, crosschain.NewError(errcode.Internal, "persist resolution: %v", err)
 	}
 	for _, id := range targets {
 		var m model.Mission
-		if err := s.db.Where("mission_id = ?", id).First(&m).Error; err != nil {
+		if err := s.db.WithContext(ctx).Where("mission_id = ?", id).First(&m).Error; err != nil {
 			continue
 		}
 		if m.Status == "COORDINATING" {

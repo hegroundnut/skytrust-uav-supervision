@@ -110,7 +110,7 @@ func (s *Service) IssuePass(ctx context.Context, traceID string, in PassIssueInp
 		passID = gen
 	}
 	var p model.FlightPass
-	err = s.db.Where("pass_id = ?", passID).First(&p).Error
+	err = s.db.WithContext(ctx).Where("pass_id = ?", passID).First(&p).Error
 	switch {
 	case err == nil && p.Status != "GENERATING":
 		return nil, nil, crosschain.NewError(errcode.PassInvalid, "许可 %q 状态 %q 不可重复签发", passID, p.Status)
@@ -131,7 +131,7 @@ func (s *Service) IssuePass(ctx context.Context, traceID string, in PassIssueInp
 			return nil, nil, crosschain.NewError(errcode.Internal, "SM9 sign pass: %v", serr)
 		}
 		p.Signature = sig
-		if cerr := s.db.Create(&p).Error; cerr != nil {
+		if cerr := s.db.WithContext(ctx).Create(&p).Error; cerr != nil {
 			return nil, nil, crosschain.NewError(errcode.Internal, "create pass: %v", cerr)
 		}
 	default:
@@ -172,7 +172,7 @@ func (s *Service) QueryPass(ctx context.Context, traceID, passID string) (*model
 		return nil, crosschain.NewError(errcode.Param, "pass_id 必填")
 	}
 	var p model.FlightPass
-	err := s.db.Where("pass_id = ?", passID).First(&p).Error
+	err := s.db.WithContext(ctx).Where("pass_id = ?", passID).First(&p).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, crosschain.NewError(errcode.Param, "pass_id %q 不存在", passID)
 	}
@@ -191,7 +191,7 @@ type PassListFilter struct {
 }
 
 func (s *Service) ListPass(ctx context.Context, traceID string, f PassListFilter) ([]model.FlightPass, int64, error) {
-	q := s.db.Model(&model.FlightPass{})
+	q := s.db.WithContext(ctx).Model(&model.FlightPass{})
 	if f.MissionID != "" {
 		q = q.Where("mission_id = ?", f.MissionID)
 	}
@@ -283,13 +283,21 @@ func (s *Service) RevokePass(ctx context.Context, traceID, passID, reason, opera
 	if err != nil {
 		return nil, "", nil, err
 	}
+	// F-2：resend 判定 DB 错误显式上抛（房规 errcode.Internal），不吞错误误判。
+	var needsResend bool
+	if p.Status == "REVOKED" {
+		var rerr error
+		if needsResend, rerr = s.revokeNeedsResend(ctx, p.PassID); rerr != nil {
+			return p, "", nil, crosschain.NewError(errcode.Internal, "revoke resend check: %v", rerr)
+		}
+	}
 	switch {
 	case p.Status == "VALID":
 		if err := s.transitionPass(traceID, operator, p, "REVOKED", "REVOKE"); err != nil {
 			return p, "", nil, err
 		}
 		s.logAudit(traceID, operator, "PASS_REVOKE", "PASS", p.PassID, map[string]any{"reason": reason})
-	case p.Status == "REVOKED" && s.revokeNeedsResend(p.PassID):
+	case p.Status == "REVOKED" && needsResend:
 		// P5-R9：本地吊销已生效但链上未落地——只重发跨链，不重复状态迁移。
 		s.logAudit(traceID, operator, "PASS_REVOKE_RETRY", "PASS", p.PassID, map[string]any{"reason": reason})
 	default:
@@ -309,15 +317,19 @@ func (s *Service) RevokePass(ctx context.Context, traceID, passID, reason, opera
 	return p, "SUCCESS", tx, nil
 }
 
-// revokeNeedsResend 该许可的 PASS_REVOKE 跨链是否仍欠账：存在 FAILED 行且无 SUCCESS 行
-//（P5-R9 重入条件；补发成功后 FAILED 行仍在，但 SUCCESS 行使本判定归 false）。
-func (s *Service) revokeNeedsResend(passID string) bool {
+// revokeNeedsResend（F-2/C11）：判断 REVOKED 许可是否存在待重发的 FAILED PASS_REVOKE
+// 跨链记录（P5-R9 放行依据）。DB 错误显式上抛——绝不吞错误误判为"无需重发"。
+func (s *Service) revokeNeedsResend(ctx context.Context, passID string) (bool, error) {
 	var failed, ok int64
-	s.db.Model(&model.CrosschainTx{}).
+	if err := s.db.WithContext(ctx).Model(&model.CrosschainTx{}).
 		Where("message_type = ? AND business_id = ? AND status = ?", crosschain.MsgPassRevoke, passID, "FAILED").
-		Count(&failed)
-	s.db.Model(&model.CrosschainTx{}).
+		Count(&failed).Error; err != nil {
+		return false, err
+	}
+	if err := s.db.WithContext(ctx).Model(&model.CrosschainTx{}).
 		Where("message_type = ? AND business_id = ? AND status = ?", crosschain.MsgPassRevoke, passID, "SUCCESS").
-		Count(&ok)
-	return failed > 0 && ok == 0
+		Count(&ok).Error; err != nil {
+		return false, err
+	}
+	return failed > 0 && ok == 0, nil
 }

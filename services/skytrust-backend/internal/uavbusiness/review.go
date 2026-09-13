@@ -40,7 +40,7 @@ func (s *Service) SubmitReview(ctx context.Context, traceID string, in ReviewInp
 		return nil, nil, nil, crosschain.NewError(errcode.ReviewRule, "result 仅允许 APPROVED|REJECTED|NEED_COORDINATION，收到 %q", in.Result)
 	}
 	var app model.MissionApplication
-	err := s.db.Where("application_id = ?", in.ApplicationID).First(&app).Error
+	err := s.db.WithContext(ctx).Where("application_id = ?", in.ApplicationID).First(&app).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil, nil, crosschain.NewError(errcode.ReviewRule, "申请 %q 不存在", in.ApplicationID)
 	}
@@ -75,7 +75,7 @@ func (s *Service) SubmitReview(ctx context.Context, traceID string, in ReviewInp
 		Result: in.Result, RulesHit: string(rulesJSON), Comment: in.Comment,
 		Reviewer: in.Reviewer, ReviewTime: timex.NowT(),
 	}
-	if err := s.db.Create(rev).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(rev).Error; err != nil {
 		return nil, m, nil, crosschain.NewError(errcode.Internal, "create review: %v", err)
 	}
 	payload := map[string]any{
@@ -91,7 +91,7 @@ func (s *Service) SubmitReview(ctx context.Context, traceID string, in ReviewInp
 		return rev, m, tx, err
 	}
 	app.Status = in.Result
-	if err := s.db.Model(&app).Update("status", app.Status).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&app).Update("status", app.Status).Error; err != nil {
 		return rev, m, tx, crosschain.NewError(errcode.Internal, "persist application status: %v", err)
 	}
 	s.logAudit(traceID, in.Reviewer, "REVIEW_SUBMIT", "REVIEW", rev.ReviewID,
@@ -105,7 +105,7 @@ func (s *Service) SubmitReview(ctx context.Context, traceID string, in ReviewInp
 func (s *Service) QueryReview(ctx context.Context, traceID, reviewID, applicationID string) (*model.ReviewRecord, []model.ReviewRecord, error) {
 	if reviewID != "" {
 		var rev model.ReviewRecord
-		err := s.db.Where("review_id = ?", reviewID).First(&rev).Error
+		err := s.db.WithContext(ctx).Where("review_id = ?", reviewID).First(&rev).Error
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil, crosschain.NewError(errcode.Param, "review_id %q 不存在", reviewID)
 		}
@@ -116,7 +116,7 @@ func (s *Service) QueryReview(ctx context.Context, traceID, reviewID, applicatio
 	}
 	if applicationID != "" {
 		var list []model.ReviewRecord
-		if err := s.db.Where("application_id = ?", applicationID).Order("review_time ASC").Find(&list).Error; err != nil {
+		if err := s.db.WithContext(ctx).Where("application_id = ?", applicationID).Order("review_time ASC").Find(&list).Error; err != nil {
 			return nil, nil, crosschain.NewError(errcode.Internal, "query reviews: %v", err)
 		}
 		return nil, list, nil

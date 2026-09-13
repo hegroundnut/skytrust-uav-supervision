@@ -23,7 +23,7 @@ func (s *Service) RegisterManufacturer(ctx context.Context, traceID string, in M
 		return nil, crosschain.NewError(errcode.Param, "manufacturer_id 与 name 必填")
 	}
 	var cnt int64
-	if err := s.db.Model(&model.Manufacturer{}).Where("manufacturer_id = ?", in.ManufacturerID).Count(&cnt).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&model.Manufacturer{}).Where("manufacturer_id = ?", in.ManufacturerID).Count(&cnt).Error; err != nil {
 		return nil, crosschain.NewError(errcode.Internal, "count: %v", err)
 	}
 	if cnt > 0 {
@@ -36,7 +36,7 @@ func (s *Service) RegisterManufacturer(ctx context.Context, traceID string, in M
 	if m.Status == "" {
 		m.Status = "ACTIVE"
 	}
-	if err := s.db.Create(m).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(m).Error; err != nil {
 		return nil, crosschain.NewError(errcode.Internal, "create: %v", err)
 	}
 	s.logAudit(traceID, in.ManufacturerID, "MANUFACTURER_REGISTER", "MANUFACTURER", m.ManufacturerID,
@@ -62,7 +62,7 @@ func (s *Service) ListManufacturers(ctx context.Context, traceID string, f Manuf
 	if f.PageSize > 200 {
 		f.PageSize = 200
 	}
-	q := s.db.Model(&model.Manufacturer{})
+	q := s.db.WithContext(ctx).Model(&model.Manufacturer{})
 	if f.Status != "" {
 		q = q.Where("status = ?", f.Status)
 	}
@@ -97,7 +97,7 @@ func (s *Service) RegisterOperator(ctx context.Context, traceID string, in Opera
 		return nil, crosschain.NewError(errcode.Param, "operator_id 与 name 必填")
 	}
 	var cnt int64
-	if err := s.db.Model(&model.Operator{}).Where("operator_id = ?", in.OperatorID).Count(&cnt).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&model.Operator{}).Where("operator_id = ?", in.OperatorID).Count(&cnt).Error; err != nil {
 		return nil, crosschain.NewError(errcode.Internal, "count: %v", err)
 	}
 	if cnt > 0 {
@@ -113,7 +113,7 @@ func (s *Service) RegisterOperator(ctx context.Context, traceID string, in Opera
 	if o.QualificationStatus == "" {
 		o.QualificationStatus = "QUALIFIED"
 	}
-	if err := s.db.Create(o).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(o).Error; err != nil {
 		return nil, crosschain.NewError(errcode.Internal, "create: %v", err)
 	}
 	s.logAudit(traceID, in.OperatorID, "OPERATOR_REGISTER", "OPERATOR", o.OperatorID,
@@ -139,7 +139,7 @@ func (s *Service) ListOperators(ctx context.Context, traceID string, f OperatorL
 	if f.PageSize > 200 {
 		f.PageSize = 200
 	}
-	q := s.db.Model(&model.Operator{})
+	q := s.db.WithContext(ctx).Model(&model.Operator{})
 	if f.Status != "" {
 		q = q.Where("status = ?", f.Status)
 	}
@@ -187,7 +187,7 @@ func (s *Service) CreateRoute(ctx context.Context, traceID string, in RouteInput
 		return nil, crosschain.NewError(errcode.Param, "corridor_status 仅允许 OPEN|RESTRICTED|CLOSED，收到 %q", in.CorridorStatus)
 	}
 	var cnt int64
-	if err := s.db.Model(&model.RouteSegment{}).Where("route_id = ?", in.RouteID).Count(&cnt).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&model.RouteSegment{}).Where("route_id = ?", in.RouteID).Count(&cnt).Error; err != nil {
 		return nil, crosschain.NewError(errcode.Internal, "count: %v", err)
 	}
 	if cnt > 0 {
@@ -197,7 +197,7 @@ func (s *Service) CreateRoute(ctx context.Context, traceID string, in RouteInput
 		RouteID: in.RouteID, Zone: in.Zone, StartPoint: in.StartPoint, EndPoint: in.EndPoint,
 		AltitudeMin: in.AltitudeMin, AltitudeMax: in.AltitudeMax, CorridorStatus: in.CorridorStatus,
 	}
-	if err := s.db.Create(r).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(r).Error; err != nil {
 		return nil, crosschain.NewError(errcode.Internal, "create: %v", err)
 	}
 	s.logAudit(traceID, "SYSTEM", "ROUTE_CREATE", "ROUTE", r.RouteID,
@@ -224,7 +224,7 @@ func (s *Service) ListRoutes(ctx context.Context, traceID string, f RouteListFil
 	if f.PageSize > 200 {
 		f.PageSize = 200
 	}
-	q := s.db.Model(&model.RouteSegment{})
+	q := s.db.WithContext(ctx).Model(&model.RouteSegment{})
 	if f.Zone != "" {
 		q = q.Where("zone = ?", f.Zone)
 	}

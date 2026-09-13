@@ -327,6 +327,26 @@ func TestQueryAndListPass(t *testing.T) {
 	}
 }
 
+func TestRevokeNeedsResendContextAndErrors(t *testing.T) {
+	// 编译期契约：签名带 ctx、返回 error（F-2）。行为回归由既有
+	// TestRevokePass* 系列覆盖（FAILED 重发放行路径）。
+	svc, db := testSvcFull(t)
+	_ = db
+	needs, err := svc.revokeNeedsResend(context.Background(), "PASS-NOT-EXIST")
+	if err != nil {
+		t.Fatalf("clean db must not error: %v", err)
+	}
+	if needs {
+		t.Error("no FAILED record → must not need resend")
+	}
+	// 已取消 ctx → 必须 surfaced 为 error 而非静默 false（F-2 核心：错误不再被吞）
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := svc.revokeNeedsResend(ctx, "PASS-NOT-EXIST"); err == nil {
+		t.Error("canceled ctx must surface error")
+	}
+}
+
 // TestPassSignatureStableAcrossReload SM3/SM9 签名跨 DB 读回字节稳定关卡（Task 13b 风险5）。
 // 简报测试构造适配（全部断言逐字保留）：① 移除显式 seedParties —— 磁盘上
 // approvedMission→submittedMission→seedMissionEnv 内部已调 seedParties，重复调用会因

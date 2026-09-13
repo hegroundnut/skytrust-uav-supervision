@@ -78,7 +78,7 @@ func (s *Service) CreateMission(ctx context.Context, traceID string, in MissionI
 		return nil, crosschain.NewError(errcode.InvalidUAV, "UAV %s 不属于运营方 %s", uav.UAVID, in.OperatorID)
 	}
 	var routes []model.RouteSegment
-	if err := s.db.Where("route_id IN ?", in.RouteSegments).Find(&routes).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("route_id IN ?", in.RouteSegments).Find(&routes).Error; err != nil {
 		return nil, crosschain.NewError(errcode.Internal, "routes lookup: %v", err)
 	}
 	byID := make(map[string]model.RouteSegment, len(routes))
@@ -109,7 +109,7 @@ func (s *Service) CreateMission(ctx context.Context, traceID string, in MissionI
 		missionID = gen
 	} else {
 		var cnt int64
-		if err := s.db.Model(&model.Mission{}).Where("mission_id = ?", missionID).Count(&cnt).Error; err != nil {
+		if err := s.db.WithContext(ctx).Model(&model.Mission{}).Where("mission_id = ?", missionID).Count(&cnt).Error; err != nil {
 			return nil, crosschain.NewError(errcode.Internal, "mission_id lookup: %v", err)
 		}
 		if cnt > 0 {
@@ -161,7 +161,7 @@ func (s *Service) CreateMission(ctx context.Context, traceID string, in MissionI
 		SM3Hash: crypto.SM3Hex(cb), SM9Identity: crypto.SM9IdentityOf(in.UAVID), Signature: sig,
 		Status: "DRAFT",
 	}
-	if err := s.db.Create(m).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(m).Error; err != nil {
 		return nil, crosschain.NewError(errcode.Internal, "create mission: %v", err)
 	}
 	s.logAudit(traceID, in.OperatorID, "MISSION_CREATE", "MISSION", m.MissionID,
@@ -173,7 +173,7 @@ func (s *Service) CreateMission(ctx context.Context, traceID string, in MissionI
 // QueryMission 单任务查询；不存在 → 6002。
 func (s *Service) QueryMission(ctx context.Context, traceID, missionID string) (*model.Mission, error) {
 	var m model.Mission
-	err := s.db.Where("mission_id = ?", missionID).First(&m).Error
+	err := s.db.WithContext(ctx).Where("mission_id = ?", missionID).First(&m).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, crosschain.NewError(errcode.Param, "mission_id %q 不存在", missionID)
 	}
@@ -203,7 +203,7 @@ func (s *Service) ListMission(ctx context.Context, traceID string, f MissionList
 	if f.PageSize > 200 {
 		f.PageSize = 200
 	}
-	q := s.db.Model(&model.Mission{})
+	q := s.db.WithContext(ctx).Model(&model.Mission{})
 	if f.OperatorID != "" {
 		q = q.Where("operator_id = ?", f.OperatorID)
 	}
@@ -278,7 +278,7 @@ func (s *Service) SubmitMission(ctx context.Context, traceID, missionID, operato
 		return nil, nil, crosschain.NewError(errcode.Internal, "unmarshal route_segments: %v", err)
 	}
 	var routes []model.RouteSegment
-	if err := s.db.Where("route_id IN ?", segIDs).Find(&routes).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("route_id IN ?", segIDs).Find(&routes).Error; err != nil {
 		return nil, nil, crosschain.NewError(errcode.Internal, "routes lookup: %v", err)
 	}
 	byID := make(map[string]model.RouteSegment, len(routes))
@@ -315,7 +315,7 @@ func (s *Service) SubmitMission(ctx context.Context, traceID, missionID, operato
 		SM3Hash: m.SM3Hash, Signature: appSig,
 		SourceChain: "fabric", Status: "PENDING",
 	}
-	if err := s.db.Create(app).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(app).Error; err != nil {
 		return nil, nil, crosschain.NewError(errcode.Internal, "create application: %v", err)
 	}
 	// 源链业务交易（fabric: operator_business/SubmitApplication）
@@ -337,7 +337,7 @@ func (s *Service) SubmitMission(ctx context.Context, traceID, missionID, operato
 	}
 	app.SourceTxID = rc.TxID
 	app.Status = "SENT"
-	if err := s.db.Model(app).Updates(map[string]any{"source_tx_id": app.SourceTxID, "status": app.Status}).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(app).Updates(map[string]any{"source_tx_id": app.SourceTxID, "status": app.Status}).Error; err != nil {
 		return app, nil, crosschain.NewError(errcode.Internal, "persist application SENT: %v", err)
 	}
 	// 网关跨链 fabric→fisco-bcos
@@ -354,7 +354,7 @@ func (s *Service) SubmitMission(ctx context.Context, traceID, missionID, operato
 		return app, tx, err
 	}
 	app.Status = "RELAYED"
-	if err := s.db.Model(app).Update("status", app.Status).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(app).Update("status", app.Status).Error; err != nil {
 		return app, tx, crosschain.NewError(errcode.Internal, "persist application RELAYED: %v", err)
 	}
 	s.logAudit(traceID, operator, "MISSION_SUBMIT", "MISSION_APPLICATION", appID,
