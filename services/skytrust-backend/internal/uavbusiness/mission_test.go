@@ -3,6 +3,7 @@ package uavbusiness
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/errcode"
 	"skytrust-backend/internal/model"
+	"skytrust-backend/internal/timex"
 )
 
 // seedMissionEnv 主数据 + 一台 VERIFIED UAV + R101(OPEN)/R205(OPEN)/R300(CLOSED)。
@@ -51,7 +53,7 @@ func TestCreateMissionFullFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}
-	if m.MissionID != "MISSION-2026-001" {
+	if m.MissionID != fmt.Sprintf("MISSION-%d-001", timex.Now().Year()) {
 		t.Errorf("id = %q", m.MissionID)
 	}
 	if m.Status != "DRAFT" {
@@ -238,6 +240,57 @@ func TestSubmitMissionFailWithdrawsAndRetries(t *testing.T) {
 	got, _ = svc.QueryMission(ctx, "TRACE-T", m.MissionID)
 	if got.Status != "SUBMITTED" {
 		t.Fatalf("after retry status = %q", got.Status)
+	}
+}
+
+// TestGenMissionIDYearRollsWithCurrentYear C17：生成 mission_id 的年份一律显式取自
+// timex.Now().Year()（年份随当前年滚动），不再跟随 start_time 年份——远未来窗口
+// （2031）也必须产出 MISSION-<当前年>- 前缀（旧实现按 start.Year() 会得 MISSION-2031-）。
+func TestGenMissionIDYearRollsWithCurrentYear(t *testing.T) {
+	svc, _ := testSvcFull(t)
+	seedMissionEnv(t, svc)
+	in := baseMissionInput()
+	in.StartTime = "2031-01-01 09:00:00"
+	in.EndTime = "2031-01-01 11:00:00"
+	m, err := svc.CreateMission(context.Background(), "TRACE-T", in)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	want := fmt.Sprintf("MISSION-%d-", timex.Now().Year())
+	if !strings.HasPrefix(m.MissionID, want) {
+		t.Fatalf("mission_id = %q, want prefix %q（年份必须随当前年滚动）", m.MissionID, want)
+	}
+}
+
+// TestMaskShortValueFullMask C19：短描述（≤4 字符）脱敏后必须全遮蔽（等长 *），
+// 不得泄露任何原文——旧实现 "机密"→"机密****" 泄露全部短值。
+func TestMaskShortValueFullMask(t *testing.T) {
+	svc, _ := testSvcFull(t)
+	seedMissionEnv(t, svc)
+	in := baseMissionInput()
+	in.Description = "机密"
+	m, err := svc.CreateMission(context.Background(), "TRACE-T", in)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if m.MaskedValue != "**" {
+		t.Fatalf("masked = %q, want %q（短值必须全遮蔽）", m.MaskedValue, "**")
+	}
+}
+
+// TestMaskDescriptionPolicy C19 统一脱敏策略直测（Step 1 盘点裁定：短值分支收紧，
+// >4 沿用现行函数策略）：≤4 全遮蔽等长 *；>4 保留前 4 字符 + 固定 ****。
+func TestMaskDescriptionPolicy(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"a", "*"},
+		{"ab", "**"},
+		{"abcd", "****"},
+		{"abcde", "abcd****"},
+		{"巡线走廊并拍摄缺陷", "巡线走廊****"},
+	} {
+		if got := maskDescription(tc.in); got != tc.want {
+			t.Errorf("maskDescription(%q) = %q, want %q", tc.in, got, tc.want)
+		}
 	}
 }
 

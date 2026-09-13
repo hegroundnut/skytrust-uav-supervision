@@ -36,7 +36,9 @@ func (s *Service) transitionPass(traceID, actor string, p *model.FlightPass, to,
 }
 
 // genPassID 自动生成 PASS-<year>-%03d（count+1 探测，镜像 genMissionID）。
-func (s *Service) genPassID(year int) (string, error) {
+// C17：年份随当前年滚动——一律显式取自 timex.Now().Year()，不再跟随 valid_from 年份。
+func (s *Service) genPassID() (string, error) {
+	year := timex.Now().Year()
 	var cnt int64
 	if err := s.db.Model(&model.FlightPass{}).Count(&cnt).Error; err != nil {
 		return "", err
@@ -103,7 +105,7 @@ func (s *Service) IssuePass(ctx context.Context, traceID string, in PassIssueInp
 	}
 	passID := in.PassID
 	if passID == "" {
-		gen, gerr := s.genPassID(vf.Year())
+		gen, gerr := s.genPassID()
 		if gerr != nil {
 			return nil, nil, crosschain.NewError(errcode.Internal, "gen pass_id: %v", gerr)
 		}

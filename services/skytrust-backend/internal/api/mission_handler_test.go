@@ -1,6 +1,17 @@
 package api
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+
+	"skytrust-backend/internal/timex"
+)
+
+// seqID 重构自动生成序列 ID（C17：年份一律显式取自 timex.Now().Year()，年份随
+// 当前年滚动——断言不再写死 2026）。api 包各 handler 测试共用。
+func seqID(prefix string, n int) string {
+	return fmt.Sprintf("%s-%d-%03d", prefix, timex.Now().Year(), n)
+}
 
 // seedUAVEnvHTTP 经 HTTP 端点铺设：厂商/运营方/UAV(VERIFIED)/R101+R205(OPEN)。
 func seedUAVEnvHTTP(t *testing.T, post func(string, map[string]any) map[string]any) {
@@ -39,13 +50,13 @@ func TestMissionEndpoints(t *testing.T) {
 		t.Fatalf("create: %v", create)
 	}
 	m := create["data"].(map[string]any)
-	if m["mission_id"] != "MISSION-2026-001" || m["status"] != "DRAFT" || m["masked_value"] != "巡线走廊****" {
+	if m["mission_id"] != seqID("MISSION", 1) || m["status"] != "DRAFT" || m["masked_value"] != "巡线走廊****" {
 		t.Fatalf("mission = %v", m)
 	}
 	if _, has := m["mission_ciphertext"]; has {
 		t.Fatal("ciphertext leaked in response")
 	}
-	q := post("/api/mission/query", map[string]any{"mission_id": "MISSION-2026-001"})
+	q := post("/api/mission/query", map[string]any{"mission_id": seqID("MISSION", 1)})
 	if q["code"].(float64) != 0 {
 		t.Fatalf("query: %v", q)
 	}
@@ -83,7 +94,7 @@ func TestMissionSubmitEndpoint(t *testing.T) {
 	if create["code"].(float64) != 0 {
 		t.Fatalf("create: %v", create)
 	}
-	sub := post("/api/mission/submit", map[string]any{"mission_id": "MISSION-2026-001", "operator": "Operator-O1"})
+	sub := post("/api/mission/submit", map[string]any{"mission_id": seqID("MISSION", 1), "operator": "Operator-O1"})
 	if sub["code"].(float64) != 0 {
 		t.Fatalf("submit: %v", sub)
 	}
@@ -96,11 +107,11 @@ func TestMissionSubmitEndpoint(t *testing.T) {
 	if cx["source_chain_tx_id"] != app["source_tx_id"] {
 		t.Errorf("source tx mismatch: %v vs %v", cx["source_chain_tx_id"], app["source_tx_id"])
 	}
-	again := post("/api/mission/submit", map[string]any{"mission_id": "MISSION-2026-001", "operator": "Operator-O1"})
+	again := post("/api/mission/submit", map[string]any{"mission_id": seqID("MISSION", 1), "operator": "Operator-O1"})
 	if again["code"].(float64) != 3004 {
 		t.Fatalf("resubmit: want 3004, got %v", again["code"])
 	}
-	q := post("/api/mission/query", map[string]any{"mission_id": "MISSION-2026-001"})
+	q := post("/api/mission/query", map[string]any{"mission_id": seqID("MISSION", 1)})
 	if q["data"].(map[string]any)["status"] != "SUBMITTED" {
 		t.Fatalf("mission status = %v", q["data"].(map[string]any)["status"])
 	}

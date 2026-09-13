@@ -305,7 +305,7 @@ func TestSendRetryRejectsPayloadMismatch(t *testing.T) {
 		SourceChain: "fisco-bcos", FinalTargetChain: "fabric",
 		Payload: validPayload(MsgFlightPass),
 	}
-	bad.Payload["pass_id"] = "PASS-2026-999"
+	bad.Payload["pass_id"] = "PASS-TEST-999"
 	signReq(t, cs, bad, uid)
 	tx, err := gw.Send(context.Background(), "TRACE-TEST", bad)
 	if errCode(err) != errcode.Param {

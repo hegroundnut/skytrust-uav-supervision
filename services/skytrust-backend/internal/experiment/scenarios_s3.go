@@ -12,14 +12,19 @@ import (
 	"skytrust-backend/internal/uavbusiness"
 )
 
-// setupGoldenThread 条件式黄金线铺设：追踪 L3 要求 PASS-2026-001 在 flight_passes
-// 真实存在（seeder 只铺身份映射，不铺许可）。已存在 → 直接复用（幂等，多轮 Run
-// 不重复建线）；缺失 → create（自动 MISSION-<year>-001）→ submit → review APPROVED
-// → issue（显式 PASS-2026-001，窗口 now∓1h 保证 VALID）。任务窗口 now+1h..now+3h，
-// 与冲突实验（now+20h）及验收用例窗口互不干扰。
-// 注：PASS-2026-001 字面量的年份腐烂 = 既有裁定 C17，移交 Plan 6 统一显式化。
+// goldenPassID 黄金线许可 ID——与 demo seed 身份映射（internal/demo/seed.go 的
+// PassID）逐字节对齐：追踪 L3 按映射的 PassID 查 flight_passes，两处必须一致。
+// C17 裁定（Plan 6 Task 13）：演示数据 ID 冻结于 2026 系列，属静态数据非生成路径，
+// 年份不随当前年滚动；生成路径已统一显式取自 timex.Now().Year()。
+const goldenPassID = "PASS-2026-001"
+
+// setupGoldenThread 条件式黄金线铺设：追踪 L3 要求黄金线许可（goldenPassID）在
+// flight_passes 真实存在（seeder 只铺身份映射，不铺许可）。已存在 → 直接复用
+// （幂等，多轮 Run 不重复建线）；缺失 → create（自动 MISSION-<year>-001）→ submit
+// → review APPROVED → issue（显式 goldenPassID，窗口 now∓1h 保证 VALID）。
+// 任务窗口 now+1h..now+3h，与冲突实验（now+20h）及验收用例窗口互不干扰。
 func setupGoldenThread(ctx context.Context, s *Service, run *model.ExperimentRun) error {
-	if _, err := s.biz.QueryPass(ctx, traceOf(run), "PASS-2026-001"); err == nil {
+	if _, err := s.biz.QueryPass(ctx, traceOf(run), goldenPassID); err == nil {
 		return nil
 	}
 	w0 := timex.Now().Add(time.Hour)
@@ -47,7 +52,7 @@ func setupGoldenThread(ctx context.Context, s *Service, run *model.ExperimentRun
 	vf := timex.Now().Add(-time.Hour)
 	vt := timex.Now().Add(time.Hour)
 	_, _, err = s.biz.IssuePass(ctx, traceOf(run), uavbusiness.PassIssueInput{
-		PassID: "PASS-2026-001", MissionID: m.MissionID,
+		PassID: goldenPassID, MissionID: m.MissionID,
 		ValidFrom: timex.FormatTime(vf), ValidTo: timex.FormatTime(vt), Issuer: "FISCO-ADMIN",
 	})
 	return err

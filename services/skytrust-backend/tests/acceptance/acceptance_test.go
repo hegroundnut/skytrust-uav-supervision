@@ -3,6 +3,7 @@ package acceptance
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -118,9 +119,15 @@ func wantCode(t *testing.T, step string, want float64, resp map[string]any) map[
 	return d
 }
 
+// seqID 重构自动生成序列 ID（C17：年份一律显式取自 timex.Now().Year()，年份随
+// 当前年滚动——断言不再写死 2026）。acceptance 包共用。
+func seqID(prefix string, n int) string {
+	return fmt.Sprintf("%s-%d-%03d", prefix, timex.Now().Year(), n)
+}
+
 // mainlineA 业务主线（载荷与 tests/system1_e2e_test.go 逐字段一致）：
 // create→submit→review APPROVED，返回 application_id。
-// 全新库首个任务恒为 MISSION-2026-001。
+// 全新库首个任务恒为 MISSION-<当前年>-001（C17：年份随当前年滚动）。
 func mainlineA(t *testing.T, srv *httptest.Server) string {
 	t.Helper()
 	must0(t, "mission/create", call(t, srv, "/api/mission/create", map[string]any{
@@ -131,7 +138,7 @@ func mainlineA(t *testing.T, srv *httptest.Server) string {
 		"description": "巡线走廊Zone-A全线巡检",
 	}))
 	sub := must0(t, "mission/submit", call(t, srv, "/api/mission/submit", map[string]any{
-		"mission_id": "MISSION-2026-001", "operator": "Operator-A",
+		"mission_id": seqID("MISSION", 1), "operator": "Operator-A",
 	}))
 	appID := sub["application"].(map[string]any)["application_id"].(string)
 	must0(t, "review/submit", call(t, srv, "/api/review/submit", map[string]any{
@@ -141,15 +148,15 @@ func mainlineA(t *testing.T, srv *httptest.Server) string {
 	return appID
 }
 
-// issuePassA 签发 PASS-2026-001（now±1h 窗口保证立即有效），返回 {pass,crosschain}。
+// issuePassA 签发 PASS-<当前年>-001（now±1h 窗口保证立即有效），返回 {pass,crosschain}。
 func issuePassA(t *testing.T, srv *httptest.Server) map[string]any {
 	t.Helper()
 	iss := must0(t, "pass/issue", call(t, srv, "/api/pass/issue", map[string]any{
-		"mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN",
+		"mission_id": seqID("MISSION", 1), "issuer": "FISCO-ADMIN",
 		"valid_from": timex.FormatTime(timex.Now().Add(-time.Hour)),
 		"valid_to":   timex.FormatTime(timex.Now().Add(time.Hour)),
 	}))
-	if iss["pass"].(map[string]any)["pass_id"] != "PASS-2026-001" ||
+	if iss["pass"].(map[string]any)["pass_id"] != seqID("PASS", 1) ||
 		iss["pass"].(map[string]any)["status"] != "VALID" {
 		t.Fatalf("pass = %v", iss["pass"])
 	}

@@ -8,7 +8,8 @@ import (
 )
 
 // TestRunTraceBatch 两轮：首轮条件式铺设黄金线（create→submit→review→issue 显式
-// PASS-2026-001），次轮 QueryPass 命中直接复用——线不重复建，7 级追踪全解析。
+// goldenPassID，冻结演示 ID 与 demo seed 身份映射对齐），次轮 QueryPass 命中直接
+// 复用——线不重复建，7 级追踪全解析。
 func TestRunTraceBatch(t *testing.T) {
 	svc := newTestSvc(t)
 	ctx := context.Background()
@@ -20,7 +21,7 @@ func TestRunTraceBatch(t *testing.T) {
 		t.Fatalf("run1 = %+v", run1)
 	}
 	var pass model.FlightPass
-	if err := svc.db.Where("pass_id = ?", "PASS-2026-001").First(&pass).Error; err != nil {
+	if err := svc.db.Where("pass_id = ?", goldenPassID).First(&pass).Error; err != nil {
 		t.Fatalf("golden pass: %v", err)
 	}
 	if pass.Status != "VALID" {
@@ -34,7 +35,7 @@ func TestRunTraceBatch(t *testing.T) {
 		t.Fatalf("run2 = %+v", run2)
 	}
 	var passCnt, missionCnt int64
-	svc.db.Model(&model.FlightPass{}).Where("pass_id = ?", "PASS-2026-001").Count(&passCnt)
+	svc.db.Model(&model.FlightPass{}).Where("pass_id = ?", goldenPassID).Count(&passCnt)
 	svc.db.Model(&model.Mission{}).Where("mission_id = ?", pass.MissionID).Count(&missionCnt)
 	if passCnt != 1 || missionCnt != 1 {
 		t.Errorf("golden thread duplicated: pass=%d mission=%d, want 1/1", passCnt, missionCnt)

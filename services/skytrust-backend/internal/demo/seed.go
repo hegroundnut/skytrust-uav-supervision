@@ -128,6 +128,8 @@ func (s *Seeder) Init() (*SeedReport, error) {
 	}
 
 	// 6. 身份映射
+	// 演示数据 ID 冻结于 2026 系列，属静态数据非生成路径（C17 裁定：年份不随当前年
+	// 滚动；experiment/scenarios_s3 黄金线 goldenPassID 与本冻结值对齐）。
 	mapping := model.IdentityMapping{
 		MappingID:      "IDM-DEMO-0001",
 		Pseudo:         "PSEUDO-UAV-83921",

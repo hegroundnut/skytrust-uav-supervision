@@ -29,15 +29,15 @@ func TestConflictEndpoints(t *testing.T) {
 		t.Fatalf("create A: %v", a)
 	}
 	b := mk("Operator-O2", "UAV-O2-001", []string{"R205"}, "2026-09-12 10:00:00", "2026-09-12 12:00:00", 80, 120)
-	if b["code"].(float64) != 0 || b["data"].(map[string]any)["mission_id"] != "MISSION-2026-002" {
+	if b["code"].(float64) != 0 || b["data"].(map[string]any)["mission_id"] != seqID("MISSION", 2) {
 		t.Fatalf("create B: %v", b)
 	}
-	for _, pair := range []struct{ id, op string }{{"MISSION-2026-001", "Operator-O1"}, {"MISSION-2026-002", "Operator-O2"}} {
+	for _, pair := range []struct{ id, op string }{{seqID("MISSION", 1), "Operator-O1"}, {seqID("MISSION", 2), "Operator-O2"}} {
 		if resp := post("/api/mission/submit", map[string]any{"mission_id": pair.id, "operator": pair.op}); resp["code"].(float64) != 0 {
 			t.Fatalf("submit %s: %v", pair.id, resp)
 		}
 	}
-	det := post("/api/conflict/detect", map[string]any{"mission_id": "MISSION-2026-001"})
+	det := post("/api/conflict/detect", map[string]any{"mission_id": seqID("MISSION", 1)})
 	if det["code"].(float64) != 0 || det["data"].(map[string]any)["count"].(float64) != 1 {
 		t.Fatalf("detect: %v", det)
 	}
@@ -50,7 +50,7 @@ func TestConflictEndpoints(t *testing.T) {
 	if res["code"].(float64) != 0 || res["data"].(map[string]any)["status"] != "RESOLVED" {
 		t.Fatalf("resolve: %v", res)
 	}
-	for _, id := range []string{"MISSION-2026-001", "MISSION-2026-002"} {
+	for _, id := range []string{seqID("MISSION", 1), seqID("MISSION", 2)} {
 		q := post("/api/mission/query", map[string]any{"mission_id": id})
 		if q["data"].(map[string]any)["status"] != "REVIEWING" {
 			t.Fatalf("%s status = %v, want REVIEWING", id, q["data"].(map[string]any)["status"])

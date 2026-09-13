@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -24,6 +25,12 @@ import (
 	"skytrust-backend/internal/timex"
 	"skytrust-backend/internal/uavbusiness"
 )
+
+// seqID 重构自动生成序列 ID（C17：年份一律显式取自 timex.Now().Year()，年份随
+// 当前年滚动——断言不再写死 2026）。tests 包 e2e 共用。
+func seqID(prefix string, n int) string {
+	return fmt.Sprintf("%s-%d-%03d", prefix, timex.Now().Year(), n)
+}
 
 // bootServerS1 系统一 E2E 引导：:memory: DB（避免 Windows 文件锁）+ 三模拟链
 // （零延迟，保障亚秒断言）+ 网关 + 业务服务全接线。
@@ -121,7 +128,7 @@ func TestSystem1E2E(t *testing.T) {
 		"altitude_min":   60, "altitude_max": 120, "payload_type": "CAMERA",
 		"description": "巡线走廊Zone-A全线巡检",
 	}))
-	if mc["mission_id"] != "MISSION-2026-001" || mc["status"] != "DRAFT" {
+	if mc["mission_id"] != seqID("MISSION", 1) || mc["status"] != "DRAFT" {
 		t.Fatalf("mission = %v", mc)
 	}
 	if mc["masked_value"] != "巡线走廊****" {
@@ -134,7 +141,7 @@ func TestSystem1E2E(t *testing.T) {
 	// 3. 任务提交：源链交易 + MISSION_APPLICATION（fabric→fisco-bcos）→ RELAYED；
 	//    TC2-06 亚秒断言：模拟链本地闭环 latency_ms < 1000
 	sub := must0("mission/submit", call(t, srv, "/api/mission/submit", map[string]any{
-		"mission_id": "MISSION-2026-001", "operator": "Operator-A",
+		"mission_id": seqID("MISSION", 1), "operator": "Operator-A",
 	}))
 	if sub["application"].(map[string]any)["status"] != "RELAYED" {
 		t.Fatalf("application = %v", sub["application"])
@@ -158,18 +165,18 @@ func TestSystem1E2E(t *testing.T) {
 		t.Fatalf("mission after review = %v", rev["mission"])
 	}
 
-	// 5. TC2-05 许可签发 + 验证：PASS-2026-001（now±1h 窗口保证立即有效）
+	// 5. TC2-05 许可签发 + 验证：PASS-<当前年>-001（now±1h 窗口保证立即有效）
 	vf := timex.FormatTime(timex.Now().Add(-time.Hour))
 	vt := timex.FormatTime(timex.Now().Add(time.Hour))
 	iss := must0("pass/issue", call(t, srv, "/api/pass/issue", map[string]any{
-		"mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN",
+		"mission_id": seqID("MISSION", 1), "issuer": "FISCO-ADMIN",
 		"valid_from": vf, "valid_to": vt,
 	}))
-	if iss["pass"].(map[string]any)["pass_id"] != "PASS-2026-001" ||
+	if iss["pass"].(map[string]any)["pass_id"] != seqID("PASS", 1) ||
 		iss["pass"].(map[string]any)["status"] != "VALID" {
 		t.Fatalf("pass = %v", iss["pass"])
 	}
-	ver := must0("pass/verify", call(t, srv, "/api/pass/verify", map[string]any{"pass_id": "PASS-2026-001"}))
+	ver := must0("pass/verify", call(t, srv, "/api/pass/verify", map[string]any{"pass_id": seqID("PASS", 1)}))
 	if ver["valid"] != true {
 		t.Fatalf("verify = %v", ver)
 	}
@@ -198,7 +205,7 @@ func TestSystem1E2E(t *testing.T) {
 	if qb["status"] != "COORDINATING" {
 		t.Fatalf("B status = %v", qb["status"])
 	}
-	qa := must0("mission/query A", call(t, srv, "/api/mission/query", map[string]any{"mission_id": "MISSION-2026-001"}))
+	qa := must0("mission/query A", call(t, srv, "/api/mission/query", map[string]any{"mission_id": seqID("MISSION", 1)}))
 	if qa["status"] != "APPROVED" {
 		t.Fatalf("approved mission must not be transitioned: %v", qa["status"])
 	}
@@ -242,7 +249,7 @@ func TestSystem1E2E(t *testing.T) {
 		"source_chain": "fisco-bcos", "final_target_chain": "fabric",
 		"payload": map[string]any{
 			"review_id": "REV-E2E-BAD", "application_id": appID,
-			"mission_id": "MISSION-2026-001", "result": "APPROVED", "reviewer": "FISCO-ADMIN",
+			"mission_id": seqID("MISSION", 1), "result": "APPROVED", "reviewer": "FISCO-ADMIN",
 		},
 		"sm9_identity": "SM9-ID-FISCO-ADMIN", "signature": "QUFBQUFBQUFBQQ==",
 	})
@@ -265,12 +272,12 @@ func TestSystem1E2E(t *testing.T) {
 
 	// 9. 吊销闭环：许可吊销（PASS_REVOKE 跨链）→ 验证无效；UAV 注销
 	rvk := must0("pass/revoke", call(t, srv, "/api/pass/revoke", map[string]any{
-		"pass_id": "PASS-2026-001", "reason": "任务结束", "operator": "FISCO-ADMIN",
+		"pass_id": seqID("PASS", 1), "reason": "任务结束", "operator": "FISCO-ADMIN",
 	}))
 	if rvk["pass"].(map[string]any)["status"] != "REVOKED" || rvk["crosschain_status"] != "SUCCESS" {
 		t.Fatalf("pass revoke = %v", rvk)
 	}
-	ver2 := must0("pass/verify revoked", call(t, srv, "/api/pass/verify", map[string]any{"pass_id": "PASS-2026-001"}))
+	ver2 := must0("pass/verify revoked", call(t, srv, "/api/pass/verify", map[string]any{"pass_id": seqID("PASS", 1)}))
 	if ver2["valid"] != false || ver2["status"] != "REVOKED" {
 		t.Fatalf("verify revoked = %v", ver2)
 	}
@@ -283,7 +290,7 @@ func TestSystem1E2E(t *testing.T) {
 
 	// 10. TC2-07 审计全程可查：许可痕迹 + 网关痕迹
 	aq := must0("audit/query pass", call(t, srv, "/api/audit/query", map[string]any{
-		"business_id": "PASS-2026-001", "page": 1, "page_size": 50,
+		"business_id": seqID("PASS", 1), "page": 1, "page_size": 50,
 	}))
 	if aq["total"].(float64) < 3 {
 		t.Fatalf("pass audit total = %v, want >= 3", aq["total"])

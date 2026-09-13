@@ -29,7 +29,8 @@ func TestSystem3E2E(t *testing.T) {
 		return d
 	}
 
-	// 0. 演示数据就绪（身份映射 PSEUDO-UAV-83921 → PASS-2026-001 → UAV-A-001 → Manufacturer-B）
+	// 0. 演示数据就绪（demo seed 身份映射冻结：PSEUDO-UAV-83921 → 冻结 PASS ID
+	//    （demo 2026 系列，静态数据非生成路径）→ UAV-A-001 → Manufacturer-B）
 	must0("demo/init", call(t, srv, "/api/demo/init", map[string]any{}))
 
 	// 1. 业务主线：create→submit→review APPROVED→pass/issue（与系统一同路径）
@@ -40,11 +41,11 @@ func TestSystem3E2E(t *testing.T) {
 		"altitude_min":   60, "altitude_max": 120, "payload_type": "CAMERA",
 		"description": "巡线走廊Zone-A全线巡检",
 	}))
-	if mc["mission_id"] != "MISSION-2026-001" || mc["masked_value"] != "巡线走廊****" {
+	if mc["mission_id"] != seqID("MISSION", 1) || mc["masked_value"] != "巡线走廊****" {
 		t.Fatalf("mission = %v", mc)
 	}
 	sub := must0("mission/submit", call(t, srv, "/api/mission/submit", map[string]any{
-		"mission_id": "MISSION-2026-001", "operator": "Operator-A",
+		"mission_id": seqID("MISSION", 1), "operator": "Operator-A",
 	}))
 	appID := sub["application"].(map[string]any)["application_id"].(string)
 	must0("review/submit", call(t, srv, "/api/review/submit", map[string]any{
@@ -52,18 +53,18 @@ func TestSystem3E2E(t *testing.T) {
 		"comment": "同意执行", "rules_hit": []string{"R-ALT-001"},
 	}))
 	iss := must0("pass/issue", call(t, srv, "/api/pass/issue", map[string]any{
-		"mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN",
+		"mission_id": seqID("MISSION", 1), "issuer": "FISCO-ADMIN",
 		"valid_from": timex.FormatTime(timex.Now().Add(-time.Hour)),
 		"valid_to":   timex.FormatTime(timex.Now().Add(time.Hour)),
 	}))
-	if iss["pass"].(map[string]any)["pass_id"] != "PASS-2026-001" ||
+	if iss["pass"].(map[string]any)["pass_id"] != seqID("PASS", 1) ||
 		iss["pass"].(map[string]any)["status"] != "VALID" {
 		t.Fatalf("pass = %v", iss["pass"])
 	}
 
 	// 2. 告警登记（显式演示 ID ALERT-2026-001）+ 状态机线性推进；跨级迁移 → 6002
 	raised := must0("alert/raise", call(t, srv, "/api/alert/raise", map[string]any{
-		"alert_id": "ALERT-2026-001", "mission_id": "MISSION-2026-001",
+		"alert_id": "ALERT-2026-001", "mission_id": seqID("MISSION", 1),
 		"uav_pseudonym": "PSEUDO-UAV-83921", "event_type": "ROUTE_DEVIATION",
 		"risk_level": "HIGH", "source_system": "MANUAL", "operator": "REG-01",
 	}))
@@ -105,7 +106,7 @@ func TestSystem3E2E(t *testing.T) {
 
 	// 4. TC3-04 未授权密文核验：5002 + 封缄（无明文键）+ 尝试留痕审计
 	un := wantCode("inspect unauthorized", 5002, call(t, srv, "/api/inspect/ciphertext", map[string]any{
-		"mission_id": "MISSION-2026-001", "regulator_id": "REG-01",
+		"mission_id": seqID("MISSION", 1), "regulator_id": "REG-01",
 	}))
 	if un["authorized"] != false {
 		t.Fatalf("un data = %v", un)
@@ -127,7 +128,7 @@ func TestSystem3E2E(t *testing.T) {
 	ap := must0("authorize/apply", call(t, srv, "/api/authorize/apply", map[string]any{
 		"authorization_id": "AUTH-2026-001", "regulator_id": "REG-01",
 		"scope":       []string{"MISSION", "ROUTE", "PAYLOAD", "IDENTITY"},
-		"target_type": "MISSION", "target_id": "MISSION-2026-001",
+		"target_type": "MISSION", "target_id": seqID("MISSION", 1),
 		"reason": "核查告警 ALERT-2026-001",
 	}))
 	if ap["authorization_id"] != "AUTH-2026-001" || ap["status"] != "PENDING" ||
@@ -148,7 +149,7 @@ func TestSystem3E2E(t *testing.T) {
 
 	// 6. 授权核验（正常航路+载荷一致）：明文视图 + 双验证 + 结论上链
 	ins := must0("inspect authorized", call(t, srv, "/api/inspect/ciphertext", map[string]any{
-		"mission_id": "MISSION-2026-001", "authorization_id": "AUTH-2026-001",
+		"mission_id": seqID("MISSION", 1), "authorization_id": "AUTH-2026-001",
 		"regulator_id": "REG-01", "trajectory": "NORMAL", "payload_type": "CAMERA",
 	}))
 	if ins["authorized"] != true || ins["decrypted_view"] != "巡线走廊Zone-A全线巡检" {
@@ -173,7 +174,7 @@ func TestSystem3E2E(t *testing.T) {
 
 	// 7. 偏航核验：ROUTE_DEVIATION → SYSTEM3 自动告警；重复核验去重不新增
 	dev := must0("inspect deviation", call(t, srv, "/api/inspect/ciphertext", map[string]any{
-		"mission_id": "MISSION-2026-001", "authorization_id": "AUTH-2026-001",
+		"mission_id": seqID("MISSION", 1), "authorization_id": "AUTH-2026-001",
 		"regulator_id": "REG-01", "trajectory": "DEVIATION",
 	}))
 	dc := dev["conclusion"].(map[string]any)
@@ -186,7 +187,7 @@ func TestSystem3E2E(t *testing.T) {
 	}
 	autoID := auto[0].(string)
 	again := must0("inspect deviation again", call(t, srv, "/api/inspect/ciphertext", map[string]any{
-		"mission_id": "MISSION-2026-001", "authorization_id": "AUTH-2026-001",
+		"mission_id": seqID("MISSION", 1), "authorization_id": "AUTH-2026-001",
 		"regulator_id": "REG-01", "trajectory": "DEVIATION",
 	}))
 	againAlerts := again["conclusion"].(map[string]any)["raised_alerts"].([]any)
@@ -237,7 +238,7 @@ func TestSystem3E2E(t *testing.T) {
 	must0("authorize/apply expired-window", call(t, srv, "/api/authorize/apply", map[string]any{
 		"authorization_id": "AUTH-2026-002", "regulator_id": "REG-02",
 		"scope":       []string{"MISSION"},
-		"target_type": "MISSION", "target_id": "MISSION-2026-001",
+		"target_type": "MISSION", "target_id": seqID("MISSION", 1),
 		"reason":     "过期窗口联测",
 		"valid_from": timex.FormatTime(timex.Now().Add(-48 * time.Hour)),
 		"valid_to":   timex.FormatTime(timex.Now().Add(-24 * time.Hour)),
@@ -246,7 +247,7 @@ func TestSystem3E2E(t *testing.T) {
 		"authorization_id": "AUTH-2026-002", "decision": "APPROVE", "reviewer_id": "REG-ADMIN",
 	}))
 	exp4 := wantCode("inspect expired", 5004, call(t, srv, "/api/inspect/ciphertext", map[string]any{
-		"mission_id": "MISSION-2026-001", "authorization_id": "AUTH-2026-002", "regulator_id": "REG-02",
+		"mission_id": seqID("MISSION", 1), "authorization_id": "AUTH-2026-002", "regulator_id": "REG-02",
 	}))
 	if exp4["authorized"] != false || exp4["sealed"] == nil {
 		t.Fatalf("expired data = %v", exp4)

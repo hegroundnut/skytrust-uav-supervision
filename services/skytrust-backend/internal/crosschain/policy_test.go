@@ -22,12 +22,12 @@ func validPayload(msgType string) map[string]any {
 		return map[string]any{"review_id": "REV-1", "application_id": "APP-1",
 			"mission_id": "MISSION-2026-001", "result": "APPROVED", "reviewer": "FISCO-ADMIN"}
 	case MsgFlightPass:
-		return map[string]any{"pass_id": "PASS-2026-001", "mission_id": "MISSION-2026-001",
+		return map[string]any{"pass_id": "PASS-TEST-001", "mission_id": "MISSION-2026-001",
 			"uav_id": "UAV-A-001", "route": []string{"R101", "R205"},
 			"valid_from": "2026-09-11 09:00:00.000", "valid_to": "2026-09-11 11:00:00.000",
 			"sm3_hash": "abc123"}
 	case MsgPassRevoke:
-		return map[string]any{"pass_id": "PASS-2026-001", "mission_id": "MISSION-2026-001",
+		return map[string]any{"pass_id": "PASS-TEST-001", "mission_id": "MISSION-2026-001",
 			"reason": "weather", "operator": "FISCO-ADMIN"}
 	}
 	return nil

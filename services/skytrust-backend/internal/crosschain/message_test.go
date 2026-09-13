@@ -46,8 +46,8 @@ func TestSignEnvelopeVerifyTamper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	env := BuildEnvelope(MsgFlightPass, "PASS-2026-001", "fisco-bcos", "fabric",
-		map[string]any{"pass_id": "PASS-2026-001", "mission_id": "MISSION-2026-001"})
+	env := BuildEnvelope(MsgFlightPass, "PASS-TEST-001", "fisco-bcos", "fabric",
+		map[string]any{"pass_id": "PASS-TEST-001", "mission_id": "MISSION-2026-001"})
 	uid := crypto.SM9IdentityOf("FISCO-ADMIN")
 	sig, hash, err := SignEnvelope(cs, uid, env)
 	if err != nil || sig == "" || len(hash) != 64 {

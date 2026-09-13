@@ -7,7 +7,7 @@ import (
 )
 
 // goldenThread 黄金线前置（载荷与 tests/system3_e2e_test.go 逐字段一致）：
-// 业务主线 → PASS-2026-001 → 显式告警 ALERT-2026-001。
+// 业务主线 → PASS-<当前年>-001（C17：年份随当前年滚动）→ 显式告警 ALERT-2026-001。
 // 身份映射由 demo/init 预置：PSEUDO-UAV-83921 → PASS-2026-001 → UAV-A-001 → Manufacturer-B。
 // L3 追踪要求映射的 pass_id 有真实 flight_passes 行 → issuePassA 必不可少。
 func goldenThread(t *testing.T, srv *httptest.Server) map[string]any {
@@ -15,7 +15,7 @@ func goldenThread(t *testing.T, srv *httptest.Server) map[string]any {
 	mainlineA(t, srv)
 	issuePassA(t, srv)
 	return must0(t, "alert/raise", call(t, srv, "/api/alert/raise", map[string]any{
-		"alert_id": "ALERT-2026-001", "mission_id": "MISSION-2026-001",
+		"alert_id": "ALERT-2026-001", "mission_id": seqID("MISSION", 1),
 		"uav_pseudonym": "PSEUDO-UAV-83921", "event_type": "ROUTE_DEVIATION",
 		"risk_level": "HIGH", "source_system": "MANUAL", "operator": "REG-01",
 	}))
@@ -27,7 +27,7 @@ func authorizeA(t *testing.T, srv *httptest.Server) {
 	ap := must0(t, "authorize/apply", call(t, srv, "/api/authorize/apply", map[string]any{
 		"authorization_id": "AUTH-2026-001", "regulator_id": "REG-01",
 		"scope":       []string{"MISSION", "ROUTE", "PAYLOAD", "IDENTITY"},
-		"target_type": "MISSION", "target_id": "MISSION-2026-001",
+		"target_type": "MISSION", "target_id": seqID("MISSION", 1),
 		"reason": "核查告警 ALERT-2026-001",
 	}))
 	if ap["status"] != "PENDING" || len(ap["audit_hash"].(string)) != 64 {
@@ -138,7 +138,7 @@ func TestTC3_04UnauthorizedInspect(t *testing.T) {
 	srv := bootTC(t)
 	goldenThread(t, srv)
 	un := wantCode(t, "inspect unauthorized", 5002, call(t, srv, "/api/inspect/ciphertext", map[string]any{
-		"mission_id": "MISSION-2026-001", "regulator_id": "REG-01",
+		"mission_id": seqID("MISSION", 1), "regulator_id": "REG-01",
 	}))
 	if un["authorized"] != false {
 		t.Fatalf("un = %v", un)
@@ -164,7 +164,7 @@ func TestTC3_05AuthorizedInspect(t *testing.T) {
 	goldenThread(t, srv)
 	authorizeA(t, srv)
 	ins := must0(t, "inspect authorized", call(t, srv, "/api/inspect/ciphertext", map[string]any{
-		"mission_id": "MISSION-2026-001", "authorization_id": "AUTH-2026-001",
+		"mission_id": seqID("MISSION", 1), "authorization_id": "AUTH-2026-001",
 		"regulator_id": "REG-01", "trajectory": "NORMAL", "payload_type": "CAMERA",
 	}))
 	if ins["authorized"] != true || ins["decrypted_view"] != "巡线走廊Zone-A全线巡检" {
@@ -201,7 +201,7 @@ func TestTC3_06RouteDeviation(t *testing.T) {
 		"alert_id": "ALERT-2026-001", "to_status": "REVIEWED", "operator": "REG-01", "reason": "核验完成",
 	}))
 	dev := must0(t, "inspect deviation", call(t, srv, "/api/inspect/ciphertext", map[string]any{
-		"mission_id": "MISSION-2026-001", "authorization_id": "AUTH-2026-001",
+		"mission_id": seqID("MISSION", 1), "authorization_id": "AUTH-2026-001",
 		"regulator_id": "REG-01", "trajectory": "DEVIATION",
 	}))
 	dc := dev["conclusion"].(map[string]any)
@@ -224,7 +224,7 @@ func TestTC3_07AuditOnChain(t *testing.T) {
 	goldenThread(t, srv)
 	authorizeA(t, srv)
 	ins := must0(t, "inspect authorized", call(t, srv, "/api/inspect/ciphertext", map[string]any{
-		"mission_id": "MISSION-2026-001", "authorization_id": "AUTH-2026-001",
+		"mission_id": seqID("MISSION", 1), "authorization_id": "AUTH-2026-001",
 		"regulator_id": "REG-01", "trajectory": "NORMAL", "payload_type": "CAMERA",
 	}))
 	ver := ins["verification"].(map[string]any)

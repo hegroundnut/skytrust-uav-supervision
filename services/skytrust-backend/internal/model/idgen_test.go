@@ -60,7 +60,7 @@ func TestValidateID(t *testing.T) {
 	if ValidateID("MISSION", "TASK-2026-001") {
 		t.Error("wrong prefix accepted")
 	}
-	if !ValidateID("PASS", "PASS-2026-001") {
+	if !ValidateID("PASS", "PASS-TEST-001") {
 		t.Error("valid pass id rejected")
 	}
 }

@@ -32,7 +32,9 @@ type MissionInput struct {
 
 // genMissionID 自动生成 MISSION-<年>-%03d（count+1 探测）。
 // db 须传当前事务句柄（C18：生成+查重+插入同事务）。
-func (s *Service) genMissionID(db *gorm.DB, year int) (string, error) {
+// C17：年份随当前年滚动——一律显式取自 timex.Now().Year()，不再跟随任务窗口年份。
+func (s *Service) genMissionID(db *gorm.DB) (string, error) {
+	year := timex.Now().Year()
 	var cnt int64
 	if err := db.Model(&model.Mission{}).Count(&cnt).Error; err != nil {
 		return "", err
@@ -48,6 +50,19 @@ func (s *Service) genMissionID(db *gorm.DB, year int) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("mission_id space exhausted for year %d", year)
+}
+
+// maskDescription 脱敏统一策略（C19，据盘点的现行函数收紧短值分支）：
+//   - 长度 ≤4：全遮蔽——等长 `*`（短值保留任何前缀都等于泄露原文/近乎全文）；
+//   - 长度 >4：沿用现行策略——保留前 4 字符 + 固定 `****`（长值留可辨识前缀）。
+//
+// 例：mask("机密")=="**"、mask("abcd")=="****"、mask("abcde")=="abcd****"。
+func maskDescription(plain string) string {
+	rs := []rune(plain)
+	if len(rs) <= 4 {
+		return strings.Repeat("*", len(rs))
+	}
+	return string(rs[:4]) + "****"
 }
 
 // CreateMission 任务创建（实施文档 §9.2 步骤2）：校验 → 生成 → 加密脱敏 →
@@ -109,7 +124,7 @@ func (s *Service) CreateMission(ctx context.Context, traceID string, in MissionI
 	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		missionID := in.MissionID
 		if missionID == "" {
-			gen, err := s.genMissionID(tx, start.Year())
+			gen, err := s.genMissionID(tx)
 			if err != nil {
 				return crosschain.NewError(errcode.Internal, "gen mission_id: %v", err)
 			}
@@ -138,11 +153,7 @@ func (s *Service) CreateMission(ctx context.Context, traceID string, in MissionI
 				return crosschain.NewError(errcode.Internal, "SM9 encrypt description: %v", err)
 			}
 			cipher = c
-			rs := []rune(in.Description)
-			if len(rs) > 4 {
-				rs = rs[:4]
-			}
-			masked = string(rs) + "****"
+			masked = maskDescription(in.Description)
 		}
 		canon := map[string]any{
 			"altitude_max": in.AltitudeMax, "altitude_min": in.AltitudeMin,

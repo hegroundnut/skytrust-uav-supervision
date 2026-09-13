@@ -39,7 +39,7 @@ func TestIssuePassSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("issue: %v", err)
 	}
-	if p.PassID != "PASS-2026-001" || p.Status != "VALID" {
+	if p.PassID != fmt.Sprintf("PASS-%d-001", timex.Now().Year()) || p.Status != "VALID" {
 		t.Fatalf("pass = %+v", p)
 	}
 	if p.MissionID != m.MissionID || p.UAVID != m.UAVID || p.Route != m.RouteSegments {
@@ -73,6 +73,25 @@ func TestIssuePassSuccess(t *testing.T) {
 	db.Model(&model.AuditLog{}).Where("action = ?", "PASS_ISSUE").Count(&auditCnt)
 	if auditCnt != 1 {
 		t.Errorf("want 1 PASS_ISSUE audit, got %d", auditCnt)
+	}
+}
+
+// TestGenPassIDYearRollsWithCurrentYear C17：生成 pass_id 的年份一律显式取自
+// timex.Now().Year()（年份随当前年滚动），不再跟随 valid_from 年份——远未来窗口
+// （2031）也必须产出 PASS-<当前年>- 前缀（旧实现按 vf.Year() 会得 PASS-2031-001）。
+func TestGenPassIDYearRollsWithCurrentYear(t *testing.T) {
+	svc, _ := testSvcFull(t)
+	m := approvedMission(t, svc)
+	p, _, err := svc.IssuePass(context.Background(), "TRACE-T", PassIssueInput{
+		MissionID: m.MissionID, Issuer: "FISCO-ADMIN",
+		ValidFrom: "2031-01-01 00:00:00", ValidTo: "2031-01-02 00:00:00",
+	})
+	if err != nil {
+		t.Fatalf("issue: %v", err)
+	}
+	want := fmt.Sprintf("PASS-%d-", timex.Now().Year())
+	if !strings.HasPrefix(p.PassID, want) {
+		t.Fatalf("pass_id = %q, want prefix %q（年份必须随当前年滚动）", p.PassID, want)
 	}
 }
 
@@ -116,9 +135,9 @@ func TestIssuePassGuards(t *testing.T) {
 	if _, _, err := svc.IssuePass(ctx, "TRACE-T", PassIssueInput{PassID: p.PassID, MissionID: m.MissionID, Issuer: "FISCO-ADMIN"}); codeOf(err) != errcode.PassInvalid {
 		t.Fatalf("re-issue: want 3002, got %v", err)
 	}
-	// 显式新 pass_id 合法（同任务多许可）
-	p2, _, err := svc.IssuePass(ctx, "TRACE-T", PassIssueInput{PassID: "PASS-2026-077", MissionID: m.MissionID, Issuer: "FISCO-ADMIN"})
-	if err != nil || p2.PassID != "PASS-2026-077" || p2.Status != "VALID" {
+	// 显式新 pass_id 合法（同任务多许可；TEST 段 = 无年份语义的任意显式 ID）
+	p2, _, err := svc.IssuePass(ctx, "TRACE-T", PassIssueInput{PassID: "PASS-TEST-077", MissionID: m.MissionID, Issuer: "FISCO-ADMIN"})
+	if err != nil || p2.PassID != "PASS-TEST-077" || p2.Status != "VALID" {
 		t.Fatalf("explicit id: %+v err=%v", p2, err)
 	}
 }
@@ -211,7 +230,7 @@ func TestVerifyPassLifecycle(t *testing.T) {
 		t.Fatalf("future: %v %v %+v err=%v", valid, reasons, got, err)
 	}
 	// 裸 GENERATING 记录 → 未生效 reason
-	raw := model.FlightPass{PassID: "PASS-2026-099", MissionID: m.MissionID, UAVID: m.UAVID,
+	raw := model.FlightPass{PassID: "PASS-TEST-099", MissionID: m.MissionID, UAVID: m.UAVID,
 		Route: m.RouteSegments, ValidFrom: timex.NowT(), ValidTo: timex.New(timex.Now().Add(time.Hour)), Status: "GENERATING"}
 	if err := db.Create(&raw).Error; err != nil {
 		t.Fatal(err)
@@ -285,7 +304,7 @@ func TestQueryAndListPass(t *testing.T) {
 	if err != nil {
 		t.Fatalf("issue p1: %v", err)
 	}
-	p2, _, err := svc.IssuePass(ctx, "TRACE-T", PassIssueInput{PassID: "PASS-2026-077", MissionID: m.MissionID, Issuer: "FISCO-ADMIN"})
+	p2, _, err := svc.IssuePass(ctx, "TRACE-T", PassIssueInput{PassID: "PASS-TEST-077", MissionID: m.MissionID, Issuer: "FISCO-ADMIN"})
 	if err != nil {
 		t.Fatalf("issue p2: %v", err)
 	}
@@ -466,7 +485,7 @@ func TestListPassPageSizeCapUnified(t *testing.T) {
 func TestListPassDeterministicTiebreaker(t *testing.T) {
 	svc, db := testSvcFull(t) // helper 名以本包既有为准
 	fixed := timex.NowT()
-	for _, id := range []string{"PASS-2026-T01", "PASS-2026-T02"} {
+	for _, id := range []string{"PASS-TEST-T01", "PASS-TEST-T02"} {
 		p := model.FlightPass{PassID: id, Status: "VALID", CreatedAt: fixed}
 		// 必填列以 model.FlightPass 现状补齐（读模型定义，最小合法行）
 		if err := db.Create(&p).Error; err != nil {
@@ -481,9 +500,9 @@ func TestListPassDeterministicTiebreaker(t *testing.T) {
 	var iT01, iT02 = -1, -1
 	for i, p := range list {
 		switch p.PassID {
-		case "PASS-2026-T01":
+		case "PASS-TEST-T01":
 			iT01 = i
-		case "PASS-2026-T02":
+		case "PASS-TEST-T02":
 			iT02 = i
 		}
 	}
