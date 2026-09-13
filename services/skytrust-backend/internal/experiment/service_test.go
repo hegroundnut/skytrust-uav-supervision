@@ -194,3 +194,36 @@ func TestResultListExport(t *testing.T) {
 		t.Errorf("csv row must carry run_id: %q", lines[1])
 	}
 }
+
+func TestStatefulExperimentsClampedToSerial(t *testing.T) {
+	for _, typ := range []string{"MESSAGE_FLOW", "CONFLICT_DETECT", "INSPECT_AUTHORIZED"} {
+		if !statefulExperiments[typ] {
+			t.Errorf("%s must be marked stateful (F-1)", typ)
+		}
+	}
+	if statefulExperiments["STRESS"] || statefulExperiments["SM3_INTEGRITY"] {
+		t.Error("stateless/per-iteration-session experiments must stay concurrency-capable")
+	}
+}
+
+func TestRunMessageFlowConcurrentRequestRunsSerial(t *testing.T) {
+	svc := newTestSvc(t) // 复用本包既有测试引导 helper（名字以现状为准）
+	req := &RunRequest{ExperimentType: "MESSAGE_FLOW", Scenario: "NORMAL", Count: 4, Concurrency: 4}
+	if err := req.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	run, err := svc.Run(context.Background(), "TRACE-F1", req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if run.Status != "DONE" {
+		t.Fatalf("run status: %s (%v)", run.Status, run.FailureReasons)
+	}
+	// 钳制生效：请求被改写为串行；成功数==Count（竞态会污染该值）
+	if req.Concurrency != 1 {
+		t.Errorf("concurrency not clamped: %d", req.Concurrency)
+	}
+	if run.SuccessCount != 4 || run.FailedCount != 0 {
+		t.Errorf("success pollution: ok=%d fail=%d", run.SuccessCount, run.FailedCount)
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
+	"log"
 	"strconv"
 	"sync"
 	"time"
@@ -45,6 +46,16 @@ const (
 	maxCount       = 1000 // P5-R1：count 必填 1..1000
 	maxConcurrency = 20   // P5-R1：concurrency clamp 1..20
 )
+
+// statefulExperiments（F-1/P6-R8）：执行器在迭代间共享链上/会话状态，concurrency>1
+// 会引发 seq/UNIQUE 竞态并污染 success_rate，Run 对其钳制串行。
+// STRESS 每迭代独立 session、S1 密码实验无状态——保持可并发。
+// INSPECT_AUTHORIZED 的"可安全并发"声明未经并发验证，保守钳制。
+var statefulExperiments = map[string]bool{
+	"MESSAGE_FLOW":       true,
+	"CONFLICT_DETECT":    true,
+	"INSPECT_AUTHORIZED": true,
+}
 
 // RunRequest 实验运行请求。Config 透传存行（预留，本计划不解释，P5-R1）。
 type RunRequest struct {
@@ -101,6 +112,9 @@ func (s *Service) Run(ctx context.Context, traceID string, req *RunRequest) (*mo
 	}
 	if err := req.Validate(); err != nil {
 		return nil, err
+	}
+	if statefulExperiments[req.ExperimentType] {
+		req.Concurrency = 1 // F-1：有状态执行器强制串行
 	}
 	if _, err := s.seeder.Init(); err != nil { // P5-R4：幂等铺设演示数据
 		return nil, errcode.NewError(errcode.Internal, "seeder init: %v", err)
@@ -163,9 +177,11 @@ func (s *Service) markSetupFailed(ctx context.Context, run *model.ExperimentRun)
 	run.Status = "FAILED"
 	run.FailureReasons = `{"setup_error":1}`
 	run.CompletedAt = timex.NowT()
-	_ = s.db.WithContext(ctx).Model(run).Updates(map[string]any{
+	if err := s.db.WithContext(ctx).Model(run).Updates(map[string]any{
 		"status": run.Status, "failure_reasons": run.FailureReasons, "completed_at": run.CompletedAt,
-	}).Error
+	}).Error; err != nil {
+		log.Printf("experiment: markSetupFailed run=%s update failed: %v", run.RunID, err)
+	}
 }
 
 // logRun EXPERIMENT_RUN 审计（P5-R3 成败均记；失败不阻断——留痕不阻断原则）。
