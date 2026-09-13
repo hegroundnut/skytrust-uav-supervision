@@ -3,6 +3,7 @@ package demo
 import (
 	"testing"
 
+	"skytrust-backend/internal/chainadapter"
 	"skytrust-backend/internal/chainadapter/sim"
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/model"
@@ -15,7 +16,11 @@ func TestInitCreatesDemoObjects(t *testing.T) {
 	chains := map[string]*sim.Chain{
 		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
 	}
-	s := NewSeeder(db, cs, chains)
+	resets := make(map[string]chainadapter.Resettable, len(chains))
+	for name, c := range chains {
+		resets[name] = c
+	}
+	s := NewSeeder(db, cs, resets)
 	rep, err := s.Init()
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +76,11 @@ func TestResetClearsBusinessData(t *testing.T) {
 	model.Migrate(db)
 	cs, _ := crypto.NewService(t.TempDir())
 	chains := map[string]*sim.Chain{"chainmaker": sim.New("chainmaker")}
-	s := NewSeeder(db, cs, chains)
+	resets := make(map[string]chainadapter.Resettable, len(chains))
+	for name, c := range chains {
+		resets[name] = c
+	}
+	s := NewSeeder(db, cs, resets)
 	s.Init()
 	// 模拟业务脏数据
 	db.Create(&model.Mission{MissionID: "MISSION-DIRTY", Status: "DRAFT"})

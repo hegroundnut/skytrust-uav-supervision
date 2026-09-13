@@ -54,7 +54,11 @@ func bootServer(t *testing.T) *httptest.Server {
 	biz := uavbusiness.New(db, cs, gw, auditSvc)
 	off := offchain.New(db, cs, auditSvc)
 	reg := regulatory.New(db, cs, gw, auditSvc)
-	seeder := demo.NewSeeder(db, cs, chains)
+	resets := make(map[string]chainadapter.Resettable, len(chains))
+	for name, c := range chains {
+		resets[name] = c
+	}
+	seeder := demo.NewSeeder(db, cs, resets)
 	exp := experiment.New(db, cs, gw, biz, off, reg, auditSvc, seeder)
 	r, err := api.NewRouter(&api.Deps{
 		DB: db, Crypto: cs, SimChains: chains,

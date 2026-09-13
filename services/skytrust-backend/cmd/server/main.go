@@ -44,7 +44,11 @@ func Run(addr string) error {
 		"chainmaker": sim.New("chainmaker", sim.WithLatency(5*time.Millisecond)),
 		"fisco-bcos": sim.New("fisco-bcos", sim.WithLatency(10*time.Millisecond)),
 	}
-	seeder := demo.NewSeeder(db, cs, chains)
+	resets := make(map[string]chainadapter.Resettable, len(chains))
+	for name, c := range chains {
+		resets[name] = c
+	}
+	seeder := demo.NewSeeder(db, cs, resets)
 	auditSvc := audit.New(db)
 	adapters := make(map[string]chainadapter.ChainAdapter, len(chains))
 	for name, s := range chains {

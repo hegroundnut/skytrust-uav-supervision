@@ -5,7 +5,7 @@ package demo
 import (
 	"gorm.io/gorm"
 
-	"skytrust-backend/internal/chainadapter/sim"
+	"skytrust-backend/internal/chainadapter"
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/model"
 )
@@ -20,10 +20,10 @@ type SeedReport struct {
 type Seeder struct {
 	db     *gorm.DB
 	cs     *crypto.Service
-	chains map[string]*sim.Chain
+	chains map[string]chainadapter.Resettable
 }
 
-func NewSeeder(db *gorm.DB, cs *crypto.Service, chains map[string]*sim.Chain) *Seeder {
+func NewSeeder(db *gorm.DB, cs *crypto.Service, chains map[string]chainadapter.Resettable) *Seeder {
 	return &Seeder{db: db, cs: cs, chains: chains}
 }
 
@@ -174,7 +174,7 @@ func (s *Seeder) Reset() (int, error) {
 		}
 		cleared++
 	}
-	for _, c := range s.chains { // nil map 安全：range nil 为 no-op
+	for _, c := range s.chains { // nil map 安全：range nil 为 no-op；real 链不在表中（P6-R6）
 		if c != nil {
 			c.ResetState()
 		}

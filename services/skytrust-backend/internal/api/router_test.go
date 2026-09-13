@@ -54,7 +54,11 @@ func validTestDeps(t *testing.T) *Deps {
 	biz := uavbusiness.New(db, cs, gw, auditSvc)
 	off := offchain.New(db, cs, auditSvc)
 	reg := regulatory.New(db, cs, gw, auditSvc)
-	seeder := demo.NewSeeder(db, cs, chains)
+	resets := make(map[string]chainadapter.Resettable, len(chains))
+	for name, c := range chains {
+		resets[name] = c
+	}
+	seeder := demo.NewSeeder(db, cs, resets)
 	exp := experiment.New(db, cs, gw, biz, off, reg, auditSvc, seeder)
 	return &Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: auditSvc, Gateway: gw, Business: biz, Offchain: off, Regulatory: reg, Experiment: exp}
 }

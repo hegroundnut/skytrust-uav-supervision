@@ -13,6 +13,7 @@ import (
 
 // *Chain 结构上满足 ChainTransport（inproc 传输，P6-R1）。
 var _ chainadapter.ChainTransport = (*Chain)(nil)
+var _ chainadapter.Resettable = (*Chain)(nil)
 
 type Chain struct {
 	name     string

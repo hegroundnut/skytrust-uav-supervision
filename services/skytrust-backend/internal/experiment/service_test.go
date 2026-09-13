@@ -46,7 +46,11 @@ func newTestSvc(t *testing.T) *Service {
 	biz := uavbusiness.New(db, cs, gw, auditSvc)
 	off := offchain.New(db, cs, auditSvc)
 	reg := regulatory.New(db, cs, gw, auditSvc)
-	return New(db, cs, gw, biz, off, reg, auditSvc, demo.NewSeeder(db, cs, chains))
+	resets := make(map[string]chainadapter.Resettable, len(chains))
+	for name, c := range chains {
+		resets[name] = c
+	}
+	return New(db, cs, gw, biz, off, reg, auditSvc, demo.NewSeeder(db, cs, resets))
 }
 
 func codeOf(err error) int {
