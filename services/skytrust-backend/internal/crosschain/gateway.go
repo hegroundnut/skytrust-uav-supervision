@@ -399,7 +399,7 @@ type ListFilter struct {
 	PageSize    int
 }
 
-// List 按创建时间倒序分页返回跨链记录与命中总数。
+// List 按创建时间倒序分页返回跨链记录与命中总数；created_at 相同时按 cross_tx_id DESC 决胜（F-5/C13）。
 func (g *Gateway) List(f ListFilter) ([]model.CrosschainTx, int64, error) {
 	if f.Page <= 0 {
 		f.Page = 1
