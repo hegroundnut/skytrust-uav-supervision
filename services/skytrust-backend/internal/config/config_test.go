@@ -31,3 +31,32 @@ func TestLoadEnvOverride(t *testing.T) {
 		t.Errorf("env override failed: %+v", c)
 	}
 }
+
+func TestChainModeForOverrides(t *testing.T) {
+	t.Setenv("CHAIN_MODE", "sim")
+	t.Setenv("FABRIC_MODE", "real")
+	cfg := Load()
+	if cfg.ChainMode != "sim" {
+		t.Fatalf("global mode: %s", cfg.ChainMode)
+	}
+	if cfg.FabricMode != "real" || cfg.ChainmakerMode != "" || cfg.FiscoMode != "" {
+		t.Fatalf("per-chain fields: %+v", cfg)
+	}
+	if got := cfg.ChainModeFor("fabric"); got != "real" {
+		t.Errorf("fabric override: %s", got)
+	}
+	if got := cfg.ChainModeFor("chainmaker"); got != "sim" {
+		t.Errorf("chainmaker must follow global: %s", got)
+	}
+	if got := cfg.ChainModeFor("fisco-bcos"); got != "sim" {
+		t.Errorf("fisco must follow global: %s", got)
+	}
+}
+
+func TestChainModeForUnknownChainFollowsGlobal(t *testing.T) {
+	t.Setenv("CHAIN_MODE", "real")
+	cfg := Load()
+	if got := cfg.ChainModeFor("unknown-chain"); got != "real" {
+		t.Errorf("unknown chain must follow global: %s", got)
+	}
+}
