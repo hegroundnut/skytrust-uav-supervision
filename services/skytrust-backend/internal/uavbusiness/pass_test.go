@@ -462,3 +462,32 @@ func TestListPassPageSizeCapUnified(t *testing.T) {
 		t.Fatalf("default: total=%d len=%d, want 25/20", total, len(list))
 	}
 }
+
+func TestListPassDeterministicTiebreaker(t *testing.T) {
+	svc, db := testSvcFull(t) // helper 名以本包既有为准
+	fixed := timex.NowT()
+	for _, id := range []string{"PASS-2026-T01", "PASS-2026-T02"} {
+		p := model.FlightPass{PassID: id, Status: "VALID", CreatedAt: fixed}
+		// 必填列以 model.FlightPass 现状补齐（读模型定义，最小合法行）
+		if err := db.Create(&p).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	list, total, err := svc.ListPass(context.Background(), "TRACE-T", PassListFilter{Page: 1, PageSize: 20})
+	if err != nil || total < 2 {
+		t.Fatalf("list: %v total=%d", err, total)
+	}
+	// created_at 相同 → 必须按 pass_id DESC 决胜（T02 在 T01 前）
+	var iT01, iT02 = -1, -1
+	for i, p := range list {
+		switch p.PassID {
+		case "PASS-2026-T01":
+			iT01 = i
+		case "PASS-2026-T02":
+			iT02 = i
+		}
+	}
+	if iT01 < 0 || iT02 < 0 || iT02 > iT01 {
+		t.Errorf("tiebreaker broken: iT01=%d iT02=%d", iT01, iT02)
+	}
+}

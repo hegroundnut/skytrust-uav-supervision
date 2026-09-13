@@ -218,7 +218,7 @@ func (s *Service) ListMission(ctx context.Context, traceID string, f MissionList
 		return nil, 0, crosschain.NewError(errcode.Internal, "count: %v", err)
 	}
 	var out []model.Mission
-	if err := q.Order("created_at DESC").Offset((f.Page - 1) * f.PageSize).Limit(f.PageSize).Find(&out).Error; err != nil {
+	if err := q.Order("created_at DESC, mission_id DESC").Offset((f.Page - 1) * f.PageSize).Limit(f.PageSize).Find(&out).Error; err != nil {
 		return nil, 0, crosschain.NewError(errcode.Internal, "find: %v", err)
 	}
 	return out, total, nil

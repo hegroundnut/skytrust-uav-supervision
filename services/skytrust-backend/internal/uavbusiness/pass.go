@@ -217,7 +217,7 @@ func (s *Service) ListPass(ctx context.Context, traceID string, f PassListFilter
 		size = 200
 	}
 	var list []model.FlightPass
-	if err := q.Order("created_at DESC").Offset((page - 1) * size).Limit(size).Find(&list).Error; err != nil {
+	if err := q.Order("created_at DESC, pass_id DESC").Offset((page - 1) * size).Limit(size).Find(&list).Error; err != nil {
 		return nil, 0, crosschain.NewError(errcode.Internal, "list passes: %v", err)
 	}
 	return list, total, nil
