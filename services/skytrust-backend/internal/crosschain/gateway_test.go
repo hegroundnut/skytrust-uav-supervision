@@ -220,6 +220,172 @@ func TestSendFailedRetryNewRow(t *testing.T) {
 	}
 }
 
+// assertNoRetryRow 断言原 FAILED 记录未被重试：无 #r 新行、无 retry_of 指向它的行、
+// 记录本身仍停留 FAILED（C16 拒绝路径留痕不变）。
+func assertNoRetryRow(t *testing.T, db *gorm.DB, orig *model.CrosschainTx) {
+	t.Helper()
+	var rcnt int64
+	db.Model(&model.CrosschainTx{}).Where("idempotency_key LIKE ?", orig.IdempotencyKey+"#r%").Count(&rcnt)
+	if rcnt != 0 {
+		t.Errorf("want 0 #r rows, got %d", rcnt)
+	}
+	var ocnt int64
+	db.Model(&model.CrosschainTx{}).Where("retry_of = ?", orig.CrossTxID).Count(&ocnt)
+	if ocnt != 0 {
+		t.Errorf("want 0 rows referencing %s, got %d", orig.CrossTxID, ocnt)
+	}
+	re := reload(t, db, orig.CrossTxID)
+	if re.Status != "FAILED" {
+		t.Errorf("original record must stay FAILED: %+v", re)
+	}
+}
+
+// TestSendRetryRejectsBusinessIDMismatch C16：#rN 重试体必须与原 FAILED 记录关键标识
+// 一致——原记录 business_id 与重试体不符 → 6002 拒绝，不落 #r 新行、原记录未被重试。
+func TestSendRetryRejectsBusinessIDMismatch(t *testing.T) {
+	gw, cs, db := testEnv(t, defaultSims())
+	uid := crypto.SM9IdentityOf("Operator-A")
+	// 构造原 FAILED 记录：幂等键按重试体 business_id（APP-C16-1）派生使其落入重试缝，
+	// 但记录 business_id 列为 APP-C16-ORIG——记录与重试体关键标识不一致。
+	orig := &model.CrosschainTx{
+		CrossTxID: model.GenCrossTxID(), SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		MessageType: MsgMissionApplication, BusinessID: "APP-C16-ORIG", SM9Identity: uid,
+		Status: "FAILED", ErrorCode: errcode.CrosschainSend,
+		IdempotencyKey: model.IdempotencyKey(MsgMissionApplication, "APP-C16-1", ""),
+	}
+	if err := db.Create(orig).Error; err != nil {
+		t.Fatalf("seed failed row: %v", err)
+	}
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-C16-1",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, req, uid)
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.Param {
+		t.Fatalf("retry with mismatched business_id: want 6002, got %v", err)
+	}
+	if tx != nil {
+		t.Errorf("rejected retry must not return a tx row: %+v", tx)
+	}
+	assertNoRetryRow(t, db, orig)
+	var total int64
+	db.Model(&model.CrosschainTx{}).Count(&total)
+	if total != 1 {
+		t.Errorf("rejected retry must not create rows: total = %d, want 1", total)
+	}
+}
+
+// TestSendRetryRejectsPayloadMismatch C16：同键重发但载荷标识（pass_id）与原 FAILED
+// 记录信封摘要不符 → 6002 拒绝（即便新体已重签、SM9/SM3 自洽）；一致 body 重试
+// 照旧成功（P5-R8 #rN 缝不变）。
+func TestSendRetryRejectsPayloadMismatch(t *testing.T) {
+	sims := defaultSims()
+	sims[RegChainName] = sim.New(RegChainName, sim.WithFailNext("RegisterReceive", 1))
+	gw, cs, db := testEnv(t, sims)
+	uid := crypto.SM9IdentityOf("Operator-A")
+	req := &SendRequest{
+		MessageType: MsgFlightPass, BusinessID: "PASS-C16-1",
+		SourceChain: "fisco-bcos", FinalTargetChain: "fabric",
+		Payload: validPayload(MsgFlightPass),
+	}
+	signReq(t, cs, req, uid)
+	first, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.CrosschainSend {
+		t.Fatalf("first send: want 2001, got %v", err)
+	}
+	if first == nil || first.Status != "FAILED" || first.SM3Hash == "" {
+		t.Fatalf("first row must be FAILED with sm3 persisted: %+v", first)
+	}
+
+	// 篡改载荷标识后重签：新体自身 SM9/SM3 全部自洽，仅与原记录不一致
+	bad := &SendRequest{
+		MessageType: MsgFlightPass, BusinessID: "PASS-C16-1",
+		SourceChain: "fisco-bcos", FinalTargetChain: "fabric",
+		Payload: validPayload(MsgFlightPass),
+	}
+	bad.Payload["pass_id"] = "PASS-2026-999"
+	signReq(t, cs, bad, uid)
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", bad)
+	if errCode(err) != errcode.Param {
+		t.Fatalf("retry with mismatched pass_id: want 6002, got %v", err)
+	}
+	if tx != nil {
+		t.Errorf("rejected retry must not return a tx row: %+v", tx)
+	}
+	assertNoRetryRow(t, db, first)
+	var cnt int64
+	db.Model(&model.CrosschainTx{}).Where("business_id = ?", "PASS-C16-1").Count(&cnt)
+	if cnt != 1 {
+		t.Errorf("rejected retry must not create rows, got %d", cnt)
+	}
+
+	// 一致 body → 既有成功路径回归（#r1 新行 + RetryOf 溯源）
+	second, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if err != nil {
+		t.Fatalf("matching retry: %v", err)
+	}
+	if second.Status != "SUCCESS" || second.RetryOf != first.CrossTxID ||
+		!strings.HasSuffix(second.IdempotencyKey, "#r1") {
+		t.Fatalf("matching retry row = %+v", second)
+	}
+}
+
+// TestSendRetryRejectsIdentityAndChainMismatch C16：同键重发但 sm9_identity /
+// final_target_chain 与原 FAILED 记录不符 → 6002 拒绝，不落 #r 新行。
+func TestSendRetryRejectsIdentityAndChainMismatch(t *testing.T) {
+	sims := defaultSims()
+	sims[RegChainName] = sim.New(RegChainName, sim.WithFailNext("RegisterReceive", 1))
+	gw, cs, db := testEnv(t, sims)
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-C16-2",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, req, crypto.SM9IdentityOf("Operator-A"))
+	first, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if errCode(err) != errcode.CrosschainSend {
+		t.Fatalf("first send: want 2001, got %v", err)
+	}
+	if first == nil || first.Status != "FAILED" {
+		t.Fatalf("first row = %+v", first)
+	}
+
+	// 换签名者：信封不含身份 → 摘要相同，仅 sm9_identity 与原记录不符
+	other := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-C16-2",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, other, crypto.SM9IdentityOf("Operator-B"))
+	if tx, err := gw.Send(context.Background(), "TRACE-TEST", other); errCode(err) != errcode.Param {
+		t.Fatalf("retry with mismatched sm9_identity: want 6002, got %v", err)
+	} else if tx != nil {
+		t.Errorf("rejected retry must not return a tx row: %+v", tx)
+	}
+	assertNoRetryRow(t, db, first)
+
+	// 换目标链
+	mischain := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-C16-2",
+		SourceChain: "fabric", FinalTargetChain: RegChainName,
+		Payload: validPayload(MsgMissionApplication),
+	}
+	signReq(t, cs, mischain, crypto.SM9IdentityOf("Operator-A"))
+	if tx, err := gw.Send(context.Background(), "TRACE-TEST", mischain); errCode(err) != errcode.Param {
+		t.Fatalf("retry with mismatched final_target_chain: want 6002, got %v", err)
+	} else if tx != nil {
+		t.Errorf("rejected retry must not return a tx row: %+v", tx)
+	}
+	assertNoRetryRow(t, db, first)
+	var cnt int64
+	db.Model(&model.CrosschainTx{}).Where("business_id = ?", "APP-C16-2").Count(&cnt)
+	if cnt != 1 {
+		t.Errorf("rejected retries must not create rows, got %d", cnt)
+	}
+}
+
 func TestSendSM3Mismatch(t *testing.T) {
 	gw, cs, db := testEnv(t, defaultSims())
 	req := &SendRequest{

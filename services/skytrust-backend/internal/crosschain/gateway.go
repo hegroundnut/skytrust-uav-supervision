@@ -101,6 +101,11 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 	if failedCnt > 0 {
 		var last model.CrosschainTx // 最近失败行 = #r 后缀数字最大者（长度降序再字典降序 = 数字降序）
 		if err := dupScope().Order("LENGTH(idempotency_key) DESC, idempotency_key DESC").First(&last).Error; err == nil {
+			// C16：加载原记录后、执行重试前——重试体与原记录关键标识不一致 → 显式
+			// 拒绝（不落 #rN 新行、状态机不变）；一致则下方 P5-R8 缝照旧。
+			if e := checkRetryInputs(req, &last); e != nil {
+				return nil, e
+			}
 			retryOf = last.CrossTxID
 		}
 		key = fmt.Sprintf("%s#r%d", baseKey, failedCnt)
@@ -376,6 +381,41 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 	}
 	g.logAudit(traceID, tx, "")
 	return tx, nil
+}
+
+// checkRetryInputs C16 重试入口输入一致性：#rN 重试体必须与原 FAILED 记录关键标识
+// 逐字段一致（message_type/business_id/source_chain/final_target_chain/sm9_identity；
+// 载荷经原记录 SM3 信封摘要核验——原记录在步 4 前失败无摘要时跳过该项）。
+// Signature 不比对（重试允许重签，内容一致性已由信封摘要覆盖）；请求侧
+// SourceChainTxID 不比对（已入幂等键；记录列可能是网关代提交的源链 TxID）。
+// 不一致 → *Error{6002}（本入口参数类错误码族，同 Query）。
+func checkRetryInputs(req *SendRequest, last *model.CrosschainTx) error {
+	mismatch := func(field, got, want string) error {
+		return NewError(errcode.Param,
+			"retry body inconsistent with original record %s: %s %q != %q", last.CrossTxID, field, got, want)
+	}
+	switch {
+	case req.MessageType != last.MessageType:
+		return mismatch("message_type", req.MessageType, last.MessageType)
+	case req.BusinessID != last.BusinessID:
+		return mismatch("business_id", req.BusinessID, last.BusinessID)
+	case req.SourceChain != last.SourceChain:
+		return mismatch("source_chain", req.SourceChain, last.SourceChain)
+	case req.FinalTargetChain != last.FinalTargetChain:
+		return mismatch("final_target_chain", req.FinalTargetChain, last.FinalTargetChain)
+	case req.SM9Identity != last.SM9Identity:
+		return mismatch("sm9_identity", req.SM9Identity, last.SM9Identity)
+	}
+	if last.SM3Hash != "" {
+		cb, err := CanonicalBytes(BuildEnvelope(req.MessageType, req.BusinessID, req.SourceChain, req.FinalTargetChain, req.Payload))
+		if err != nil {
+			return NewError(errcode.Internal, "retry canonicalize: %v", err)
+		}
+		if h := crypto.SM3Hex(cb); h != last.SM3Hash {
+			return mismatch("payload sm3_hash", h, last.SM3Hash)
+		}
+	}
+	return nil
 }
 
 // Query 按 cross_tx_id 查询跨链记录；不存在 → *Error{Code:6002}。
