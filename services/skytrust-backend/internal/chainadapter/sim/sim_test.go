@@ -2,9 +2,13 @@ package sim
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
+
+	"skytrust-backend/internal/chainadapter"
+	"skytrust-backend/internal/crypto"
 )
 
 func TestSubmitAndQueryTx(t *testing.T) {
@@ -145,5 +149,31 @@ func TestFailedReceiptIsStored(t *testing.T) {
 	}
 	if got.Status != 1 || got.TxID != rc.TxID {
 		t.Errorf("receipt mismatch: %+v", got)
+	}
+}
+
+func TestTxIDDerivationIsSM3(t *testing.T) {
+	c := New("fabric")
+	params := map[string]any{"uav_id": "UAV-A-001", "op": "register"}
+	rc, err := c.SubmitTx(context.Background(), "operator_business", "RegisterUAV", params)
+	if err != nil || rc.Status != 0 {
+		t.Fatalf("submit failed: %v %+v", err, rc)
+	}
+	canonical, _ := crypto.CanonicalJSON(params)
+	// 第一笔交易 blockNum=1；派生输入与 txID() 逐字一致（P6-R4）
+	want := "FABRIC-" + crypto.SM3Hex([]byte(fmt.Sprintf("%s|%s|%s|%s|%d",
+		"fabric", "operator_business", "RegisterUAV", canonical, 1)))[:32]
+	if rc.TxID != want {
+		t.Errorf("TxID not SM3-derived:\n got %s\nwant %s", rc.TxID, want)
+	}
+	if !strings.HasPrefix(rc.TxID, "FABRIC-") || len(rc.TxID) != len("FABRIC-")+32 {
+		t.Errorf("prefix/length contract broken: %s", rc.TxID)
+	}
+}
+
+func TestChainSatisfiesChainTransport(t *testing.T) {
+	var tr chainadapter.ChainTransport = New("chainmaker")
+	if err := tr.Health(); err != nil {
+		t.Fatalf("health: %v", err)
 	}
 }

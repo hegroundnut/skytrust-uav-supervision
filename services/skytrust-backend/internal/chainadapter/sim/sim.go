@@ -2,8 +2,6 @@ package sim
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"strings"
 	"sync"
@@ -12,6 +10,9 @@ import (
 	"skytrust-backend/internal/chainadapter"
 	"skytrust-backend/internal/crypto"
 )
+
+// *Chain 结构上满足 ChainTransport（inproc 传输，P6-R1）。
+var _ chainadapter.ChainTransport = (*Chain)(nil)
 
 type Chain struct {
 	name     string
@@ -86,11 +87,12 @@ func (c *Chain) SubmitTx(ctx context.Context, contract, method string, params ma
 	return rc, nil
 }
 
+// txID 交易摘要：SM3（商密合规，P6-R4）。前缀契约不变：UPPER(name)-<32 hex>。
 func (c *Chain) txID(contract, method string, params map[string]any) string {
 	canonical, _ := crypto.CanonicalJSON(params)
-	h := sha256.Sum256([]byte(fmt.Sprintf("%s|%s|%s|%s|%d",
+	h := crypto.SM3Hex([]byte(fmt.Sprintf("%s|%s|%s|%s|%d",
 		c.name, contract, method, canonical, c.blockNum)))
-	return strings.ToUpper(c.name) + "-" + hex.EncodeToString(h[:])[:32]
+	return strings.ToUpper(c.name) + "-" + h[:32]
 }
 
 // ResetState 清空链模拟器全部运行时状态：回执、KV 状态、区块高度、交易计数与故障注入计数。
