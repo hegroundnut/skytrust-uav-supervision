@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -51,15 +52,17 @@ func TestBuildChainsRealFailsFastWithoutSDK(t *testing.T) {
 }
 
 func TestBuildChainsPerChainOverride(t *testing.T) {
+	// 注册表无注销 API，-count>1 时首轮注册会驻留：每轮开始统一解除武装，
+	// 保证各轮观察到的行为一致（先 fail-fast 报错，武装后构建成功）。
+	fabricRealArmed = false
 	cfg := &config.Config{ChainMode: "sim", FabricMode: "real"}
 	_, _, err := buildChains(cfg)
 	if err == nil || !strings.Contains(err.Error(), `"fabric"`) {
 		t.Fatalf("only fabric should fail fast: %v", err)
 	}
 	// 注册 fake real 传输后，同一 cfg 构建成功且该链不再 Resettable（P6-R6）
-	chainadapter.RegisterRealTransport("fabric", func() (chainadapter.ChainTransport, error) {
-		return fakeReal{}, nil
-	})
+	chainadapter.RegisterRealTransport("fabric", fabricRealFactory)
+	fabricRealArmed = true
 	adapters, resets, err := buildChains(cfg)
 	if err != nil {
 		t.Fatalf("with registered transport: %v", err)
@@ -95,3 +98,16 @@ func (fakeReal) QueryState(ctx context.Context, contract, key string) ([]byte, e
 	return nil, nil
 }
 func (fakeReal) Health() error { return nil }
+
+// fabricRealArmed 切换 fabricRealFactory 行为：解除武装时返回错误（含 "fabric"
+// 并指向迁移指南，与 NewRealTransport 的 fail-fast 契约一致）；武装时返回 fakeReal。
+// -count>1 下注册无法撤销，用本开关让每轮测试语义一致（首轮首断言仍走真实的
+// 未注册 fail-fast 路径——注册发生在该断言之后）。
+var fabricRealArmed bool
+
+func fabricRealFactory() (chainadapter.ChainTransport, error) {
+	if !fabricRealArmed {
+		return nil, fmt.Errorf("chain %q: no armed real SDK transport in this test phase — see docs/real-chain-migration.md", "fabric")
+	}
+	return fakeReal{}, nil
+}
