@@ -597,3 +597,48 @@ func TestStateTransitionAudit(t *testing.T) {
 		t.Errorf("last transition: want REG_RELAYED->FAILED, got %s->%s", last[0], last[1])
 	}
 }
+
+// TestListDeterministicTiebreaker F-5/C13：created_at 相同的两行跨链记录 → 分页列表
+// 必须由唯一键 cross_tx_id DESC 决胜（此前仅 created_at DESC → SQLite 行序不定）。
+func TestListDeterministicTiebreaker(t *testing.T) {
+	gw, _, db := testEnv(t, defaultSims())
+	// 两行共用同一 created_at：第二行复制第一行的落库值。
+	// idempotency_key 带唯一索引 → 必须逐行给不同值。
+	first := model.CrosschainTx{CrossTxID: "CX-2026-T01", MessageType: MsgFlightPass,
+		BusinessID: "PASS-T10", Status: "SUCCESS", IdempotencyKey: "idem-t10-1"}
+	if err := db.Create(&first).Error; err != nil {
+		t.Fatal(err)
+	}
+	second := model.CrosschainTx{CrossTxID: "CX-2026-T02", MessageType: MsgFlightPass,
+		BusinessID: "PASS-T10", Status: "SUCCESS", IdempotencyKey: "idem-t10-2",
+		CreatedAt: first.CreatedAt}
+	if err := db.Create(&second).Error; err != nil {
+		t.Fatal(err)
+	}
+	// 夹具自检：读回的两行 created_at 必须真实相等且非零（否则本测试测不到平局）。
+	var reloaded []model.CrosschainTx
+	if err := db.Order("cross_tx_id ASC").Find(&reloaded).Error; err != nil {
+		t.Fatal(err)
+	}
+	if len(reloaded) != 2 || reloaded[0].CreatedAt.IsZero() ||
+		!reloaded[0].CreatedAt.Equal(reloaded[1].CreatedAt.Time) {
+		t.Fatalf("fixture needs two rows with equal non-zero created_at: %+v", reloaded)
+	}
+	list, total, err := gw.List(ListFilter{Page: 1, PageSize: 20})
+	if err != nil || total < 2 {
+		t.Fatalf("list: %v total=%d", err, total)
+	}
+	// created_at 相同 → 必须按 cross_tx_id DESC 决胜（T02 在 T01 前）
+	var iT01, iT02 = -1, -1
+	for i, tx := range list {
+		switch tx.CrossTxID {
+		case "CX-2026-T01":
+			iT01 = i
+		case "CX-2026-T02":
+			iT02 = i
+		}
+	}
+	if iT01 < 0 || iT02 < 0 || iT02 > iT01 {
+		t.Errorf("tiebreaker broken: iT01=%d iT02=%d", iT01, iT02)
+	}
+}

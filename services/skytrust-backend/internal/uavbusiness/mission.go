@@ -192,7 +192,7 @@ type MissionListFilter struct {
 	PageSize   int
 }
 
-// ListMission created_at 倒序分页。
+// ListMission created_at 倒序分页；created_at 相同时按 mission_id DESC 决胜（F-5/C13）。
 func (s *Service) ListMission(ctx context.Context, traceID string, f MissionListFilter) ([]model.Mission, int64, error) {
 	if f.Page <= 0 {
 		f.Page = 1

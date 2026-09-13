@@ -422,7 +422,7 @@ func (g *Gateway) List(f ListFilter) ([]model.CrosschainTx, int64, error) {
 		return nil, 0, NewError(errcode.Internal, "count: %v", err)
 	}
 	var out []model.CrosschainTx
-	if err := q.Order("created_at DESC").
+	if err := q.Order("created_at DESC, cross_tx_id DESC").
 		Offset((f.Page - 1) * f.PageSize).
 		Limit(f.PageSize).
 		Find(&out).Error; err != nil {
