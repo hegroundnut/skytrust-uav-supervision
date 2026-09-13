@@ -37,7 +37,7 @@ func TestDemoResetEndpoint(t *testing.T) {
 	}
 }
 
-func TestChainStatusWithSimChains(t *testing.T) {
+func TestChainStatusWithChains(t *testing.T) {
 	r := setupFullTestRouter(t)
 	resp := post(r, "/api/chain/status", map[string]any{})
 	if resp.Code != 0 {

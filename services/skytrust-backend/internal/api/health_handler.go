@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"skytrust-backend/internal/audit"
-	"skytrust-backend/internal/chainadapter/sim"
 	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/demo"
@@ -19,15 +18,14 @@ import (
 type ChainStatusProvider interface{ Health() error }
 
 type Deps struct {
-	DB        *gorm.DB
-	Chains    map[string]ChainStatusProvider
-	SimChains map[string]*sim.Chain
-	Crypto    *crypto.Service
-	Seeder    *demo.Seeder
-	Audit     *audit.Service
-	Gateway   *crosschain.Gateway
-	Business  *uavbusiness.Service
-	Offchain  *offchain.Service
+	DB       *gorm.DB
+	Chains   map[string]ChainStatusProvider
+	Crypto   *crypto.Service
+	Seeder   *demo.Seeder
+	Audit    *audit.Service
+	Gateway  *crosschain.Gateway
+	Business *uavbusiness.Service
+	Offchain *offchain.Service
 
 	Regulatory *regulatory.Service
 	Experiment *experiment.Service
@@ -50,8 +48,8 @@ func (d *Deps) Validate() error {
 	if d.Audit == nil {
 		return errors.New("deps: Audit is required")
 	}
-	if len(d.SimChains) == 0 && len(d.Chains) == 0 {
-		return errors.New("deps: at least one chain (SimChains or Chains) is required")
+	if len(d.Chains) == 0 {
+		return errors.New("deps: at least one chain (Chains) is required")
 	}
 	if d.Gateway == nil {
 		return errors.New("deps: Gateway is required")
@@ -71,16 +69,8 @@ func (d *Deps) Validate() error {
 	return nil
 }
 
-// chainProviders 优先返回 SimChains（*sim.Chain 结构上满足 ChainStatusProvider），
-// 否则回退到 Chains（保留兼容既有测试/接线）。
+// chainProviders 返回链状态提供者（P6-R5：Chains 为唯一入口，SimChains 已删除）。
 func chainProviders(deps *Deps) map[string]ChainStatusProvider {
-	if len(deps.SimChains) > 0 {
-		out := make(map[string]ChainStatusProvider, len(deps.SimChains))
-		for name, c := range deps.SimChains {
-			out[name] = c
-		}
-		return out
-	}
 	return deps.Chains
 }
 

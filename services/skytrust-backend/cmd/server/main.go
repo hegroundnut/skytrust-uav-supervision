@@ -3,12 +3,9 @@ package main
 import (
 	"errors"
 	"log"
-	"time"
 
 	"skytrust-backend/internal/api"
 	"skytrust-backend/internal/audit"
-	"skytrust-backend/internal/chainadapter"
-	"skytrust-backend/internal/chainadapter/sim"
 	"skytrust-backend/internal/config"
 	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/crypto"
@@ -39,27 +36,22 @@ func Run(addr string) error {
 	if err != nil {
 		return err
 	}
-	chains := map[string]*sim.Chain{
-		"fabric":     sim.New("fabric", sim.WithLatency(10*time.Millisecond)),
-		"chainmaker": sim.New("chainmaker", sim.WithLatency(5*time.Millisecond)),
-		"fisco-bcos": sim.New("fisco-bcos", sim.WithLatency(10*time.Millisecond)),
-	}
-	resets := make(map[string]chainadapter.Resettable, len(chains))
-	for name, c := range chains {
-		resets[name] = c
+	adapters, resets, err := buildChains(cfg)
+	if err != nil {
+		return err
 	}
 	seeder := demo.NewSeeder(db, cs, resets)
 	auditSvc := audit.New(db)
-	adapters := make(map[string]chainadapter.ChainAdapter, len(chains))
-	for name, s := range chains {
-		adapters[name] = s
-	}
 	gw := crosschain.NewGateway(db, cs, adapters, auditSvc)
 	biz := uavbusiness.New(db, cs, gw, auditSvc)
 	off := offchain.New(db, cs, auditSvc)
 	reg := regulatory.New(db, cs, gw, auditSvc)
 	exp := experiment.New(db, cs, gw, biz, off, reg, auditSvc, seeder)
-	r, err := api.NewRouter(&api.Deps{DB: db, Crypto: cs, SimChains: chains, Seeder: seeder, Audit: auditSvc, Gateway: gw, Business: biz, Offchain: off, Regulatory: reg, Experiment: exp})
+	status := make(map[string]api.ChainStatusProvider, len(adapters))
+	for name, ad := range adapters {
+		status[name] = ad
+	}
+	r, err := api.NewRouter(&api.Deps{DB: db, Crypto: cs, Chains: status, Seeder: seeder, Audit: auditSvc, Gateway: gw, Business: biz, Offchain: off, Regulatory: reg, Experiment: exp})
 	if err != nil {
 		return err
 	}

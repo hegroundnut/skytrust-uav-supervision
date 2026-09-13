@@ -12,6 +12,9 @@ import (
 	"skytrust-backend/internal/api"
 	"skytrust-backend/internal/audit"
 	"skytrust-backend/internal/chainadapter"
+	adpchainmaker "skytrust-backend/internal/chainadapter/chainmaker"
+	adpfabric "skytrust-backend/internal/chainadapter/fabric"
+	adpfisco "skytrust-backend/internal/chainadapter/fisco"
 	"skytrust-backend/internal/chainadapter/sim"
 	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/crypto"
@@ -45,23 +48,28 @@ func bootServer(t *testing.T) *httptest.Server {
 	chains := map[string]*sim.Chain{
 		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
 	}
-	adapters := make(map[string]chainadapter.ChainAdapter, len(chains))
-	for name, s := range chains {
-		adapters[name] = s
+	adapters := map[string]chainadapter.ChainAdapter{
+		"fabric":     adpfabric.New(chains["fabric"]),
+		"chainmaker": adpchainmaker.New(chains["chainmaker"]),
+		"fisco-bcos": adpfisco.New(chains["fisco-bcos"]),
+	}
+	resets := make(map[string]chainadapter.Resettable, len(chains))
+	for name, c := range chains {
+		resets[name] = c
+	}
+	status := make(map[string]api.ChainStatusProvider, len(adapters))
+	for name, ad := range adapters {
+		status[name] = ad
 	}
 	auditSvc := audit.New(db)
 	gw := crosschain.NewGateway(db, cs, adapters, auditSvc)
 	biz := uavbusiness.New(db, cs, gw, auditSvc)
 	off := offchain.New(db, cs, auditSvc)
 	reg := regulatory.New(db, cs, gw, auditSvc)
-	resets := make(map[string]chainadapter.Resettable, len(chains))
-	for name, c := range chains {
-		resets[name] = c
-	}
 	seeder := demo.NewSeeder(db, cs, resets)
 	exp := experiment.New(db, cs, gw, biz, off, reg, auditSvc, seeder)
 	r, err := api.NewRouter(&api.Deps{
-		DB: db, Crypto: cs, SimChains: chains,
+		DB: db, Crypto: cs, Chains: status,
 		Seeder: seeder, Audit: auditSvc,
 		Gateway: gw, Business: biz, Offchain: off, Regulatory: reg, Experiment: exp,
 	})
