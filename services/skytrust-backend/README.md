@@ -8,7 +8,9 @@
 - **跨链网关（Plan 2）**：13 步跨链协议引擎——监管链非旁路、业务链不直连（fabric 与 fisco-bcos 之间必经 chainmaker 中转）、两跳四段 TxID 全程留痕、幂等去重（2004）、传输级重试、SM3/SM9 成败均留痕（`verify_result = PASS|FAIL_SM3|FAIL_SM9`）；
 - **系统一·任务申请跨域协同（Plan 2）**：主数据 → 无人机注册跨链证明 → 任务创建（SM9 加密 + 脱敏）→ 提交（源链交易 + MISSION_APPLICATION 跨链）→ 监管审核（MISSION_REVIEW_RESULT 跨链）→ 三维冲突协调 → 飞行许可签发/验证/吊销（FLIGHT_PASS / PASS_REVOKE 跨链）；
 - **系统二·链下可信网络（Plan 3）**：亚秒级 Dijkstra 可信路由与确定性时延仿真、SM9 挑战认证会话、消息引擎（seq/SM3/SM9/失败也留痕）、虫洞攻击仿真与 5 维风险检测、节点隔离与可信路径重算恢复；
-- **系统三·跨域可信监管（Plan 4）**：6 类安全告警与线性状态机、7 级跨链身份亚秒追踪（断链即断点留痕，禁止拼造）、监管授权（scope×目标×有效窗 + ChainMaker 上链）、SM9 密文核验（未授权仅返回封缄——密文状态/摘要/脱敏值；授权后按 scope 解密临时视图 + SM3/SM9 双验证 + 航路/载荷一致性自动告警，核验结论 audit_hash 上链）、监管审计查询/CSV 导出与驾驶舱聚合。
+- **系统三·跨域可信监管（Plan 4）**：6 类安全告警与线性状态机、7 级跨链身份亚秒追踪（断链即断点留痕，禁止拼造）、监管授权（scope×目标×有效窗 + ChainMaker 上链）、SM9 密文核验（未授权仅返回封缄——密文状态/摘要/脱敏值；授权后按 scope 解密临时视图 + SM3/SM9 双验证 + 航路/载荷一致性自动告警，核验结论 audit_hash 上链）、监管审计查询/CSV 导出与驾驶舱聚合；
+- **实验与验收（Plan 5）**：11 类实验引擎（执行器注册表 + 统计器 成功率/p50/p95/max + Run 编排）、experiment 四端点、TC1/TC2/TC3 各 8 例验收套件（24 例独立 :memory: 服务器）、Apifox 文档工件（openapi.json 64 端点 + scenarios.json 24 场景 + 回放录制套件，产物入库 docs/apifox）；
+- **真实三链迁移（Plan 6）**：ChainTransport 迁移缝 + 按链适配器（chainmaker/fabric/fisco）、CHAIN_MODE 与分链覆盖 + buildChains 切换（未注册 real 传输 = 启动 fail-fast，绝不静默仿真冒充真实链）、contracts/ 三链合约工件 + 交付索引、docs/real-chain-migration.md 迁移指南（"三链真实在线"属部署期验收门）。
 
 ## 启动方式
 
@@ -32,11 +34,16 @@ cd services/skytrust-backend && go run ./cmd/server
 | --- | --- | --- |
 | `SERVER_ADDR` | `:8080` | HTTP 监听地址 |
 | `DB_PATH` | `data/skytrust.db` | SQLite 数据库文件路径 |
-| `CHAIN_MODE` | `sim` | 链模式：`sim`（模拟链，默认）/ `real`（真实三链由 Plan 6 接入 ChainMaker→Fabric→FISCO SDK） |
+| `CHAIN_MODE` | `sim` | 链模式：`sim`（inproc 模拟传输，默认）/ `real`（真实三链；需按 `docs/real-chain-migration.md` 注册各链 SDK 传输，未注册则启动 fail-fast，绝不静默仿真冒充真实链） |
+| `CHAINMAKER_MODE` | `（空）` | 监管链分链覆盖：空=跟随 `CHAIN_MODE`；可独立设 `sim`/`real` |
+| `FABRIC_MODE` | `（空）` | 运营链分链覆盖：空=跟随 `CHAIN_MODE`；可独立设 `sim`/`real` |
+| `FISCO_MODE` | `（空）` | 管理链分链覆盖：空=跟随 `CHAIN_MODE`；可独立设 `sim`/`real` |
 | `SM9_KEY_DIR` | `data/sm9` | SM9 主密钥持久化目录 |
 | `APP_TIMEZONE` | `Asia/Shanghai` | 响应时间戳时区 |
 | `LOG_LEVEL` | `info` | 日志级别 |
 | `OFFCHAIN_AUTOPILOT_MS` | `0` | 系统二后台 HEARTBEAT 间隔（毫秒）。`0`=关闭（测试默认）；生产入口 main.go 在值为 0 时自动采用 2000ms；设为负值 = 显式关闭生产后台流量 |
+
+> **三链真实在线属部署期验收门**：`CHAIN_MODE=real`（或分链 `CHAINMAKER_MODE`/`FABRIC_MODE`/`FISCO_MODE`=real）需 Docker / cgo（CGO_ENABLED=1，MinGW-w64）/ Java 与三链网络就绪，并按 [`docs/real-chain-migration.md`](../../docs/real-chain-migration.md) 注册真实 SDK 传输；hermetic 构建不携带任何链 SDK，未注册传输时启动即 fail-fast（`config.ChainModeFor` 决定每链生效模式，绝不静默仿真冒充真实链）。三链合约工件与索引见 [`contracts/README.md`](../../contracts/README.md)。
 
 ## API 约定与端点清单
 
@@ -406,6 +413,7 @@ go test ./... -count=1
 - `TestFoundationE2E`：链状态 → demo init → SM9 签名/验签/篡改拒绝 → 健康检查 → 审计查询 → 重置后重复演示；
 - `TestSystem1E2E`：注册跨链闭环 → 任务创建/提交 → 审核获批 → 许可签发/验证 → 冲突检测/协调 → 幂等 2004 → 伪签名 FAIL_SM9 留痕 → 亚秒时延断言 → 吊销闭环 → 审计全程可查。
 - `TestSystem2E2E`：链下拓扑 → 会话开启（SM9 挑战认证）→ 基线消息 → 虫洞开启（虚假短路径）→ 隧道消息时延骤降 → 5 维检测 DETECT → 攻击节点隔离 + 会话降级 → 降级期仍可发消息 → 路径重算恢复 → 回归 ACTIVE → 隔离节点拒绝复活（4001）→ 事件链 DETECT/ISOLATE/RECOVER 齐备 → 消息统计 → 会话关闭后拒发（4002）。
+- `TestSystem3E2E`：业务主线（create→submit→review APPROVED→pass/issue）→ 告警登记 + 线性状态机（跨级 6002）→ 7 级身份追踪（L7=Manufacturer-B、亚秒、断链 5001 break_level 1 断点留痕禁拼造）→ 未授权密文核验 5002 封缄（无明文键 + INSPECT_UNAUTHORIZED 留痕）→ 授权闭环（AUTH-2026-001 APPROVE 上链 CHAINMAKER- 前缀 + 复审 6002）→ 授权核验（明文视图 + SM3/SM9 双验证 + 航路/载荷一致结论上链）→ 偏航核验（ROUTE_DEVIATION 自动告警 + 去重）→ 监管审计查询/CSV 导出 → 驾驶舱聚合 → 过期授权 5004（惰性 EXPIRED）。
 
 ```bash
 go test ./tests/ -v
@@ -447,11 +455,11 @@ services/skytrust-backend/
 - **Plan 3（系统二·链下可信网络）**：✅ 完成 —— 链下拓扑与 Dijkstra 可信路由、确定性时延仿真（通告/实测/地理下限）、会话域（SM9 挑战认证 + 状态机全程 Assert）、消息引擎（seq/SM3/SM9/失败留痕/性能统计）、虫洞攻击开关（隐藏隧道 + 虚假短路径）、5 维风险评分与隔离（阈值 0.7 + 身份一票否决）、可信路径重算恢复、事件留痕、autopilot 后台流量、系统二端到端验证。
 - **Plan 4（系统三·密文监管）**：✅ 完成 —— 6 类安全告警与线性状态机、7 级跨链身份追踪（伪名→设备地址→许可→SM9→无人机→运营方→厂商，断链即断点 5001，亚秒实测）、监管授权（scope×目标×有效窗，APPROVE 写 ChainMaker regulatory_authorization，惰性过期）、SM9 密文核验（未授权仅封缄 5002/5003/5004 且留痕，授权后临时解密视图不落库 + SM3/SM9 双验证 + 航路/载荷一致性自动告警去重 + 结论 audit_hash 写 audit_record）、监管审计查询/CSV 导出、驾驶舱聚合、系统三端到端验证（10 端点）。
 - **Plan 5（实验 + 验收 + Apifox 文档）**：✅ 完成 —— 11 类实验引擎（注册表 + 统计器成功率/p50/p95/max + Run 编排）、experiment 四端点、TC1×8+TC2×8+TC3×8 验收套件（24 例独立 :memory:）、apidoc 渲染核心（Schema 推断/OpenAPI 3.0.3/场景文档/确定性渲染）+ 端点表 64 行/场景表 24 个、Apifox 回放录制套件（24 场景 + 64 端点样例 + [] 探针）与 docs/apifox 产物入库。
-- **Plan 6（真实三链切换 ChainMaker→Fabric→FISCO）**：待实施
+- **Plan 6（真实三链切换 ChainMaker→Fabric→FISCO）**：✅ 完成 —— ChainTransport 迁移缝 + 按链适配器（chainmaker/fabric/fisco）、sim TxID SM3 化、CHAIN_MODE 与分链覆盖（CHAINMAKER_MODE/FABRIC_MODE/FISCO_MODE）+ buildChains 切换（未注册 real = 启动 fail-fast，绝不静默仿真）、三链 contracts/ 合约工件（ChainMaker Docker-Go ×5 / Fabric chaincode / FISCO Solidity）+ 交付索引、docs/real-chain-migration.md 迁移指南、实验并发钳制与遗留 backlog 清扫（F-1/F-2/F-3/F-5、C11-C19、B3/B4）；"三链真实在线"属部署期验收门（需 Docker/cgo/Java/三链网络），hermetic 构建不携带链 SDK。
 
 ## Apifox 文档
 
-- `docs/apifox/skytrust-backend.openapi.json`（仓库根）：OpenAPI 3.0.3，64 个全 POST 端点，含录制请求样例与 success/business_error 双响应样例（`x-error-sample-source: recorded|static` 标注来源）——Apifox「导入数据 → OpenAPI/Swagger」直接导入。
+- `docs/apifox/skytrust-backend.openapi.json`（仓库根）：OpenAPI 3.0.3，64 个全 POST 端点，含录制请求样例与 success/business_error 双响应样例（`x-sample-source: recorded|static` 标注来源）——Apifox「导入数据 → OpenAPI/Swagger」直接导入。
 - `docs/apifox/skytrust-test-scenarios.json`：24 个验收/演示场景（TC1-01..TC3-08），每步含 body 与预期 code；`${ref}` 为运行时捕获引用（前序步骤 capture），`${now-1h}`/`${now+1h}` 为动态时间占位符（timex 格式）。
 - 重新生成（在 `services/skytrust-backend` 下执行；产物含时间戳/trace_id，重生成字节变化属正常快照语义）：
 
