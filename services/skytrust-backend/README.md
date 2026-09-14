@@ -402,7 +402,7 @@ cd services/skytrust-backend && go run ./cmd/server
 
 ## 测试运行方式
 
-全量回归（274 个顶层测试）：
+全量回归（315 个顶层测试）：
 
 ```bash
 go test ./... -count=1
@@ -429,7 +429,10 @@ services/skytrust-backend/
 │   ├── api/               # 路由、中间件、统一响应/错误码别名、64 端点 handler、api.Deps
 │   ├── apidoc/            # Apifox 文档渲染：Schema 推断 / OpenAPI 3.0.3 构建 / 场景文档 / 确定性渲染 + 端点表（64 行）/ 场景表（24 个）
 │   ├── audit/             # 审计服务（query / export CSV）
-│   ├── chainadapter/      # 链适配接口（ChainAdapter / ChainStatusProvider）
+│   ├── chainadapter/      # 链适配接口（ChainAdapter / ChainStatusProvider）+ ChainTransport 迁移缝
+│   │   ├── chainmaker/    # ChainMaker 真实链适配器（合约/方法白名单）
+│   │   ├── fabric/        # Fabric 真实链适配器（recordJSON 约定 + 方法白名单）
+│   │   ├── fisco/         # FISCO BCOS 真实链适配器（合约/方法白名单）
 │   │   └── sim/           # 模拟链：fabric / chainmaker / fisco-bcos（延迟/故障注入）
 │   ├── config/            # 环境变量配置加载（默认值见上表）
 │   ├── crosschain/        # 跨链网关：13 步协议引擎、信封规范化、路由/载荷策略、errcode/timex 之外的共享类型
