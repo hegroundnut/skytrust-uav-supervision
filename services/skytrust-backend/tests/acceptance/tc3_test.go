@@ -7,7 +7,7 @@ import (
 )
 
 // goldenThread 黄金线前置（载荷与 tests/system3_e2e_test.go 逐字段一致）：
-// 业务主线 → PASS-<当前年>-001（C17：年份随当前年滚动）→ 显式告警 ALERT-2026-001。
+// 业务主线 → PASS-2026-001（冻结数据裁定：issuePassA 显式 pass_id 签发，非生成路径，年翻稳定）→ 显式告警 ALERT-2026-001。
 // 身份映射由 demo/init 预置：PSEUDO-UAV-83921 → PASS-2026-001 → UAV-A-001 → Manufacturer-B。
 // L3 追踪要求映射的 pass_id 有真实 flight_passes 行 → issuePassA 必不可少。
 func goldenThread(t *testing.T, srv *httptest.Server) map[string]any {
