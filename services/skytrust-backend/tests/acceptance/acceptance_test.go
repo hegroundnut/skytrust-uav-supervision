@@ -3,7 +3,6 @@ package acceptance
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -119,13 +118,6 @@ func wantCode(t *testing.T, step string, want float64, resp map[string]any) map[
 	return d
 }
 
-// seqID 重构自动生成序列 ID，仅用于 PASS 侧（C17：genPassID 年份显式取自
-// timex.Now().Year()，随当前年滚动）。MISSION 侧（C17 范围裁定）：年份随任务 start_time
-// 年滚动——夹具窗口均冻结于 2026，断言直接写 MISSION-2026-001 等冻结字面量。acceptance 包共用。
-func seqID(prefix string, n int) string {
-	return fmt.Sprintf("%s-%d-%03d", prefix, timex.Now().Year(), n)
-}
-
 // mainlineA 业务主线（载荷与 tests/system1_e2e_test.go 逐字段一致）：
 // create→submit→review APPROVED，返回 application_id。
 // 全新库首个任务恒为 MISSION-2026-001（C17 范围裁定：年份随 start_time 年滚动——窗口冻结于 2026 → 冻结字面量，年翻稳定）。
@@ -149,15 +141,19 @@ func mainlineA(t *testing.T, srv *httptest.Server) string {
 	return appID
 }
 
-// issuePassA 签发 PASS-<当前年>-001（now±1h 窗口保证立即有效），返回 {pass,crosschain}。
+// issuePassA 签发 PASS-2026-001（显式冻结 ID + now±1h 窗口保证立即有效），返回 {pass,crosschain}。
+// 演示数据冻结裁定（C17 范围）：seed 身份映射 PassID=PASS-2026-001 为冻结字面量，
+// L3 追踪要求该 ID 在 flight_passes 有真实行——显式 ID 签发生成路径旁路（genPassID
+// 随当前年滚动），年翻后映射与许可行永久一致（与 experiment/scenarios_s3 黄金线同款手法）。
 func issuePassA(t *testing.T, srv *httptest.Server) map[string]any {
 	t.Helper()
 	iss := must0(t, "pass/issue", call(t, srv, "/api/pass/issue", map[string]any{
+		"pass_id":    "PASS-2026-001", // 演示数据冻结裁定：与 seed 身份映射逐字节对齐，非生成路径
 		"mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN",
 		"valid_from": timex.FormatTime(timex.Now().Add(-time.Hour)),
 		"valid_to":   timex.FormatTime(timex.Now().Add(time.Hour)),
 	}))
-	if iss["pass"].(map[string]any)["pass_id"] != seqID("PASS", 1) ||
+	if iss["pass"].(map[string]any)["pass_id"] != "PASS-2026-001" ||
 		iss["pass"].(map[string]any)["status"] != "VALID" {
 		t.Fatalf("pass = %v", iss["pass"])
 	}

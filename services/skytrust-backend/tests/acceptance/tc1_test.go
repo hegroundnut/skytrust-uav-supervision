@@ -198,7 +198,7 @@ func TestTC1_07PassIssuance(t *testing.T) {
 		!strings.HasPrefix(tx["target_chain_tx_id"].(string), "FABRIC-") {
 		t.Fatalf("FLIGHT_PASS 管理→监管→运营 = %v", tx)
 	}
-	ver := must0(t, "pass/verify", call(t, srv, "/api/pass/verify", map[string]any{"pass_id": seqID("PASS", 1)}))
+	ver := must0(t, "pass/verify", call(t, srv, "/api/pass/verify", map[string]any{"pass_id": "PASS-2026-001"})) // 演示数据冻结裁定：issuePassA 显式冻结 ID
 	if ver["valid"] != true {
 		t.Fatalf("verify = %v", ver)
 	}

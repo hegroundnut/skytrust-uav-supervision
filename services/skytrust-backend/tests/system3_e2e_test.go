@@ -53,11 +53,12 @@ func TestSystem3E2E(t *testing.T) {
 		"comment": "同意执行", "rules_hit": []string{"R-ALT-001"},
 	}))
 	iss := must0("pass/issue", call(t, srv, "/api/pass/issue", map[string]any{
+		"pass_id":    "PASS-2026-001", // 演示数据冻结裁定：与 demo/init 身份映射逐字节对齐（L3 追踪年翻永久命中）
 		"mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN",
 		"valid_from": timex.FormatTime(timex.Now().Add(-time.Hour)),
 		"valid_to":   timex.FormatTime(timex.Now().Add(time.Hour)),
 	}))
-	if iss["pass"].(map[string]any)["pass_id"] != seqID("PASS", 1) ||
+	if iss["pass"].(map[string]any)["pass_id"] != "PASS-2026-001" ||
 		iss["pass"].(map[string]any)["status"] != "VALID" {
 		t.Fatalf("pass = %v", iss["pass"])
 	}

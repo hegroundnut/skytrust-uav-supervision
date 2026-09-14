@@ -51,12 +51,12 @@ func TestTC2_02InvalidPassRejected(t *testing.T) {
 	mainlineA(t, srv)
 	issuePassA(t, srv)
 	rvk := must0(t, "pass/revoke", call(t, srv, "/api/pass/revoke", map[string]any{
-		"pass_id": seqID("PASS", 1), "reason": "任务结束", "operator": "FISCO-ADMIN",
+		"pass_id": "PASS-2026-001", "reason": "任务结束", "operator": "FISCO-ADMIN",
 	}))
 	if rvk["pass"].(map[string]any)["status"] != "REVOKED" || rvk["crosschain_status"] != "SUCCESS" {
 		t.Fatalf("revoke = %v", rvk)
 	}
-	ver := must0(t, "pass/verify revoked", call(t, srv, "/api/pass/verify", map[string]any{"pass_id": seqID("PASS", 1)}))
+	ver := must0(t, "pass/verify revoked", call(t, srv, "/api/pass/verify", map[string]any{"pass_id": "PASS-2026-001"}))
 	if ver["valid"] != false || ver["status"] != "REVOKED" {
 		t.Fatalf("verify = %v", ver)
 	}

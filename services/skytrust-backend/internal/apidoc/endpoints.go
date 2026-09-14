@@ -62,7 +62,7 @@ var Endpoints = []Endpoint{
 	{Path: "/api/review/query", Group: "审核", Summary: "审核记录查询", Sample: map[string]any{"application_id": "${app_id}"}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/conflict/detect", Group: "冲突", Summary: "时空冲突检测（三维重叠，主动方进 COORDINATING）", Sample: map[string]any{"mission_id": "MISSION-2026-001"}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/conflict/resolve", Group: "冲突", Summary: "冲突协调处置。样例为确定性错误（未知 conflict_id→6002）；成功路径见场景 TC1-06", Sample: map[string]any{"conflict_id": "CFL-NOPE-001", "resolution": "时间窗后移30分钟", "operator": "Operator-B"}, ExpectCode: 6002, ProbeExpect: 6002},
-	{Path: "/api/pass/issue", Group: "通行许可", Summary: "飞行许可签发（FLIGHT_PASS 管理→监管→运营）", Sample: map[string]any{"mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN", "valid_from": "${now-1h}", "valid_to": "${now+1h}"}, ExpectCode: 0, ProbeExpect: 6002},
+	{Path: "/api/pass/issue", Group: "通行许可", Summary: "飞行许可签发（FLIGHT_PASS 管理→监管→运营）", Sample: map[string]any{"pass_id": "PASS-2026-001", "mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN", "valid_from": "${now-1h}", "valid_to": "${now+1h}"}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/pass/query", Group: "通行许可", Summary: "许可查询", Sample: map[string]any{"pass_id": "PASS-2026-001"}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/pass/list", Group: "通行许可", Summary: "许可列表（分页）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/pass/verify", Group: "通行许可", Summary: "许可验证（valid/reasons/status；吊销后 valid=false）", Sample: map[string]any{"pass_id": "PASS-2026-001"}, ExpectCode: 0, ProbeExpect: 6002},

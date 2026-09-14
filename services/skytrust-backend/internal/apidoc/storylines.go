@@ -5,7 +5,8 @@ package apidoc
 // capture 引用全回放共享命名空间（TC 前缀防冲突）；${now±1h} 由回放引擎注入。
 // 状态依赖：TC2-08 开头 demo/reset+demo/init（清 ISOLATED/虫洞——虫洞状态由 DB 推导，
 // 清表即复位；reset 不重灌故必须跟 init）；TC3 依赖 TC2-08 重灌后的种子数据，
-// 自增 ID 从头（MISSION-2026-001/PASS-2026-001 复用无冲突——旧行已清）。
+// 自增 ID 从头（MISSION-2026-001 复用无冲突——旧行已清；PASS-2026-001 为显式 ID
+// 签发——演示数据冻结裁定，签发即冻结字面量，年翻永久命中后续 verify/revoke/追踪步）。
 var Storylines = []Scenario{
 	{ID: "TC1-01", Name: "三链在线", System: "system1", Steps: []ScenarioStep{
 		{Path: "/api/chain/status", Body: map[string]any{}, ExpectCode: 0},
@@ -49,7 +50,7 @@ var Storylines = []Scenario{
 		{Path: "/api/mission/query", Body: map[string]any{"mission_id": "MISSION-2026-001"}, ExpectCode: 0},
 	}},
 	{ID: "TC1-07", Name: "许可签发与验证", System: "system1", Steps: []ScenarioStep{
-		{Path: "/api/pass/issue", Body: map[string]any{"mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN", "valid_from": "${now-1h}", "valid_to": "${now+1h}"}, ExpectCode: 0},
+		{Path: "/api/pass/issue", Body: map[string]any{"pass_id": "PASS-2026-001", "mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN", "valid_from": "${now-1h}", "valid_to": "${now+1h}"}, ExpectCode: 0},
 		{Path: "/api/pass/verify", Body: map[string]any{"pass_id": "PASS-2026-001"}, ExpectCode: 0},
 	}},
 	{ID: "TC1-08", Name: "跨链批量吞吐", System: "system1", Steps: []ScenarioStep{
@@ -100,7 +101,7 @@ var Storylines = []Scenario{
 		{Path: "/api/mission/create", Body: missionMainline(), ExpectCode: 0},
 		{Path: "/api/mission/submit", Body: map[string]any{"mission_id": "MISSION-2026-001", "operator": "Operator-A"}, ExpectCode: 0, Capture: map[string]string{"tc3_app": "data.application.application_id"}},
 		{Path: "/api/review/submit", Body: reviewApproved("${tc3_app}", "同意执行"), ExpectCode: 0},
-		{Path: "/api/pass/issue", Body: map[string]any{"mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN", "valid_from": "${now-1h}", "valid_to": "${now+1h}"}, ExpectCode: 0},
+		{Path: "/api/pass/issue", Body: map[string]any{"pass_id": "PASS-2026-001", "mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN", "valid_from": "${now-1h}", "valid_to": "${now+1h}"}, ExpectCode: 0},
 		{Path: "/api/alert/raise", Body: map[string]any{"alert_id": "ALERT-2026-001", "mission_id": "MISSION-2026-001", "uav_pseudonym": "PSEUDO-UAV-83921", "event_type": "ROUTE_DEVIATION", "risk_level": "HIGH", "source_system": "MANUAL", "operator": "REG-01"}, ExpectCode: 0},
 		{Path: "/api/alert/list", Body: map[string]any{}, ExpectCode: 0},
 	}},
