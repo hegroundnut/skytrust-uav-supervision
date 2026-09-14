@@ -32,9 +32,8 @@ type MissionInput struct {
 
 // genMissionID 自动生成 MISSION-<年>-%03d（count+1 探测）。
 // db 须传当前事务句柄（C18：生成+查重+插入同事务）。
-// C17：年份随当前年滚动——一律显式取自 timex.Now().Year()，不再跟随任务窗口年份。
-func (s *Service) genMissionID(db *gorm.DB) (string, error) {
-	year := timex.Now().Year()
+// C17 范围裁定：年份随任务 start_time 年滚动——与冻结演示数据一致，由调用方显式传入 start.Year()。
+func (s *Service) genMissionID(db *gorm.DB, year int) (string, error) {
 	var cnt int64
 	if err := db.Model(&model.Mission{}).Count(&cnt).Error; err != nil {
 		return "", err
@@ -124,7 +123,7 @@ func (s *Service) CreateMission(ctx context.Context, traceID string, in MissionI
 	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		missionID := in.MissionID
 		if missionID == "" {
-			gen, err := s.genMissionID(tx)
+			gen, err := s.genMissionID(tx, start.Year())
 			if err != nil {
 				return crosschain.NewError(errcode.Internal, "gen mission_id: %v", err)
 			}

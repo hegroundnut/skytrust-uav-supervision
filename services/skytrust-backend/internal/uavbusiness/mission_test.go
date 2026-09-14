@@ -3,7 +3,6 @@ package uavbusiness
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -13,7 +12,6 @@ import (
 	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/errcode"
 	"skytrust-backend/internal/model"
-	"skytrust-backend/internal/timex"
 )
 
 // seedMissionEnv 主数据 + 一台 VERIFIED UAV + R101(OPEN)/R205(OPEN)/R300(CLOSED)。
@@ -53,7 +51,8 @@ func TestCreateMissionFullFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}
-	if m.MissionID != fmt.Sprintf("MISSION-%d-001", timex.Now().Year()) {
+	// C17 范围裁定：年份随 start_time 年滚动——baseMissionInput 窗口冻结于 2026，故 ID 冻结为字面量（年翻稳定）。
+	if m.MissionID != "MISSION-2026-001" {
 		t.Errorf("id = %q", m.MissionID)
 	}
 	if m.Status != "DRAFT" {
@@ -243,10 +242,10 @@ func TestSubmitMissionFailWithdrawsAndRetries(t *testing.T) {
 	}
 }
 
-// TestGenMissionIDYearRollsWithCurrentYear C17：生成 mission_id 的年份一律显式取自
-// timex.Now().Year()（年份随当前年滚动），不再跟随 start_time 年份——远未来窗口
-// （2031）也必须产出 MISSION-<当前年>- 前缀（旧实现按 start.Year() 会得 MISSION-2031-）。
-func TestGenMissionIDYearRollsWithCurrentYear(t *testing.T) {
+// TestGenMissionIDYearFollowsStartTime C17 范围裁定：mission_id 年份显式取自任务
+// start_time 的年份（年份随任务 start_time 年滚动——与冻结演示数据一致），而非当前年——
+// 远未来窗口（2031）必须产出 MISSION-2031-001（若按 timex.Now().Year() 派生会得 MISSION-<当前年>-001）。
+func TestGenMissionIDYearFollowsStartTime(t *testing.T) {
 	svc, _ := testSvcFull(t)
 	seedMissionEnv(t, svc)
 	in := baseMissionInput()
@@ -256,9 +255,8 @@ func TestGenMissionIDYearRollsWithCurrentYear(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}
-	want := fmt.Sprintf("MISSION-%d-", timex.Now().Year())
-	if !strings.HasPrefix(m.MissionID, want) {
-		t.Fatalf("mission_id = %q, want prefix %q（年份必须随当前年滚动）", m.MissionID, want)
+	if m.MissionID != "MISSION-2031-001" {
+		t.Fatalf("mission_id = %q, want %q（年份必须随任务 start_time 年滚动）", m.MissionID, "MISSION-2031-001")
 	}
 }
 
