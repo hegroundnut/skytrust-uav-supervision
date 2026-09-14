@@ -87,25 +87,36 @@ func (s *Service) sendUAVProof(ctx context.Context, traceID string, uav *model.U
 		"fabric", crosschain.RegChainName, payload, uav.SM9Identity, sourceTxID)
 }
 
-// RegisterUAV 无人机注册（实施文档 §9.2 步骤1）。跨链失败停留 REGISTERED，
+// RegisterUAV 无人机注册（实施文档 §9.2 步骤1）。被引用 manufacturer/operator 须
+// 存在且 ACTIVE（B3，非 ACTIVE → 1001 + 文案含实际状态）。跨链失败停留 REGISTERED，
 // 返回的 tx 为网关留痕记录（非 nil），可经 StatusUAV VERIFY 重试。
 func (s *Service) RegisterUAV(ctx context.Context, traceID string, in UAVInput) (*model.UAV, *model.CrosschainTx, error) {
 	if in.ManufacturerID == "" || in.OperatorID == "" || in.SerialNo == "" {
 		return nil, nil, crosschain.NewError(errcode.Param, "manufacturer_id/operator_id/serial_no 必填")
 	}
-	var cnt int64
-	if err := s.db.WithContext(ctx).Model(&model.Manufacturer{}).Where("manufacturer_id = ?", in.ManufacturerID).Count(&cnt).Error; err != nil {
+	// B3：被引用主数据须存在且 ACTIVE（暂停的厂商/运营方不得注册新机；
+	// 对齐 CreateMission 的 UAV 状态守卫房规——1001 + 文案含实际状态）。
+	var mfr model.Manufacturer
+	if err := s.db.WithContext(ctx).Where("manufacturer_id = ?", in.ManufacturerID).First(&mfr).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil, crosschain.NewError(errcode.InvalidUAV, "manufacturer_id %q 不存在", in.ManufacturerID)
+		}
 		return nil, nil, crosschain.NewError(errcode.Internal, "manufacturer lookup: %v", err)
 	}
-	if cnt == 0 {
-		return nil, nil, crosschain.NewError(errcode.InvalidUAV, "manufacturer_id %q 不存在", in.ManufacturerID)
+	if mfr.Status != "ACTIVE" {
+		return nil, nil, crosschain.NewError(errcode.InvalidUAV, "manufacturer %s 状态 %q 不可注册无人机（需 ACTIVE）", mfr.ManufacturerID, mfr.Status)
 	}
-	if err := s.db.WithContext(ctx).Model(&model.Operator{}).Where("operator_id = ?", in.OperatorID).Count(&cnt).Error; err != nil {
+	var op model.Operator
+	if err := s.db.WithContext(ctx).Where("operator_id = ?", in.OperatorID).First(&op).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil, crosschain.NewError(errcode.InvalidUAV, "operator_id %q 不存在", in.OperatorID)
+		}
 		return nil, nil, crosschain.NewError(errcode.Internal, "operator lookup: %v", err)
 	}
-	if cnt == 0 {
-		return nil, nil, crosschain.NewError(errcode.InvalidUAV, "operator_id %q 不存在", in.OperatorID)
+	if op.Status != "ACTIVE" {
+		return nil, nil, crosschain.NewError(errcode.InvalidUAV, "operator %s 状态 %q 不可注册无人机（需 ACTIVE）", op.OperatorID, op.Status)
 	}
+	var cnt int64
 	// 查重+插入同事务（C12）：并发同 serial_no/uav_id 注册恰一成功。
 	var uav *model.UAV
 	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {

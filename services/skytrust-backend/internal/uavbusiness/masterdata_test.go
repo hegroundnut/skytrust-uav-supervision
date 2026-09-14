@@ -168,3 +168,38 @@ func TestListRoutesFilters(t *testing.T) {
 		t.Fatalf("pagesize cap: %d/%d err=%v", len(capped), cappedTotal, err)
 	}
 }
+
+// TestRegisterPartyStatusEnumValidation B3：manufacturer/operator status 枚举校验——
+// 对齐 CreateRoute corridor_status 枚举房规（收紧缺失侧；空串默认 ACTIVE 不变，
+// 枚举内合法值不受影响，不放松任何既有校验）。
+func TestRegisterPartyStatusEnumValidation(t *testing.T) {
+	svc, _ := testSvc(t)
+	ctx := context.Background()
+	if _, err := svc.RegisterManufacturer(ctx, "TRACE-T", ManufacturerInput{ManufacturerID: "Manufacturer-E1", Name: "厂商E1", Status: "BOGUS"}); codeOf(err) != errcode.Param {
+		t.Fatalf("manufacturer bogus status: want 6002, got %v", err)
+	}
+	if _, err := svc.RegisterOperator(ctx, "TRACE-T", OperatorInput{OperatorID: "Operator-E1", Name: "运营E1", Status: "BOGUS"}); codeOf(err) != errcode.Param {
+		t.Fatalf("operator bogus status: want 6002, got %v", err)
+	}
+	// 枚举内值与空串默认仍合法
+	if m, err := svc.RegisterManufacturer(ctx, "TRACE-T", ManufacturerInput{ManufacturerID: "Manufacturer-E2", Name: "厂商E2", Status: "SUSPENDED"}); err != nil || m.Status != "SUSPENDED" {
+		t.Fatalf("manufacturer suspended: %+v err=%v", m, err)
+	}
+	if o, err := svc.RegisterOperator(ctx, "TRACE-T", OperatorInput{OperatorID: "Operator-E2", Name: "运营E2"}); err != nil || o.Status != "ACTIVE" {
+		t.Fatalf("operator default: %+v err=%v", o, err)
+	}
+}
+
+// TestCreateRouteRejectsNegativeAltitude B3：CreateRoute 对齐 CreateMission——
+// altitude_min 必须非负（旧实现接受负值；0 为合法边界）。
+func TestCreateRouteRejectsNegativeAltitude(t *testing.T) {
+	svc, _ := testSvc(t)
+	ctx := context.Background()
+	_, err := svc.CreateRoute(ctx, "TRACE-T", RouteInput{RouteID: "R910", Zone: "Zone-A", StartPoint: "P1", EndPoint: "P2", AltitudeMin: -5, AltitudeMax: 120})
+	if codeOf(err) != errcode.Param {
+		t.Fatalf("negative altitude_min: want 6002, got %v", err)
+	}
+	if _, err := svc.CreateRoute(ctx, "TRACE-T", RouteInput{RouteID: "R911", Zone: "Zone-A", StartPoint: "P1", EndPoint: "P2", AltitudeMin: 0, AltitudeMax: 120}); err != nil {
+		t.Fatalf("zero altitude_min must stay legal: %v", err)
+	}
+}

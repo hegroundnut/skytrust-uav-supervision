@@ -2,6 +2,7 @@ package uavbusiness
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -136,6 +137,46 @@ func TestRegisterUAVValidation(t *testing.T) {
 	_, _, err = svc.RegisterUAV(ctx, "TRACE-T", UAVInput{ManufacturerID: "Manufacturer-M1", OperatorID: "Operator-O1"})
 	if codeOf(err) != errcode.Param {
 		t.Fatalf("missing serial: want 6002, got %v", err)
+	}
+}
+
+// TestRegisterUAVRejectsSuspendedParties B3：RegisterUAV 必须拒绝被引用的 SUSPENDED
+// manufacturer/operator（对齐 CreateMission 的 UAV 状态守卫——1001 + 文案含实际状态；
+// ACTIVE 双方不受影响，不放松任何既有校验）。
+func TestRegisterUAVRejectsSuspendedParties(t *testing.T) {
+	svc, _ := testSvcFull(t)
+	ctx := context.Background()
+	if _, err := svc.RegisterManufacturer(ctx, "TRACE-T", ManufacturerInput{ManufacturerID: "Manufacturer-S1", Name: "厂商S1", Status: "SUSPENDED"}); err != nil {
+		t.Fatalf("seed suspended manufacturer: %v", err)
+	}
+	if _, err := svc.RegisterManufacturer(ctx, "TRACE-T", ManufacturerInput{ManufacturerID: "Manufacturer-A1", Name: "厂商A1"}); err != nil {
+		t.Fatalf("seed active manufacturer: %v", err)
+	}
+	if _, err := svc.RegisterOperator(ctx, "TRACE-T", OperatorInput{OperatorID: "Operator-S1", Name: "运营S1", Status: "SUSPENDED"}); err != nil {
+		t.Fatalf("seed suspended operator: %v", err)
+	}
+	if _, err := svc.RegisterOperator(ctx, "TRACE-T", OperatorInput{OperatorID: "Operator-A1", Name: "运营A1"}); err != nil {
+		t.Fatalf("seed active operator: %v", err)
+	}
+	// SUSPENDED manufacturer → 1001 + 文案含实际状态
+	_, _, err := svc.RegisterUAV(ctx, "TRACE-T", UAVInput{ManufacturerID: "Manufacturer-S1", OperatorID: "Operator-A1", SerialNo: "SN-S-001"})
+	if codeOf(err) != errcode.InvalidUAV {
+		t.Fatalf("suspended manufacturer: want 1001, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "SUSPENDED") {
+		t.Errorf("error must carry actual manufacturer status: %v", err)
+	}
+	// SUSPENDED operator → 1001 + 文案含实际状态
+	_, _, err = svc.RegisterUAV(ctx, "TRACE-T", UAVInput{ManufacturerID: "Manufacturer-A1", OperatorID: "Operator-S1", SerialNo: "SN-S-002"})
+	if codeOf(err) != errcode.InvalidUAV {
+		t.Fatalf("suspended operator: want 1001, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "SUSPENDED") {
+		t.Errorf("error must carry actual operator status: %v", err)
+	}
+	// ACTIVE×ACTIVE → 既有成功路径不受影响
+	if _, _, err := svc.RegisterUAV(ctx, "TRACE-T", UAVInput{ManufacturerID: "Manufacturer-A1", OperatorID: "Operator-A1", SerialNo: "SN-S-003"}); err != nil {
+		t.Fatalf("active parties: %v", err)
 	}
 }
 

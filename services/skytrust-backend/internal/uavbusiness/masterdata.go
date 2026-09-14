@@ -17,10 +17,17 @@ type ManufacturerInput struct {
 	Status         string
 }
 
-// RegisterManufacturer 厂商注册；ID 重复 → 6002。
+// validPartyStatus manufacturer/operator status 枚举（B3：对齐 route corridor_status
+// 枚举校验房规；空串走默认 ACTIVE，不经枚举拒绝）。
+var validPartyStatus = map[string]bool{"ACTIVE": true, "SUSPENDED": true}
+
+// RegisterManufacturer 厂商注册；ID 重复 → 6002；status 仅允许 ACTIVE|SUSPENDED（空 → ACTIVE）→ 6002。
 func (s *Service) RegisterManufacturer(ctx context.Context, traceID string, in ManufacturerInput) (*model.Manufacturer, error) {
 	if in.ManufacturerID == "" || in.Name == "" {
 		return nil, crosschain.NewError(errcode.Param, "manufacturer_id 与 name 必填")
+	}
+	if in.Status != "" && !validPartyStatus[in.Status] {
+		return nil, crosschain.NewError(errcode.Param, "status 仅允许 ACTIVE|SUSPENDED，收到 %q", in.Status)
 	}
 	var cnt int64
 	if err := s.db.WithContext(ctx).Model(&model.Manufacturer{}).Where("manufacturer_id = ?", in.ManufacturerID).Count(&cnt).Error; err != nil {
@@ -91,10 +98,13 @@ type OperatorInput struct {
 	Contact             string
 }
 
-// RegisterOperator 运营方注册；ID 重复 → 6002。
+// RegisterOperator 运营方注册；ID 重复 → 6002；status 仅允许 ACTIVE|SUSPENDED（空 → ACTIVE）→ 6002。
 func (s *Service) RegisterOperator(ctx context.Context, traceID string, in OperatorInput) (*model.Operator, error) {
 	if in.OperatorID == "" || in.Name == "" {
 		return nil, crosschain.NewError(errcode.Param, "operator_id 与 name 必填")
+	}
+	if in.Status != "" && !validPartyStatus[in.Status] {
+		return nil, crosschain.NewError(errcode.Param, "status 仅允许 ACTIVE|SUSPENDED，收到 %q", in.Status)
 	}
 	var cnt int64
 	if err := s.db.WithContext(ctx).Model(&model.Operator{}).Where("operator_id = ?", in.OperatorID).Count(&cnt).Error; err != nil {
@@ -171,14 +181,14 @@ type RouteInput struct {
 
 var validCorridorStatus = map[string]bool{"OPEN": true, "RESTRICTED": true, "CLOSED": true}
 
-// CreateRoute 航线创建；ID 重复 → 6002；altitude_min >= altitude_max → 6002；
+// CreateRoute 航线创建；ID 重复 → 6002；altitude_min 负值或 >= altitude_max → 6002；
 // corridor_status 仅允许 OPEN|RESTRICTED|CLOSED（空 → OPEN）。
 func (s *Service) CreateRoute(ctx context.Context, traceID string, in RouteInput) (*model.RouteSegment, error) {
 	if in.RouteID == "" || in.Zone == "" || in.StartPoint == "" || in.EndPoint == "" {
 		return nil, crosschain.NewError(errcode.Param, "route_id/zone/start_point/end_point 必填")
 	}
-	if in.AltitudeMin >= in.AltitudeMax {
-		return nil, crosschain.NewError(errcode.Param, "altitude_min(%v) 必须小于 altitude_max(%v)", in.AltitudeMin, in.AltitudeMax)
+	if in.AltitudeMin < 0 || in.AltitudeMin >= in.AltitudeMax {
+		return nil, crosschain.NewError(errcode.Param, "altitude_min(%v) 必须非负且小于 altitude_max(%v)", in.AltitudeMin, in.AltitudeMax)
 	}
 	if in.CorridorStatus == "" {
 		in.CorridorStatus = "OPEN"

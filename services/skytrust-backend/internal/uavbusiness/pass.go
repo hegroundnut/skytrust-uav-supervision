@@ -74,7 +74,8 @@ type PassIssueInput struct {
 	Issuer    string
 }
 
-// IssuePass 飞行许可签发：任务须 APPROVED（3004）。本地签名落库 GENERATING →
+// IssuePass 飞行许可签发：任务须 APPROVED（3004），且任务引用的 UAV 须 VERIFIED
+// （B4 跨域守卫 → 6002 + 文案含 UAV 实际状态）。本地签名落库 GENERATING →
 // FLIGHT_PASS 跨链（fisco-bcos→fabric，网关代提交源链）→ 成功迁移 VALID；
 // 失败停留 GENERATING，可用同 pass_id 重试（复用 FAILED 记录的源链 TxID）。
 func (s *Service) IssuePass(ctx context.Context, traceID string, in PassIssueInput) (*model.FlightPass, *model.CrosschainTx, error) {
@@ -88,6 +89,15 @@ func (s *Service) IssuePass(ctx context.Context, traceID string, in PassIssueInp
 	if m.Status != "APPROVED" {
 		return nil, nil, crosschain.NewError(errcode.MissionState,
 			"任务 %q 状态 %q 不可签发许可（需 APPROVED）", m.MissionID, m.Status)
+	}
+	// B4：跨域守卫——任务引用的 UAV 必须 VERIFIED（吊销/暂停/未确认机不得获得许可；
+	// 错误码沿用该入口既有参数错误族 6002，文案含实际状态）。
+	uav, err := s.QueryUAV(ctx, traceID, m.UAVID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if uav.Status != "VERIFIED" {
+		return nil, nil, crosschain.NewError(errcode.Param, "UAV %s 状态 %q 不可签发许可（需 VERIFIED）", uav.UAVID, uav.Status)
 	}
 	vf, vt := m.StartTime.Time, m.EndTime.Time
 	if in.ValidFrom != "" {

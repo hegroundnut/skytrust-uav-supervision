@@ -510,3 +510,32 @@ func TestListPassDeterministicTiebreaker(t *testing.T) {
 		t.Errorf("tiebreaker broken: iT01=%d iT02=%d", iT01, iT02)
 	}
 }
+
+// TestIssuePassUAVStatusGuard B4：签发许可的 UAV 状态跨域守卫——任务引用的 UAV 必须
+// VERIFIED；非 VERIFIED（REGISTERED/SUSPENDED/REVOKED）→ 6002 + 文案含 UAV 实际状态；
+// VERIFIED → 既有成功路径回归。守卫先于签名/落库：被拒轮次不得产生许可行。
+func TestIssuePassUAVStatusGuard(t *testing.T) {
+	svc, db := testSvcFull(t)
+	m := approvedMission(t, svc)
+	ctx := context.Background()
+	if _, _, err := svc.IssuePass(ctx, "TRACE-T", PassIssueInput{MissionID: m.MissionID, Issuer: "FISCO-ADMIN"}); err != nil {
+		t.Fatalf("verified uav issue: %v", err)
+	}
+	for _, st := range []string{"REGISTERED", "SUSPENDED", "REVOKED"} {
+		if err := db.Model(&model.UAV{}).Where("uav_id = ?", m.UAVID).Update("status", st).Error; err != nil {
+			t.Fatal(err)
+		}
+		_, _, err := svc.IssuePass(ctx, "TRACE-T", PassIssueInput{PassID: "PASS-GUARD-" + st, MissionID: m.MissionID, Issuer: "FISCO-ADMIN"})
+		if codeOf(err) != errcode.Param {
+			t.Fatalf("uav %s: want 6002, got %v", st, err)
+		}
+		if !strings.Contains(err.Error(), st) {
+			t.Errorf("uav %s: error must carry actual status: %v", st, err)
+		}
+	}
+	var cnt int64
+	db.Model(&model.FlightPass{}).Where("pass_id LIKE ?", "PASS-GUARD-%").Count(&cnt)
+	if cnt != 0 {
+		t.Errorf("rejected issues must not create pass rows, got %d", cnt)
+	}
+}
