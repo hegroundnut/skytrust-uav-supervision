@@ -26,10 +26,13 @@ type Gateway struct {
 	cs     *crypto.Service
 	chains map[string]chainadapter.ChainAdapter
 	audit  *audit.Service
+	// retryDelay 传输层重试退避（Task 15 可注入缝）：默认 retryBackoffMs；测试置 0
+	// 使 #rN failRow（UNIQUE 重试）路径无固定等待、可确定性测试。
+	retryDelay time.Duration
 }
 
 func NewGateway(db *gorm.DB, cs *crypto.Service, chains map[string]chainadapter.ChainAdapter, auditSvc *audit.Service) *Gateway {
-	return &Gateway{db: db, cs: cs, chains: chains, audit: auditSvc}
+	return &Gateway{db: db, cs: cs, chains: chains, audit: auditSvc, retryDelay: retryBackoffMs * time.Millisecond}
 }
 
 // Chain 按名返回链适配器（供业务服务发起本源链业务交易；跨域通信仍仅经 Send——
@@ -54,14 +57,16 @@ type SendRequest struct {
 	SourceChainTxID  string
 }
 
-// 重试策略：传输层 error（adapter 返回 err）重试 1 次、退避 20ms；
-// 回执 Status!=0 是确定性业务失败，不重试。
+// 重试策略：传输层 error（adapter 返回 err）重试 1 次、退避默认 20ms（经
+// Gateway.retryDelay 注入，Task 15 测试缝）；回执 Status!=0 是确定性业务失败，不重试。
 const (
 	retryAttempts  = 2
 	retryBackoffMs = 20
 )
 
-func withRetry[T any](fn func() (T, error)) (T, error) {
+// withRetry 传输层重试。Go 泛型方法不允许带类型参数的接收者方法，故 delay 以参数
+// 注入（调用点传 g.retryDelay），保持包级纯函数、无全局可变状态。
+func withRetry[T any](delay time.Duration, fn func() (T, error)) (T, error) {
 	var last T
 	var err error
 	for i := 0; i < retryAttempts; i++ {
@@ -70,7 +75,7 @@ func withRetry[T any](fn func() (T, error)) (T, error) {
 			return last, nil
 		}
 		if i < retryAttempts-1 {
-			time.Sleep(time.Duration(retryBackoffMs) * time.Millisecond)
+			time.Sleep(delay)
 		}
 	}
 	return last, err
@@ -196,7 +201,7 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 
 	// 步 3：源链确认。
 	if req.SourceChainTxID != "" {
-		rc, err := withRetry(func() (*chainadapter.TxReceipt, error) { return src.QueryTx(ctx, req.SourceChainTxID) })
+		rc, err := withRetry(g.retryDelay, func() (*chainadapter.TxReceipt, error) { return src.QueryTx(ctx, req.SourceChainTxID) })
 		if err != nil {
 			return fail(errcode.CrosschainSend, "source tx %s not found: %v", req.SourceChainTxID, err)
 		}
@@ -205,7 +210,7 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 		}
 		tx.SourceChainTxID = rc.TxID
 	} else {
-		rc, err := withRetry(func() (*chainadapter.TxReceipt, error) {
+		rc, err := withRetry(g.retryDelay, func() (*chainadapter.TxReceipt, error) {
 			return src.SubmitTx(ctx, sourceContract(req.SourceChain), SourceSubmitMethod, map[string]any{
 				"cross_tx_id": tx.CrossTxID, "message_type": req.MessageType, "business_id": req.BusinessID,
 			})
@@ -256,7 +261,7 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 	}
 
 	// 步 7：监管链登记接收。
-	rcv, err := withRetry(func() (*chainadapter.TxReceipt, error) {
+	rcv, err := withRetry(g.retryDelay, func() (*chainadapter.TxReceipt, error) {
 		return reg.SubmitTx(ctx, ContractRegRecord, "RegisterReceive", map[string]any{
 			"cross_tx_id": tx.CrossTxID, "message_type": req.MessageType, "business_id": req.BusinessID,
 			"source_chain": req.SourceChain, "source_chain_tx_id": tx.SourceChainTxID, "sm3_hash": tx.SM3Hash,
@@ -278,7 +283,7 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 
 	// 步 8：监管凭证（reg_record_id + 校验结果登记）。
 	tx.RegRecordID = model.GenRegRecordID()
-	vc, err := withRetry(func() (*chainadapter.TxReceipt, error) {
+	vc, err := withRetry(g.retryDelay, func() (*chainadapter.TxReceipt, error) {
 		return reg.SubmitTx(ctx, ContractRegRecord, "VerifyCredential", map[string]any{
 			"reg_record_id": tx.RegRecordID, "cross_tx_id": tx.CrossTxID,
 			"verify_result": tx.VerifyResult, "policy_result": tx.PolicyResult,
@@ -299,7 +304,7 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 	}
 
 	// 步 9：监管链登记转发。
-	rl, err := withRetry(func() (*chainadapter.TxReceipt, error) {
+	rl, err := withRetry(g.retryDelay, func() (*chainadapter.TxReceipt, error) {
 		return reg.SubmitTx(ctx, ContractRegTrace, "RegisterRelay", map[string]any{
 			"cross_tx_id": tx.CrossTxID, "reg_record_id": tx.RegRecordID,
 			"final_target_chain": req.FinalTargetChain, "business_id": req.BusinessID,
@@ -321,7 +326,7 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 
 	// 步 10：调用目标链适配器（仅监管校验通过后）。
 	tContract, tMethod := targetContractMethod(req.MessageType)
-	trc, err := withRetry(func() (*chainadapter.TxReceipt, error) {
+	trc, err := withRetry(g.retryDelay, func() (*chainadapter.TxReceipt, error) {
 		return target.SubmitTx(ctx, tContract, tMethod, req.Payload)
 	})
 	if err != nil {
@@ -339,7 +344,7 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 	}
 
 	// 步 11：监管链登记回执（回程）。
-	ret, err := withRetry(func() (*chainadapter.TxReceipt, error) {
+	ret, err := withRetry(g.retryDelay, func() (*chainadapter.TxReceipt, error) {
 		return reg.SubmitTx(ctx, ContractRegTrace, "RegisterReceipt", map[string]any{
 			"cross_tx_id": tx.CrossTxID, "reg_record_id": tx.RegRecordID,
 			"target_chain": req.FinalTargetChain, "target_chain_tx_id": tx.TargetChainTxID,
@@ -356,7 +361,7 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 	}
 
 	// 步 12：源链统一 ACK → SUCCESS。
-	ack, err := withRetry(func() (*chainadapter.TxReceipt, error) {
+	ack, err := withRetry(g.retryDelay, func() (*chainadapter.TxReceipt, error) {
 		return src.SubmitTx(ctx, sourceContract(req.SourceChain), "CrosschainAck", map[string]any{
 			"cross_tx_id": tx.CrossTxID, "reg_record_id": tx.RegRecordID,
 			"target_chain_tx_id": tx.TargetChainTxID, "status": "SUCCESS",

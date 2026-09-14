@@ -1,9 +1,14 @@
 package offchain
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -278,5 +283,55 @@ func TestMessageSendProxySignedEvidence(t *testing.T) {
 	ok, verr := svc.cs.SM9VerifyUserID(uid, []byte(res.Message.SM3Hash), sig)
 	if verr != nil || !ok {
 		t.Fatalf("proxy signature must verify: ok=%v err=%v", ok, verr)
+	}
+}
+
+// TestMessageSendSessionSyncFailureObservability Task 15（P3 遗留缝）：Create 成功、
+// session 同步失败（经 syncSession 函数变量缝注入）→ (1) 消息不回滚：SUCCESS 行已
+// 落库；(2) 错误 surface 给调用方（现状语义保持：仍返回 error、result 为 nil）；
+// (3) 观测缝：打出精确日志（消息已创建但同步失败——排障不再静默）。
+func TestMessageSendSessionSyncFailureObservability(t *testing.T) {
+	svc := newTestSvc(t)
+	ctx := context.Background()
+	sid := openTestSession(t, svc)
+
+	orig := syncSession
+	defer func() { syncSession = orig }()
+	boom := errors.New("sync boom")
+	var gotSession, gotActor string
+	syncSession = func(ctx context.Context, s *Service, traceID string, sess *model.OffchainSession, pathJSON string, actor string) error {
+		gotSession, gotActor = sess.SessionID, actor
+		return boom
+	}
+	var logBuf bytes.Buffer
+	log.SetOutput(&logBuf)
+	defer log.SetOutput(os.Stderr)
+
+	res, err := svc.MessageSend(ctx, "TRACE-T", &MessageSendRequest{
+		SessionID: sid, MsgType: "HEARTBEAT",
+		SourceNode: "UAV-A-001-NODE", TargetNode: "MGR",
+	})
+	// (2) 同步失败 surface：调用方收到注入错误本身（错误返回语义不变）
+	if !errors.Is(err, boom) {
+		t.Fatalf("want injected sync error surfaced, got %v", err)
+	}
+	if res != nil {
+		t.Errorf("result must be nil on sync failure: %+v", res)
+	}
+	if gotSession != sid || gotActor != "UAV-A-001-NODE" {
+		t.Errorf("seam args = session %q actor %q, want %q / UAV-A-001-NODE", gotSession, gotActor, sid)
+	}
+	// (1) 消息仍创建成功、不因同步失败回滚：SUCCESS 行已落库
+	var msg model.OffchainMessage
+	if qerr := svc.db.Where("session_id = ?", sid).First(&msg).Error; qerr != nil {
+		t.Fatalf("message must survive sync failure: %v", qerr)
+	}
+	if msg.Status != "SUCCESS" || msg.Seq != 1 || msg.MessageID == "" {
+		t.Errorf("persisted msg = %+v", msg)
+	}
+	// (3) 观测缝：精确日志字符串（brief 原文）
+	want := fmt.Sprintf("offchain: message %s created but session sync failed: %v", msg.MessageID, boom)
+	if !strings.Contains(logBuf.String(), want) {
+		t.Errorf("log = %q, want substring %q", logBuf.String(), want)
 	}
 }

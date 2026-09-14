@@ -808,3 +808,73 @@ func TestListDeterministicTiebreaker(t *testing.T) {
 		t.Errorf("tiebreaker broken: iT01=%d iT02=%d", iT01, iT02)
 	}
 }
+
+// TestSendRetryFailRowNonCosign Task 15（P3 遗留缝）：非代提交路径（SourceChainTxID
+// 由调用方提供、网关步 3 仅 QueryTx 确认）的 failRow 重试——预插 FAILED 行占用
+// baseKey（注入 UNIQUE 冲突：重发不能再以原幂等键 Create，必须走 #rN 分支）；
+// 经 retryDelay=0 注入缝，重发路径上的传输层抖动由 withRetry 以零退避重试
+//（确定性，无固定 20ms 等待）；断言 #r1 新行生成、RetryOf 溯源原行、原
+// FAILED 行停留终态（重试是新行不是状态迁移——P5-R8 断言风格）。
+func TestSendRetryFailRowNonCosign(t *testing.T) {
+	sims := defaultSims()
+	fabric := sims["fabric"]
+	// 非代提交：调用方自行提交源链交易，网关仅查询确认
+	srcRc, err := fabric.SubmitTx(context.Background(), "operator_business", "SeedNonCosign", map[string]any{"x": 1})
+	if err != nil || srcRc.Status != 0 {
+		t.Fatalf("seed source tx: rc=%+v err=%v", srcRc, err)
+	}
+	// reg 链包 flakyChain：重发的首次 SubmitTx（RegisterReceive）返回传输层 error →
+	// withRetry 以注入 delay=0 重试一次（确定性走过注入缝，不依赖固定退避）
+	adapters := map[string]chainadapter.ChainAdapter{
+		"fabric": fabric, RegChainName: &flakyChain{inner: sims[RegChainName], fails: 1}, "fisco-bcos": sims["fisco-bcos"],
+	}
+	gw, cs, db := testEnvAdapters(t, adapters)
+	gw.retryDelay = 0 // Task 15 可注入缝：零退避，消除固定 20ms 等待
+
+	uid := crypto.SM9IdentityOf("Operator-A")
+	// 预插 FAILED 行占用 baseKey（UNIQUE 冲突注入）：关键标识与重发体一致（C16），
+	// SM3Hash 留空 → 原记录步 4 前失败无摘要，载荷核验按 checkRetryInputs 规则跳过。
+	baseKey := model.IdempotencyKey(MsgMissionApplication, "APP-FR-NC-1", srcRc.TxID)
+	orig := &model.CrosschainTx{
+		CrossTxID: model.GenCrossTxID(), SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		MessageType: MsgMissionApplication, BusinessID: "APP-FR-NC-1", SM9Identity: uid,
+		Status: "FAILED", ErrorCode: errcode.CrosschainSend,
+		IdempotencyKey: baseKey, SourceChainTxID: srcRc.TxID,
+	}
+	if err := db.Create(orig).Error; err != nil {
+		t.Fatalf("seed failed row: %v", err)
+	}
+	req := &SendRequest{
+		MessageType: MsgMissionApplication, BusinessID: "APP-FR-NC-1",
+		SourceChain: "fabric", FinalTargetChain: "fisco-bcos",
+		Payload: validPayload(MsgMissionApplication), SourceChainTxID: srcRc.TxID,
+	}
+	signReq(t, cs, req, uid)
+	tx, err := gw.Send(context.Background(), "TRACE-TEST", req)
+	if err != nil {
+		t.Fatalf("failRow retry send: %v", err)
+	}
+	if tx.Status != "SUCCESS" {
+		t.Fatalf("want SUCCESS, got %s (code %d)", tx.Status, tx.ErrorCode)
+	}
+	// P5-R8 断言风格：#r1 新行 + RetryOf 溯源原 FAILED 行
+	if tx.IdempotencyKey != baseKey+"#r1" {
+		t.Errorf("retry key = %q, want %q", tx.IdempotencyKey, baseKey+"#r1")
+	}
+	if tx.RetryOf != orig.CrossTxID {
+		t.Errorf("retry_of = %q, want %q", tx.RetryOf, orig.CrossTxID)
+	}
+	re := reload(t, db, tx.CrossTxID)
+	if re.Status != "SUCCESS" || re.RetryOf != orig.CrossTxID {
+		t.Errorf("persisted retry row = %+v", re)
+	}
+	var cnt int64
+	db.Model(&model.CrosschainTx{}).Where("business_id = ?", "APP-FR-NC-1").Count(&cnt)
+	if cnt != 2 {
+		t.Errorf("want 2 rows (FAILED + #r1 retry), got %d", cnt)
+	}
+	// 原 FAILED 行停留终态：重试是新行不是状态迁移
+	if origRe := reload(t, db, orig.CrossTxID); origRe.Status != "FAILED" {
+		t.Errorf("original row must stay FAILED: %+v", origRe)
+	}
+}

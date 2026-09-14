@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"sort"
 	"strings"
@@ -189,20 +190,34 @@ func (s *Service) MessageSend(ctx context.Context, traceID string, req *MessageS
 			return nil, errcode.NewError(errcode.Internal, "save message: %v", err)
 		}
 	}
-	// 会话同步：CurrentPath = 实际路由；RECOVERED → ACTIVE（恢复完成自动回归）
-	if err := s.db.WithContext(ctx).Model(sess).Update("current_path", string(pathJSON)).Error; err != nil {
-		return nil, errcode.NewError(errcode.Internal, "sync session path: %v", err)
-	}
-	sess.CurrentPath = string(pathJSON)
-	if sess.Status == "RECOVERED" {
-		if err := s.transition(ctx, traceID, sess, "ACTIVE", req.SourceNode, "message flow normalized"); err != nil {
-			return nil, err
-		}
+	// 会话同步（Task 15 观测缝）：消息已 Create 成功——同步失败不回滚消息、错误返回
+	// 语义不变（现状保持），但"已落库却同步失败"这一事实必须显式日志留痕（调用方
+	// 可能吞掉返回错误，如 autopilot 的 `_, _ =`），排障不再静默。
+	if err := syncSession(ctx, s, traceID, sess, string(pathJSON), req.SourceNode); err != nil {
+		log.Printf("offchain: message %s created but session sync failed: %v", msg.MessageID, err)
+		return nil, err
 	}
 	s.logAudit(traceID, req.SourceNode, "MESSAGE_SEND", "MESSAGE", msg.MessageID, map[string]any{
 		"session_id": sess.SessionID, "msg_type": req.MsgType, "seq": seq, "latency_ms": totalLatency,
 	})
 	return &MessageSendResult{Message: msg, PathDetail: details}, nil
+}
+
+// syncSession Create 成功后的会话同步（Task 15 提取的函数变量缝；默认实现 = 原
+// MessageSend 内联逻辑逐字迁移，行为不变）：CurrentPath = 实际路由；
+// RECOVERED → ACTIVE（恢复完成自动回归）。包级 var 仅为测试可注入同步失败点，
+// 生产代码不改写。同步失败不回滚消息——观测与错误返回由调用点收敛。
+var syncSession = func(ctx context.Context, s *Service, traceID string, sess *model.OffchainSession, pathJSON string, actor string) error {
+	if err := s.db.WithContext(ctx).Model(sess).Update("current_path", pathJSON).Error; err != nil {
+		return errcode.NewError(errcode.Internal, "sync session path: %v", err)
+	}
+	sess.CurrentPath = pathJSON
+	if sess.Status == "RECOVERED" {
+		if err := s.transition(ctx, traceID, sess, "ACTIVE", actor, "message flow normalized"); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type MessageQuery struct {
