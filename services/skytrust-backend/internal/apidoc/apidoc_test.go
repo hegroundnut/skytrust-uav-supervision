@@ -69,7 +69,7 @@ func TestBuildOpenAPI(t *testing.T) {
 	if _, has := examples["success"]; !has {
 		t.Errorf("recorded success example missing: %v", examples)
 	}
-	if be := examples["business_error"].(map[string]any); be["x-error-sample-source"] != "recorded" {
+	if be := examples["business_error"].(map[string]any); be["x-sample-source"] != "recorded" {
 		t.Errorf("probe example must be marked recorded: %v", be)
 	}
 	// 请求样例必须用录制解析后的实际请求体
@@ -79,7 +79,7 @@ func TestBuildOpenAPI(t *testing.T) {
 	}
 	ping := paths["/api/health/ping"].(map[string]any)["post"].(map[string]any)
 	pex := ping["responses"].(map[string]any)["200"].(map[string]any)["content"].(map[string]any)["application/json"].(map[string]any)["examples"].(map[string]any)
-	if pex["business_error"].(map[string]any)["x-error-sample-source"] != "static" {
+	if pex["business_error"].(map[string]any)["x-sample-source"] != "static" {
 		t.Errorf("unrecorded must fall back to static: %v", pex["business_error"])
 	}
 	tags := doc["tags"].([]any)

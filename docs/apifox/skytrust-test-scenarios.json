@@ -298,6 +298,7 @@
           "body": {
             "issuer": "FISCO-ADMIN",
             "mission_id": "MISSION-2026-001",
+            "pass_id": "PASS-2026-001",
             "valid_from": "${now-1h}",
             "valid_to": "${now+1h}"
           },
@@ -626,6 +627,7 @@
           "body": {
             "issuer": "FISCO-ADMIN",
             "mission_id": "MISSION-2026-001",
+            "pass_id": "PASS-2026-001",
             "valid_from": "${now-1h}",
             "valid_to": "${now+1h}"
           },

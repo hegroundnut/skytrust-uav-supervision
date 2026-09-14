@@ -30,7 +30,7 @@ func operationID(path string) string {
 	return out
 }
 
-// staticEnvelope 未录制时的静态信封模板（x-error-sample-source: static 标注来源）。
+// staticEnvelope 未录制时的静态信封模板（x-sample-source: static 标注来源）。
 func staticEnvelope(code int, message string) map[string]any {
 	return map[string]any{
 		"code": code, "message": message, "data": nil,
@@ -40,7 +40,7 @@ func staticEnvelope(code int, message string) map[string]any {
 
 // BuildOpenAPI 组装 OpenAPI 3.0.3 文档：全 POST、统一信封、tag=Group（按表序去重）、
 // 每端点两个响应样例（success=Sample 回放录制；business_error=`[]` 探针录制）。
-// ok/probe 中缺失的端点回退静态模板并标注 x-error-sample-source: static。
+// ok/probe 中缺失的端点回退静态模板并标注 x-sample-source: static。
 func BuildOpenAPI(endpoints []Endpoint, ok, probe Samples) map[string]any {
 	tagSeen := map[string]bool{}
 	var tags []any
@@ -57,22 +57,22 @@ func BuildOpenAPI(endpoints []Endpoint, ok, probe Samples) map[string]any {
 		examples := map[string]any{}
 		if rec, has := ok[ep.Path]; has {
 			examples["success"] = map[string]any{
-				"summary": "回放录制样例", "value": rec.Response, "x-error-sample-source": "recorded",
+				"summary": "回放录制样例", "value": rec.Response, "x-sample-source": "recorded",
 			}
 		} else {
 			examples["success"] = map[string]any{
 				"summary": "静态模板（未录制）", "value": staticEnvelope(ep.ExpectCode, "(static sample)"),
-				"x-error-sample-source": "static",
+				"x-sample-source": "static",
 			}
 		}
 		if rec, has := probe[ep.Path]; has {
 			examples["business_error"] = map[string]any{
-				"summary": "`[]` 探针录制的业务错误样例", "value": rec.Response, "x-error-sample-source": "recorded",
+				"summary": "`[]` 探针录制的业务错误样例", "value": rec.Response, "x-sample-source": "recorded",
 			}
 		} else {
 			examples["business_error"] = map[string]any{
 				"summary": "静态错误模板（未录制）", "value": staticEnvelope(ep.ProbeExpect, "(static error sample)"),
-				"x-error-sample-source": "static",
+				"x-sample-source": "static",
 			}
 		}
 		paths[ep.Path] = map[string]any{"post": map[string]any{
