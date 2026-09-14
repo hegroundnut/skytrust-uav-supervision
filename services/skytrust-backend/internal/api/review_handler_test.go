@@ -17,7 +17,7 @@ func TestReviewEndpoints(t *testing.T) {
 	}); resp["code"].(float64) != 0 {
 		t.Fatalf("create: %v", resp)
 	}
-	sub := post("/api/mission/submit", map[string]any{"mission_id": seqID("MISSION", 1), "operator": "Operator-O1"})
+	sub := post("/api/mission/submit", map[string]any{"mission_id": "MISSION-2026-001", "operator": "Operator-O1"})
 	if sub["code"].(float64) != 0 {
 		t.Fatalf("submit: %v", sub)
 	}

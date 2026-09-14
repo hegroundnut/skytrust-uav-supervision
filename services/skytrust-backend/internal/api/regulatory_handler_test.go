@@ -264,13 +264,13 @@ func TestRegulatoryAuditHandlersHTTP(t *testing.T) {
 	postJSON(t, r, "/api/authorize/apply", map[string]any{
 		"authorization_id": "AUTH-2026-001",
 		"regulator_id": "REG-01", "scope": []string{"MISSION"},
-		"target_type": "MISSION", "target_id": seqID("MISSION", 1), "reason": "审计联测",
+		"target_type": "MISSION", "target_id": "MISSION-2026-001", "reason": "审计联测",
 	})
 	postJSON(t, r, "/api/authorize/review", map[string]any{
 		"authorization_id": "AUTH-2026-001", "decision": "APPROVE", "reviewer_id": "REG-ADMIN",
 	})
 	postJSON(t, r, "/api/inspect/ciphertext", map[string]any{
-		"mission_id": seqID("MISSION", 1), "authorization_id": "AUTH-2026-001", "regulator_id": "REG-01",
+		"mission_id": "MISSION-2026-001", "authorization_id": "AUTH-2026-001", "regulator_id": "REG-01",
 	})
 	// list 过滤：INSPECT ≥1 条，AUTH_APPROVE ≥1 条
 	got := postJSON(t, r, "/api/regulatory/audit/list", map[string]any{"action": "INSPECT"})

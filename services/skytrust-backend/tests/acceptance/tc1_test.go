@@ -33,7 +33,7 @@ func TestTC1_02NormalApplication(t *testing.T) {
 		"description": "巡线走廊Zone-A全线巡检",
 	}))
 	sub := must0(t, "mission/submit", call(t, srv, "/api/mission/submit", map[string]any{
-		"mission_id": seqID("MISSION", 1), "operator": "Operator-A",
+		"mission_id": "MISSION-2026-001", "operator": "Operator-A",
 	}))
 	if sub["application"].(map[string]any)["status"] != "RELAYED" {
 		t.Fatalf("application = %v", sub["application"])
@@ -141,7 +141,7 @@ func TestTC1_05ConflictDetected(t *testing.T) {
 	if qb["status"] != "COORDINATING" {
 		t.Fatalf("B status = %v, want COORDINATING", qb["status"])
 	}
-	qa := must0(t, "mission/query A", call(t, srv, "/api/mission/query", map[string]any{"mission_id": seqID("MISSION", 1)}))
+	qa := must0(t, "mission/query A", call(t, srv, "/api/mission/query", map[string]any{"mission_id": "MISSION-2026-001"}))
 	if qa["status"] != "APPROVED" {
 		t.Fatalf("approved mission must not be transitioned: %v", qa["status"])
 	}
@@ -175,7 +175,7 @@ func TestTC1_06CoordinatedApproval(t *testing.T) {
 		"application_id": appIDB, "result": "APPROVED", "reviewer": "FISCO-ADMIN",
 		"comment": "协调后放行", "rules_hit": []string{"R-ALT-001"},
 	}))
-	qa := must0(t, "mission/query A", call(t, srv, "/api/mission/query", map[string]any{"mission_id": seqID("MISSION", 1)}))
+	qa := must0(t, "mission/query A", call(t, srv, "/api/mission/query", map[string]any{"mission_id": "MISSION-2026-001"}))
 	qb := must0(t, "mission/query B", call(t, srv, "/api/mission/query", map[string]any{"mission_id": "MISSION-B-002"}))
 	if qa["status"] != "APPROVED" || qb["status"] != "APPROVED" {
 		t.Fatalf("A = %v, B = %v, want both APPROVED", qa["status"], qb["status"])

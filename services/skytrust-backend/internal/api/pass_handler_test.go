@@ -24,7 +24,7 @@ func TestPassEndpoints(t *testing.T) {
 	if create["code"].(float64) != 0 {
 		t.Fatalf("create: %v", create)
 	}
-	sub := post("/api/mission/submit", map[string]any{"mission_id": seqID("MISSION", 1), "operator": "Operator-O1"})
+	sub := post("/api/mission/submit", map[string]any{"mission_id": "MISSION-2026-001", "operator": "Operator-O1"})
 	if sub["code"].(float64) != 0 {
 		t.Fatalf("submit: %v", sub)
 	}
@@ -35,7 +35,7 @@ func TestPassEndpoints(t *testing.T) {
 	// 签发（now±1h 窗口，保证 verify 立即有效）
 	vf := timex.FormatTime(timex.Now().Add(-time.Hour))
 	vt := timex.FormatTime(timex.Now().Add(time.Hour))
-	iss := post("/api/pass/issue", map[string]any{"mission_id": seqID("MISSION", 1), "issuer": "FISCO-ADMIN", "valid_from": vf, "valid_to": vt})
+	iss := post("/api/pass/issue", map[string]any{"mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN", "valid_from": vf, "valid_to": vt})
 	if iss["code"].(float64) != 0 {
 		t.Fatalf("issue: %v", iss)
 	}
@@ -59,8 +59,8 @@ func TestPassEndpoints(t *testing.T) {
 		"route_segments": []string{"R101"}, "altitude_min": 60, "altitude_max": 120,
 		"payload_type": "CAMERA",
 	})
-	post("/api/mission/submit", map[string]any{"mission_id": seqID("MISSION", 2), "operator": "Operator-O1"})
-	if bad := post("/api/pass/issue", map[string]any{"mission_id": seqID("MISSION", 2), "issuer": "FISCO-ADMIN"}); bad["code"].(float64) != 3004 {
+	post("/api/mission/submit", map[string]any{"mission_id": "MISSION-2026-002", "operator": "Operator-O1"})
+	if bad := post("/api/pass/issue", map[string]any{"mission_id": "MISSION-2026-002", "issuer": "FISCO-ADMIN"}); bad["code"].(float64) != 3004 {
 		t.Fatalf("unapproved issue: want 3004, got %v", bad)
 	}
 	// 吊销 → REVOKED + SUCCESS；再验 → 无效
@@ -81,7 +81,7 @@ func TestPassEndpoints(t *testing.T) {
 		t.Fatalf("query unknown: want 6002, got %v", q)
 	}
 	// 列表过滤
-	if l := post("/api/pass/list", map[string]any{"mission_id": seqID("MISSION", 1)}); l["data"].(map[string]any)["total"].(float64) != 1 {
+	if l := post("/api/pass/list", map[string]any{"mission_id": "MISSION-2026-001"}); l["data"].(map[string]any)["total"].(float64) != 1 {
 		t.Fatalf("list by mission: %v", l)
 	}
 	if l := post("/api/pass/list", map[string]any{"status": "REVOKED"}); l["data"].(map[string]any)["total"].(float64) != 1 {

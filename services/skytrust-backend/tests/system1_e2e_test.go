@@ -26,8 +26,9 @@ import (
 	"skytrust-backend/internal/uavbusiness"
 )
 
-// seqID 重构自动生成序列 ID（C17：年份一律显式取自 timex.Now().Year()，年份随
-// 当前年滚动——断言不再写死 2026）。tests 包 e2e 共用。
+// seqID 重构自动生成序列 ID，仅用于 PASS 侧（C17：genPassID 年份显式取自
+// timex.Now().Year()，随当前年滚动）。MISSION 侧（C17 范围裁定）：年份随任务 start_time
+// 年滚动——e2e 夹具窗口均冻结于 2026，断言直接写 MISSION-2026-001 等冻结字面量。tests 包 e2e 共用。
 func seqID(prefix string, n int) string {
 	return fmt.Sprintf("%s-%d-%03d", prefix, timex.Now().Year(), n)
 }
@@ -128,7 +129,7 @@ func TestSystem1E2E(t *testing.T) {
 		"altitude_min":   60, "altitude_max": 120, "payload_type": "CAMERA",
 		"description": "巡线走廊Zone-A全线巡检",
 	}))
-	if mc["mission_id"] != seqID("MISSION", 1) || mc["status"] != "DRAFT" {
+	if mc["mission_id"] != "MISSION-2026-001" || mc["status"] != "DRAFT" {
 		t.Fatalf("mission = %v", mc)
 	}
 	if mc["masked_value"] != "巡线走廊****" {
@@ -141,7 +142,7 @@ func TestSystem1E2E(t *testing.T) {
 	// 3. 任务提交：源链交易 + MISSION_APPLICATION（fabric→fisco-bcos）→ RELAYED；
 	//    TC2-06 亚秒断言：模拟链本地闭环 latency_ms < 1000
 	sub := must0("mission/submit", call(t, srv, "/api/mission/submit", map[string]any{
-		"mission_id": seqID("MISSION", 1), "operator": "Operator-A",
+		"mission_id": "MISSION-2026-001", "operator": "Operator-A",
 	}))
 	if sub["application"].(map[string]any)["status"] != "RELAYED" {
 		t.Fatalf("application = %v", sub["application"])
@@ -169,7 +170,7 @@ func TestSystem1E2E(t *testing.T) {
 	vf := timex.FormatTime(timex.Now().Add(-time.Hour))
 	vt := timex.FormatTime(timex.Now().Add(time.Hour))
 	iss := must0("pass/issue", call(t, srv, "/api/pass/issue", map[string]any{
-		"mission_id": seqID("MISSION", 1), "issuer": "FISCO-ADMIN",
+		"mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN",
 		"valid_from": vf, "valid_to": vt,
 	}))
 	if iss["pass"].(map[string]any)["pass_id"] != seqID("PASS", 1) ||
@@ -205,7 +206,7 @@ func TestSystem1E2E(t *testing.T) {
 	if qb["status"] != "COORDINATING" {
 		t.Fatalf("B status = %v", qb["status"])
 	}
-	qa := must0("mission/query A", call(t, srv, "/api/mission/query", map[string]any{"mission_id": seqID("MISSION", 1)}))
+	qa := must0("mission/query A", call(t, srv, "/api/mission/query", map[string]any{"mission_id": "MISSION-2026-001"}))
 	if qa["status"] != "APPROVED" {
 		t.Fatalf("approved mission must not be transitioned: %v", qa["status"])
 	}
@@ -249,7 +250,7 @@ func TestSystem1E2E(t *testing.T) {
 		"source_chain": "fisco-bcos", "final_target_chain": "fabric",
 		"payload": map[string]any{
 			"review_id": "REV-E2E-BAD", "application_id": appID,
-			"mission_id": seqID("MISSION", 1), "result": "APPROVED", "reviewer": "FISCO-ADMIN",
+			"mission_id": "MISSION-2026-001", "result": "APPROVED", "reviewer": "FISCO-ADMIN",
 		},
 		"sm9_identity": "SM9-ID-FISCO-ADMIN", "signature": "QUFBQUFBQUFBQQ==",
 	})
