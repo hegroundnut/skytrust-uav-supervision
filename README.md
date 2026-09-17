@@ -26,6 +26,8 @@ cd services/skytrust-backend && go run ./cmd/server
 （实测 p95≈527-539ms）。
 
 - **版本矩阵 / TxID 登记 / 性能实录 / 偏差记录**：[`docs/version-matrix.md`](docs/version-matrix.md)
+- **三幕展示流程（三大系统端到端演示）**：[`docs/demo-showcase.md`](docs/demo-showcase.md)
+  （一键实跑 `./scripts/demo-showcase.sh`，51 次调用覆盖任务协同/虫洞攻防/密文核查）
 - **迁移指南（权威流程）**：[`docs/real-chain-migration.md`](docs/real-chain-migration.md)
 - **一键运维脚本**：[`scripts/`](scripts/)（`start-chains.sh` / `stop-chains.sh` /
   `build-backend-real.sh` / `start-backend-real.sh` / `deploy-contracts.sh` /
