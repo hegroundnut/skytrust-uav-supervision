@@ -111,8 +111,10 @@ peer chaincode invoke -C <channel-name> -n operator_business \
   -c '{"function":"CrosschainSubmit","Args":["{\"cross_tx_id\":\"CX-DEPLOY-SMOKE-001\",\"message_type\":\"MISSION_APPLICATION\",\"business_id\":\"APP-DEPLOY-SMOKE-001\"}"]}'
 ```
 
-注：链码表面仅含后端调用面所需 6 个写方法（无查询方法）；状态核验经 peer 区块/
-world-state 工具在部署期执行。合约名 `operator_business` 必须与链码 name 一致
+注：链码后端调用面为 6 个写方法；部署期按 `docs/real-chain-migration.md` §5-② 补充
+只读方法 `QueryState(key string)`（真实传输 QueryState 经
+`EvaluateWithContext("QueryState", key)` 调用；当前后端无活跃业务调用点，仅供部署期/
+运维状态核验，不触碰后端代码）。合约名 `operator_business` 必须与链码 name 一致
 （后端白名单按此名调用）。
 
 ## 前向指针

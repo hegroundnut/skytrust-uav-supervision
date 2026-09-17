@@ -241,24 +241,36 @@ curl -s -X POST http://127.0.0.1:8080/api/chain/status
 
 ### 4.1 ChainMaker 监管链（5 个 Docker-Go 合约，经 cmc/docker 部署）
 
+> **部署实况更新（2026-09-17）**：本节原命令形态与 cmc v2.3.10 实际 CLI 存在漂移，
+> 已按实测修正——入口约定为 `InitContract`/`InvokeContract` 方法对 + `main()`
+> （contract-sdk-go v2.3.10 形态，**无** `//export` 注释）；cmc 子命令为
+> `client contract user create|upgrade|invoke|get`；字节码经 py7zr 打 `.7z` 后由
+> `--byte-code-path` 上传（**无需** `docker cp` 进节点容器）；`--runtime-type` 取
+> 大写 `DOCKER_GO`；管理员签名材料用 `--admin-key-file-paths`/`--admin-crt-file-paths`/
+> `--admin-org-ids`。逐字可执行版本见 `scripts/deploy-contracts.sh chainmaker-*` 与
+> `contracts/chainmaker/README.md`「Docker-Go 部署」；偏差记录 `docs/version-matrix.md` §8。
+
 源路径 `contracts/chainmaker/<name>/contract.go`（每合约独立目录，依赖
-`chainmaker.org/chainmaker/contract-sdk-go/v2`，入口约定 `//export initContract` /
-`//export invokeContract`）。对 5 个合约逐一执行：
+`chainmaker.org/chainmaker/contract-sdk-go/v2`）。对 5 个合约逐一执行：
 
 ```bash
-# 1) 构建 Docker-Go 合约镜像（在合约目录内，cmc docker 工具链）
-cd contracts/chainmaker/<name>
-cmc client contract create --chain-id chain1 --creator-key-file <creator-key-path> \
-  --creator-cert-file <creator-cert-path> --runtime-type docker-go \
-  --contract-name <name> --version 1.0.0 --byte-code-path . \
-  --sdk-conf-path <sdk-conf-path>
+# 1) 构建（脚手架目录含 go.mod；CGO_ENABLED=0 静态构建 + py7zr 打 7z）
+#    然后管理员身份创建合约（实测全参数见 scripts/deploy-contracts.sh）
+cmc client contract user create --chain-id chain1 --org-id <org-id> \
+  --contract-name <name> --version 1.0.0 --runtime-type DOCKER_GO \
+  --byte-code-path <build-dir>/<name>.7z --params '{}' \
+  --sdk-conf-path <cmc-sdk-conf-path> \
+  --admin-key-file-paths <admin1.sign.key> --admin-crt-file-paths <admin1.sign.crt> \
+  --admin-org-ids <org-id> --sync-result --timeout 30
 
-# 2) 校验合约已登记
-cmc client contract get --chain-id chain1 --contract-name <name> --sdk-conf-path <sdk-conf-path>
+# 2) 校验合约已登记 / 交易回执可查（protobuf-JSON 省略零值：result.code 缺省即 SUCCESS）
+cmc query tx <deploy-txid> --chain-id chain1 --sdk-conf-path <cmc-sdk-conf-path> \
+  --with-rw-set=false --truncate-value=false
 
-# 3) 试调一笔读方法（预留方法可作只读探针，如 crosschain_trace.QueryTrace）
-cmc client contract query --chain-id chain1 --contract-name <name> --method QueryTrace \
-  --params '{"cross_tx_id":"<probe-cross-tx-id>","seq":"0"}' --sdk-conf-path <sdk-conf-path>
+# 3) 试调读方法（写=user invoke，读=user get --result-to-string；QueryState 为 v1.0.2 通用读）
+cmc client contract user get --chain-id chain1 --org-id <org-id> --contract-name <name> \
+  --method QueryTrace --params '{"cross_tx_id":"<probe-cross-tx-id>","seq":"1"}' \
+  --sdk-conf-path <cmc-sdk-conf-path> --result-to-string --timeout 30
 ```
 
 `<name>` 依次取 `regulatory_record`、`crosschain_trace`、`identity_mapping`、
