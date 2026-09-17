@@ -55,3 +55,4 @@ config.local.yaml
 application-local.yml
 # ChainMaker SDK 客户端日志（随运行目录生成，运维垃圾不入库）
 sdk.log*
+__pycache__/

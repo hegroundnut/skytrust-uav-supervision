@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>云巡信链 SkyTrust · 三链监管演示台</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🛰️</text></svg>">
+</head>
+<body><!-- 主题：无 data-theme 时跟随 OS 偏好（CSS 媒体查询）；app.js 会从 localStorage 恢复显式选择 -->
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">⬡</span>
+    <span class="brand-name">云巡信链 <b>SkyTrust</b></span>
+    <span class="brand-sub">无人机跨域协同与可信监管 · 真实三链演示台</span>
+  </div>
+  <div class="topbar-right">
+    <div id="chain-lamps" class="chain-lamps" title="三链健康状态（chain/status 实时探针）">
+      <span class="lamp" data-chain="chainmaker"><i></i>ChainMaker 监管链</span>
+      <span class="lamp" data-chain="fabric"><i></i>Fabric 运营链</span>
+      <span class="lamp" data-chain="fisco-bcos"><i></i>FISCO BCOS 管理链</span>
+    </div>
+    <div id="backend-badge" class="backend-badge" title="最近一次 API 往返延迟">后端 …</div>
+    <button id="theme-toggle" class="btn btn-ghost" title="切换明暗主题">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar">
+    <a class="nav-item" href="#/dashboard" data-page="dashboard"><span class="nav-ico">▦</span>总览驾驶舱</a>
+    <div class="nav-group">三大系统 · 三幕演示</div>
+    <a class="nav-item" href="#/act1" data-page="act1"><span class="nav-ico">①</span>幕一 · 任务跨域协同</a>
+    <a class="nav-item" href="#/act2" data-page="act2"><span class="nav-ico">②</span>幕二 · 虫洞攻防</a>
+    <a class="nav-item" href="#/act3" data-page="act3"><span class="nav-ico">③</span>幕三 · 监管密文核查</a>
+    <div class="nav-group">工具</div>
+    <a class="nav-item" href="#/explorer" data-page="explorer"><span class="nav-ico">⇄</span>API 浏览器（64 端点）</a>
+    <div class="nav-foot">
+      <div>契约：docs/apifox</div>
+      <div>实跑报告：docs/demo-api-report.md</div>
+    </div>
+  </nav>
+  <main id="page" class="page"></main>
+</div>
+
+<div id="toast-box" class="toast-box"></div>
+
+<script src="js/data/endpoints.js"></script>
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/pages/dashboard.js"></script>
+<script src="js/pages/act1.js"></script>
+<script src="js/pages/act2.js"></script>
+<script src="js/pages/act3.js"></script>
+<script src="js/pages/explorer.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
