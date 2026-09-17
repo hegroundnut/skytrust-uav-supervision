@@ -6,7 +6,9 @@
 
 后端基于 Go + Gin + GORM（SQLite），代码与详细文档见 [`services/skytrust-backend/README.md`](services/skytrust-backend/README.md)。
 
-在 **仓库根目录** 使用自带的 hermetic Go 工具链启动：
+在 **仓库根目录** 使用自带的 hermetic Go 工具链启动（`tools/go` 为原开发机本地工具链、
+不入库；新克隆若无该目录，用系统 Go ≥ 1.25 即可，部署机为 `/usr/local/go`，
+或直接 `source scripts/env.sh`）：
 
 ```bash
 export PATH="$PWD/tools/go/bin:$PATH"
