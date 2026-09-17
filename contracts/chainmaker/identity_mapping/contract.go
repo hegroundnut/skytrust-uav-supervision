@@ -9,33 +9,49 @@ package main
 
 import (
 	"bytes"
+	"log"
 	"strconv"
+	"strings"
 
 	"chainmaker.org/chainmaker/contract-sdk-go/v2/pb/protogo"
+	"chainmaker.org/chainmaker/contract-sdk-go/v2/sandbox"
 	"chainmaker.org/chainmaker/contract-sdk-go/v2/sdk"
 )
 
-func main() {}
+type IdentityMappingContract struct{}
 
-//export initContract
-func initContract() protogo.Response {
+// InitContract 合约部署时由 sandbox 回调。
+func (c *IdentityMappingContract) InitContract() protogo.Response {
 	return sdk.Success([]byte("identity_mapping init ok"))
 }
 
-//export invokeContract
-func invokeContract() protogo.Response {
-	switch sdk.Instance.GetMethod() {
+// UpgradeContract 合约升级时由 sandbox 回调。
+func (c *IdentityMappingContract) UpgradeContract() protogo.Response {
+	return sdk.Success([]byte("identity_mapping upgrade ok"))
+}
+
+// InvokeContract 交易方法分发（方法名与后端固化常量逐字一致）。
+func (c *IdentityMappingContract) InvokeContract(method string) protogo.Response {
+	switch method {
 	case "RegisterIndex":
 		return registerIndex()
 	case "QueryIdentity":
 		return queryIdentity()
+	case "QueryState":
+		return queryState()
 	default:
-		return sdk.Error("unknown method: " + sdk.Instance.GetMethod())
+		return sdk.Error("unknown method: " + method)
+	}
+}
+
+func main() {
+	if err := sandbox.Start(new(IdentityMappingContract)); err != nil {
+		log.Fatal(err)
 	}
 }
 
 // registerIndex 身份索引登记：以 sm9_identity 为主键存证无人机实名索引。
-// 状态键 ID/<sm9_identity>。
+// 状态键 ID_<sm9_identity>。
 func registerIndex() protogo.Response {
 	args := sdk.Instance.GetArgs() // 键集 = MsgUAVRegisterProof payload 必备键（policy.go requiredFields）逐字转录
 	id := string(args["sm9_identity"])
@@ -45,7 +61,7 @@ func registerIndex() protogo.Response {
 	payload := buildRecordJSON(args, []string{
 		"uav_id", "manufacturer_id", "operator_id", "serial_no", "sm9_identity",
 	})
-	if err := sdk.Instance.PutStateFromKeyByte([]byte("ID/"+id), payload); err != nil {
+	if err := sdk.Instance.PutStateFromKeyByte(stateKey("ID", id), payload); err != nil {
 		return sdk.Error(err.Error())
 	}
 	return sdk.Success([]byte(id))
@@ -59,7 +75,7 @@ func queryIdentity() protogo.Response {
 	if id == "" {
 		return sdk.Error("sm9_identity required")
 	}
-	v, err := sdk.Instance.GetStateFromKeyByte([]byte("ID/" + id))
+	v, err := sdk.Instance.GetStateFromKeyByte(stateKey("ID", id))
 	if err != nil || v == nil {
 		return sdk.Error("identity not found: " + id)
 	}
@@ -80,4 +96,44 @@ func buildRecordJSON(args map[string][]byte, keys []string) []byte {
 	}
 	buf.WriteByte('}')
 	return buf.Bytes()
+}
+
+// stateKey 生成 ChainMaker 合规状态键：chainmaker-go v2.3.x 底链限制合约状态键仅允许
+// 数字、点、字母、下划线（违规报 "key can only consist of numbers, dot, letters and
+// underscores"）。各段以 _ 连接，段内非法字符（如后端 ID CX-<hex> 的 -）逐一替换为 _。
+// 仅键形态适配；方法名、参数键与存证值（含原始 ID）保持不变。
+func stateKey(parts ...string) string {
+	var b strings.Builder
+	for i, p := range parts {
+		if i > 0 {
+			b.WriteByte('_')
+		}
+		for _, r := range p {
+			if (r >= '0' && r <= '9') || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '_' || r == '.' {
+				b.WriteRune(r)
+			} else {
+				b.WriteByte('_')
+			}
+		}
+	}
+	return b.String()
+}
+
+// queryState 通用状态键读取（部署期补充的读方法，docs/real-chain-migration.md §5-②，
+// 与 Fabric 链码 QueryState 同例）：真实传输 QueryState 经
+// QueryContract("QueryState", {"state_key": key}) 调用。入参单段键按与写路径一致的
+// stateKey 规则消毒（如 "REG/CX-x" → "REG_CX_x"，与写入侧 stateKey("REG", "CX-x")
+// 逐字节一致）后 GetStateFromKeyByte 直读；无值返回 error。
+// 预留（后端当前无活跃 QueryState 调用点）。
+func queryState() protogo.Response {
+	args := sdk.Instance.GetArgs()
+	key := stateKey(string(args["state_key"]))
+	if key == "" {
+		return sdk.Error("state_key required")
+	}
+	v, err := sdk.Instance.GetStateFromKeyByte(key)
+	if err != nil || v == nil {
+		return sdk.Error("state not found: " + key)
+	}
+	return sdk.Success(v)
 }

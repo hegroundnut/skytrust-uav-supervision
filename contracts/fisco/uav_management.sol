@@ -13,9 +13,12 @@ pragma solidity ^0.8.0;
 //     CrosschainAck。
 //
 // 方法名 / 参数名与后端 SubmitTx 调用点逐字对应（强制规则 P6-R9）。后端固化常量
-// ContractFiscoManage = "uav_management"（policy.go:70）。本合约对外表面恰为下列
-// 3 个写方法（无查询方法、无自动 getter——存证映射均为 private），与 Fabric 运营方
-// 链码一致：状态核验经 Console / 链上查询工具在部署期执行。
+// ContractFiscoManage = "uav_management"（policy.go:70）。本合约后端调用面为下列
+// 3 个写方法（存证映射均为 private，无自动 getter）；部署期按
+// docs/real-chain-migration.md §5-② 另补充只读方法 QueryState(key)（与 Fabric 链码 /
+// ChainMaker 合约同例：真实传输 QueryState 经 CallContract("QueryState", key) 调用，
+// 键形态 APP/<mission_id>、SUBMIT/<cross_tx_id>、ACK/<cross_tx_id>，不在后端 6 个
+// 写方法调用面内，当前后端无活跃业务调用点，供部署期/运维状态核验）。
 //
 //   1) SubmitApplication(mission_id, application_id, operator_id, uav_id,
 //                        mission_type, start_time, end_time, route_segments, sm3_hash)
@@ -205,6 +208,64 @@ contract UavManagement {
         acks[cross_tx_id] = _encode(keys, vals);
 
         emit CROSSCHAINACK(cross_tx_id, reg_record_id, target_chain_tx_id, status);
+    }
+
+    // ------------------------------------------------------------------------
+    // QueryState —— 通用状态键读取（部署期补充的只读方法，docs/real-chain-migration.md
+    // §5-②，与 Fabric 链码 QueryState / ChainMaker 合约 queryState 同例）。真实传输
+    // QueryState(contract, key) 经 CallContract("QueryState", key) 调用；键形态与写入
+    // 存证的前缀语义一一对应：APP/<mission_id> → applications、SUBMIT/<cross_tx_id> →
+    // submits、ACK/<cross_tx_id> → acks（对应 Fabric 链码状态键 APP/、SUBMIT/、ACK/）。
+    // 无值 revert（与 ChainMaker queryState 的 "state not found" 语义一致）。
+    // 预留（后端当前无活跃 QueryState 调用点）。
+    // ------------------------------------------------------------------------
+    function QueryState(string memory key) public view returns (string memory) {
+        require(bytes(key).length > 0, "key required");
+        string memory v;
+        if (_hasPrefix(key, "APP/")) {
+            v = applications[_substring(key, 4)];
+        } else if (_hasPrefix(key, "SUBMIT/")) {
+            v = submits[_substring(key, 7)];
+        } else if (_hasPrefix(key, "ACK/")) {
+            v = acks[_substring(key, 4)];
+        } else {
+            revert("unknown key prefix");
+        }
+        require(bytes(v).length > 0, "state not found");
+        return v;
+    }
+
+    // _hasPrefix / _substring —— QueryState 的键前缀解析辅助（纯内存操作）。
+    function _hasPrefix(string memory s, string memory p)
+        internal
+        pure
+        returns (bool)
+    {
+        bytes memory sb = bytes(s);
+        bytes memory pb = bytes(p);
+        if (sb.length < pb.length) {
+            return false;
+        }
+        for (uint256 i = 0; i < pb.length; i++) {
+            if (sb[i] != pb[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function _substring(string memory s, uint256 start)
+        internal
+        pure
+        returns (string memory)
+    {
+        bytes memory sb = bytes(s);
+        require(sb.length >= start, "substring out of range");
+        bytes memory out = new bytes(sb.length - start);
+        for (uint256 i = start; i < sb.length; i++) {
+            out[i - start] = sb[i];
+        }
+        return string(out);
     }
 
     // ------------------------------------------------------------------------

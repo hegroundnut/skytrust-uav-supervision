@@ -133,6 +133,21 @@ func (c *OperatorBusiness) RecordPassRevoke(ctx contractapi.TransactionContextIn
 	return id, nil
 }
 
+// QueryState 按状态键直读世界状态（部署期补充的读方法，依据
+// docs/real-chain-migration.md §5-②：真实传输 QueryState 经
+// EvaluateWithContext("QueryState", key) 调用，属部署期链码演进，不触碰后端代码；
+// 不在后端 6 个写方法调用面内，当前后端无活跃业务调用点，供部署期/运维状态核验）。
+func (c *OperatorBusiness) QueryState(ctx contractapi.TransactionContextInterface, key string) (string, error) {
+	if key == "" {
+		return "", fmt.Errorf("key required")
+	}
+	v, err := ctx.GetStub().GetState(key)
+	if err != nil {
+		return "", err
+	}
+	return string(v), nil
+}
+
 func main() {
 	cc, err := contractapi.NewChaincode(&OperatorBusiness{})
 	if err != nil {
