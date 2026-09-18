@@ -291,34 +291,50 @@
       const api = h('span', { class: 'rs-api' }, '');
       const meta = h('span', { class: 'rs-meta' }, '');
       const calls = h('div', { class: 'rs-calls' });
+      const detail = s.detail || s.api;
       const row = h('div', { class: 'run-step' },
         ico,
-        h('span', { class: 'rs-name' }, (i + 1) + '. ' + s.name, s.detail ? h('span', { class: 'small muted' }, ' · ' + s.detail) : null),
+        h('span', { class: 'rs-name' }, (i + 1) + '. ' + s.name,
+          detail ? h('span', { class: 'small muted' }, ' · ' + detail) : null,
+          s.expectCode !== undefined ? h('span', { class: 'badge warning rs-tag' }, h('i', { class: 'bi' }, '◈'), '预期 code=' + s.expectCode) : null,
+          s.expectData ? h('span', { class: 'badge warning rs-tag' }, h('i', { class: 'bi' }, '◈'), '预期 ' + Object.entries(s.expectData).map(([k, v]) => k + '=' + v).join(' ')) : null),
         h('span', { class: 'rs-right' }, api, meta),
         calls);
       body.append(row);
-      return { row, ico, api, meta, calls, n: 0, ok: null };
+      return { row, ico, api, meta, calls, n: 0, ok: null, spec: s, codes: [], lastData: null, datas: [] };
     });
     function tick() { elapsedEl.textContent = '⏱ ' + ((Date.now() - t0) / 1000).toFixed(1) + 's'; }
     function begin(i) {
       const R = rows[i];
       R.row.className = 'run-step running';
       R.ico.textContent = '⏳';
+      window.SKYTRUST_CURRENT_STEP = R.spec;   // 供三幕总控尾流把「按设计拒绝」标成 ◈ 而非红 ✕
       if (!timer) timer = setInterval(tick, 100);
       // 面板内滚动到当前步骤（不牵动整页）
       body.parentElement.scrollTop = R.row.offsetTop - 60;
       off = window.API.onCall(r => {
         if (BG_PATHS.includes(r.path)) return;
         R.n++;
+        R.codes.push(r.code);
+        R.lastData = r.data;
+        R.datas.push({ path: r.path, data: r.data });
         R.api.textContent = r.path;
         if (R.ok === null) R.ok = r.ok; else R.ok = R.ok && r.ok;
+        const EX = window.EXPLAIN || { codes: {}, paths: {} };
+        const expected = R.spec.expectCode !== undefined && r.code === R.spec.expectCode;
+        const why = r.ok
+          ? (R.spec.whyOk || EX.paths[r.path] || '')
+          : (expected ? (R.spec.whyFail || EX.codes[r.code] || r.message)
+                      : (EX.codes[r.code] || r.message));
         const chips = summarizeData(r.data);
         const callRow = h('div', { class: 'run-call' },
           h('span', { class: 'rc-line' },
             r.ok ? h('span', { class: 'badge good' }, h('i', { class: 'bi' }, '✓'), 'code=0')
+                 : expected ? h('span', { class: 'badge warning' }, h('i', { class: 'bi' }, '◈'), 'code=' + r.code + ' · 按设计拒绝')
                  : h('span', { class: 'badge critical' }, h('i', { class: 'bi' }, '✕'), 'code=' + r.code),
             h('code', { class: 'mono' }, 'POST ' + r.path),
             h('span', { class: 'rc-ms' }, r.latencyMs + 'ms')),
+          why ? h('div', { class: 'run-why' }, h('b', {}, r.ok ? '✔ 成功解说 · ' : expected ? '◈ 理论失败解说 · ' : '✖ 失败解说 · '), why) : null,
           chips.length ? h('div', { class: 'run-sum' }, chips.map(([k, v]) =>
             h('span', { class: 'chip' }, h('b', {}, k), '=', v))) : null,
           h('details', {},
@@ -332,10 +348,35 @@
     function end(i, ok, note) {
       const R = rows[i];
       if (off) { off(); off = null; }
-      const good = ok === undefined ? R.ok !== false && R.n > 0 : ok;
+      if (window.SKYTRUST_CURRENT_STEP === R.spec) window.SKYTRUST_CURRENT_STEP = null;
+      const S = R.spec;
+      let good, autoNote = '';
+      if (ok !== undefined) {
+        good = ok;                                   // 显式裁定优先
+      } else if (S.expectCode !== undefined) {       // 理论失败步：必须出现预期错误码，且无其它意外错误
+        good = R.codes.includes(S.expectCode) && R.codes.every(c => c === 0 || c === S.expectCode);
+        autoNote = good ? '按设计拒绝 code=' + S.expectCode
+                        : R.n === 0 ? '未发起调用' : '未出现预期 code=' + S.expectCode + '（实际 ' + R.codes.join(',') + '）';
+      } else {
+        good = R.ok !== false && R.n > 0;
+        /* 预期校验对准「本步 API 自己的那次调用」：处理器常在主调用后顺手刷新
+           （如 risk/evaluate 后 loadTopo 再发 topology/get），最后一次调用未必是主调用。 */
+        const apiBase = (S.api || '').split(' ')[0];           // 'wormhole/toggle ON' → 'wormhole/toggle'
+        const own = apiBase ? R.datas.filter(c => c.path.endsWith('/' + apiBase)) : [];
+        const tData = ((own.length ? own[own.length - 1] : R.datas[R.datas.length - 1]) || {}).data;
+        if (good && S.expectData) {
+          for (const [k, v] of Object.entries(S.expectData)) {
+            const av = tData && typeof tData === 'object' ? tData[k] : undefined;
+            if (av !== v) { good = false; autoNote = '预期 ' + k + '=' + v + '，实际 ' + av; break; }
+          }
+          if (good) autoNote = '符合理论预期 ' + Object.entries(S.expectData).map(([k, v]) => k + '=' + v).join(' ');
+        }
+        if (good && S.expectFn && !S.expectFn(tData)) { good = false; autoNote = '返回未达预期结论'; }
+      }
       R.row.className = 'run-step ' + (good ? 'done' : 'error');
       R.ico.textContent = good ? '✓' : '✕';
-      R.meta.textContent = (note || '') + (R.n ? (note ? ' · ' : '') + R.n + ' 次调用' : '');
+      const noteText = note || autoNote;
+      R.meta.textContent = noteText + (R.n ? (noteText ? ' · ' : '') + R.n + ' 次调用' : '');
       ended++; if (!good) failed++;
       progressEl.textContent = ended + '/' + steps.length;
       tick();

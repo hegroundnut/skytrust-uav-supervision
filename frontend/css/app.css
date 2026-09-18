@@ -497,3 +497,8 @@ svg.topo { display: block; width: 100%; height: auto; }
 .gro-tail .gt-row code { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gro-close { margin-left: auto; }
 @media (max-width: 700px) { .global-run-overlay { width: calc(100vw - 28px); right: 14px; } }
+
+/* ---- 实跑监控台：逐调用解说行 + 预期失败标签 ---- */
+.run-why { font-size: 12px; color: var(--ink-2); margin-top: 4px; line-height: 1.55; }
+.run-why b { color: var(--ink-3); font-weight: 600; }
+.rs-tag { margin-left: 6px; font-weight: 500; vertical-align: 1px; }

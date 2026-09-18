@@ -126,7 +126,9 @@
     /* ===== 一键幕二 ===== */
     const runCard = card(null, null, h('div', { class: 'row' },
       asyncBtn('▶ 一键实跑幕二攻防剧本', runAll, 'btn-primary'),
-      h('span', { class: 'small muted' }, '会话建立 → 基线消息×2 → 虫洞 ON → 攻击态消息（延迟骤降）→ 五维风险判定 DETECT+ISOLATE → 路径规避 RECOVERED → 恢复消息 → 虫洞 OFF → DEFENSE 对比实验。监控台逐步展示每次调用的 API / 参数 / 返回 / 延迟。')));
+      h('span', { class: 'small muted' }, '自动执行 14 步（含 3 个理论失败步：基线判定应 PASS 不误报、健康会话切路径应拒 4002、隔离残留重部署应拒 4001）：' +
+        '会话建立 → 基线消息×2 → 虫洞 ON → 攻击态消息（延迟骤降）→ 五维判定 DETECT+ISOLATE → 路径规避 RECOVERED → 恢复消息 → 虫洞 OFF → DEFENSE 对比实验。' +
+        '监控台逐步展示每次调用的 API / 参数 / 返回 / 延迟，并附成功/失败解说。攻击拓扑是一次性消耗品：若存在上次攻防的隔离残留，开跑前会询问是否 demo/reset（真实链账本不受影响）。')));
     root.append(runCard);
 
     /* ===== 节点注册 ===== */
@@ -360,21 +362,45 @@
       document.body.append(a); a.click(); a.remove();
     }
 
-    /* ===== 一键剧本（runMonitor 可视化：逐步展示实际调用的 API/参数/返回/延迟） ===== */
+    /* ===== 一键剧本（runMonitor 可视化 + 理论失败步：预期拒绝按「◈ 按设计」展示并附解说） ===== */
     const RUN_STEPS = [
       { fi: 0, sec: 'sess', i: 0, name: '建立会话（SM9 挑战-响应认证）', api: 'session/open' },
       { fi: 1, sec: 'msg', i: 0, name: '基线消息 ①（正常多跳延迟）', api: 'message/send' },
       { fi: 1, sec: 'msg', i: 0, name: '基线消息 ②（建立延迟基线）', api: 'message/send' },
-      { fi: 2, sec: 'atk', i: 0, name: '部署虫洞隧道（伪造邻接）', api: 'wormhole/toggle ON' },
-      { fi: 3, sec: 'msg', i: 0, name: '攻击态消息（延迟骤降 < 物理下限）', api: 'message/send' },
-      { fi: 4, sec: 'atk', i: 1, name: '五维风险判定（DETECT + ISOLATE）', api: 'risk/evaluate' },
+      { fi: 2, sec: 'atk', i: 1, name: '基线风险判定（理论失败：应 PASS 不误报）', api: 'risk/evaluate',
+        expectData: { verdict: 'PASS' },
+        whyOk: '干净路径 + 正常延迟：五维累积评分低于阈值 0.7，检测器不应触发——「不告警」正是零误报的证明。' },
+      { fi: 2, sec: 'atk', i: 3, name: '健康会话切路径（理论失败：应拒 4002）', api: 'path/switch',
+        expectCode: 4002 },
+      { fi: 3, sec: 'atk', i: 0, name: '部署虫洞隧道（注入伪造邻接）', api: 'wormhole/toggle ON' },
+      { fi: 4, sec: 'msg', i: 0, name: '攻击态消息（延迟骤降 < 物理下限）', api: 'message/send' },
+      { fi: 5, sec: 'atk', i: 1, name: '五维风险判定（应 DETECT + ISOLATE）', api: 'risk/evaluate',
+        expectData: { verdict: 'DETECT' } },
       { fi: 5, sec: 'atk', i: 2, name: '攻防事件流水', api: 'event/list' },
-      { fi: 6, sec: 'atk', i: 3, name: '路径规避切换（Dijkstra 重算）', api: 'path/switch' },
-      { fi: 7, sec: 'msg', i: 0, name: '恢复验证消息（新路径）', api: 'message/send' },
-      { fi: 8, sec: 'atk', i: 4, name: '关闭隧道（隔离处置保持）', api: 'wormhole/toggle OFF' },
+      { fi: 6, sec: 'atk', i: 3, name: '路径规避切换（Dijkstra 重算，仅 DEGRADED 可切）', api: 'path/switch' },
+      { fi: 7, sec: 'msg', i: 0, name: '恢复验证消息（新路径绕开隔离节点）', api: 'message/send' },
+      { fi: 8, sec: 'atk', i: 4, name: '关闭隧道（ISOLATED 处置保持）', api: 'wormhole/toggle OFF' },
+      { fi: 8, sec: 'atk', i: 0, name: '隔离残留重部署（理论失败：应拒 4001）', api: 'wormhole/toggle ON',
+        expectCode: 4001 },
       { fi: 9, sec: 'exp', i: 0, name: 'DEFENSE 对比实验', api: 'experiment/run' },
     ];
     async function runAll() {
+      /* 重演自检：攻击拓扑是一次性消耗品（后端源码 scenarios_s2.go 同款结论），
+         上次攻防的 ISOLATED 残留会让「部署虫洞」被 4001 守卫拒绝。
+         检测到残留 → 确认后 demo/reset+init（真实链账本永不复位，P6-R6）；
+         三幕总控模式下出发前已统一复位，跳过询问。 */
+      const pre = await call('/api/topology/get', {});
+      const isolated = (pre.ok && pre.data && pre.data.isolated) || [];
+      const residue = isolated.length > 0 || (pre.ok && pre.data && pre.data.wormhole_enabled);
+      if (residue && !(window.SKYTRUST_GLOBAL_RUN && window.SKYTRUST_GLOBAL_RUN.active)) {
+        if (confirm('检测到上次攻防残留（隔离节点：' + isolated.join('、') + '）。隔离处置按设计不会自动解除，直接重演会在「部署虫洞」被 4001 拒绝。\n\n点「确定」：先 demo/reset+init 复位业务库再重演（真实三链账本不受影响，P6-R6；注意幕一产生的任务会被清空，之后跑幕三需先重跑幕一）。\n点「取消」：按现状硬跑，失败步骤如实展示并附解说。')) {
+          toast('正在复位业务库（demo/reset + init）…', 'ok');
+          const r1 = await call('/api/demo/reset', {});
+          const r2 = r1.ok ? await call('/api/demo/init', {}) : r1;
+          if (r1.ok && r2.ok) toast('已复位并重灌基线，开始重演', 'ok');
+          else toast('复位失败 code=' + (r1.ok ? r2.code : r1.code) + '，按现状硬跑', 'err', 5000);
+        }
+      }
       const clickBtn = (sec_, i) => {
         const cardEl = out[sec_].parentElement;
         const btn = cardEl.querySelectorAll('.btn-row .btn')[i];
@@ -387,7 +413,7 @@
         const t = setInterval(() => { if (!btn.disabled) { clearInterval(t); setTimeout(res, 150); } }, 80);
         setTimeout(() => { clearInterval(t); res(); }, 25000);
       });
-      const mon = UI.runMonitor(RUN_STEPS.map(s => ({ name: s.name, detail: s.api })), { title: '▶ 幕二实跑监控台' });
+      const mon = UI.runMonitor(RUN_STEPS, { title: '▶ 幕二实跑监控台' });
       runCard.after(mon.el);
       mon.el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       window.SKYTRUST_RUN = { active: true, act: 'act2' };

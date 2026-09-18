@@ -50,9 +50,9 @@
     /* ---------- 一键幕一 ---------- */
     const runCard = card(null, null, h('div', { class: 'row' },
       asyncBtn('▶ 一键实跑幕一全流程', runAll, 'btn-primary'),
-      h('span', { class: 'small muted' }, '按报告剧本顺序自动执行 14 步：注册无人机 UAV-WEB-' + TS +
-        ' → 任务A申请审核 → 任务B冲突消解 → 许可签发/吊销 → 盘点（约 8 秒，含 6 次真实跨链）。',
-        '下方监控台逐步展示每次调用的 API / 参数 / 返回 / 延迟。')));
+      h('span', { class: 'small muted' }, '按报告剧本顺序自动执行 15 步（含 2 个理论失败步：重复消解必拒 3004、吊销后复验必 valid=false）：注册无人机 → ' +
+        '任务A申请审核 → 任务B冲突消解 → 许可签发/吊销 → 盘点（约 10 秒，含 6 次真实跨链）。任务时隙是可复用演示资源：库里有历史任务时会先询问是否 demo/reset+init 复位（真实三链账本不受影响）。',
+        '下方监控台逐步展示每次调用的 API / 参数 / 返回 / 延迟，并附成功/失败解说。')));
     root.append(runCard);
 
     const out = {};
@@ -301,25 +301,53 @@
       }, d => cxFlow(d.crosschain || d))));
     sec('cx', '⑥ 跨链网关盘点', '本幕全部跨链闭环流水；crosschain/send 可手动发起一条存证消息（网关通用入口）。', cxBtns);
 
-    /* ===== 一键全流程（runMonitor 可视化：逐步展示实际调用的 API/参数/返回/延迟） ===== */
+    /* ===== 一键全流程（runMonitor 可视化 + 理论失败步：预期拒绝按「◈ 按设计」展示并附解说） ===== */
     const RUN_STEPS = [
       { fi: 1, name: '无人机注册 + 跨链存证', api: 'uav/register', btn: () => uavBtns.children[0] },
-      { fi: 2, name: '创建任务A（密文落库）', api: 'mission/create', btn: () => mABtns.children[0] },
-      { fi: 2, name: '提交任务A申请（跨链闭环）', api: 'mission/submit', btn: () => mABtns.children[2] },
-      { fi: 3, name: '任务A审核通过（跨链回传）', api: 'review/submit', btn: () => mABtns.children[3] },
-      { fi: 4, name: '创建任务B（重叠窗口）', api: 'mission/create', btn: () => mBBtns.children[0] },
+      { fi: 2, name: '创建任务A（轨迹密文落库）', api: 'mission/create', btn: () => mABtns.children[0] },
+      { fi: 2, name: '提交任务A申请（源链交易 + 跨链闭环）', api: 'mission/submit', btn: () => mABtns.children[2] },
+      { fi: 3, name: '任务A审核通过（双链回传）', api: 'review/submit', btn: () => mABtns.children[3] },
+      { fi: 4, name: '创建任务B（与A重叠窗口）', api: 'mission/create', btn: () => mBBtns.children[0] },
       { fi: 4, name: '提交任务B申请', api: 'mission/submit', btn: () => mBBtns.children[1] },
-      { fi: 4, name: '冲突检测（R205 航段重叠）', api: 'conflict/detect', btn: () => mBBtns.children[2] },
-      { fi: 5, name: '冲突消解（时间窗后移）', api: 'conflict/resolve', btn: () => mBBtns.children[3] },
+      { fi: 4, name: '冲突检测（应命中航段重叠）', api: 'conflict/detect', btn: () => mBBtns.children[2],
+        expectFn: d => d && d.count >= 1 },
+      { fi: 5, name: '冲突消解（B时间窗后移）', api: 'conflict/resolve', btn: () => mBBtns.children[3] },
+      { fi: 5, name: '重复消解（理论失败：应拒 3004）', api: 'conflict/resolve', btn: () => mBBtns.children[3],
+        expectCode: 3004,
+        whyFail: '消解幂等守卫：该冲突已 RESOLVED——重复处置必须被 3004 拒绝（消解是一次性落地操作，防止决议留痕被反复改写；再对同窗口复测 detect 会新开一条冲突记录，而不是复用已消解的旧记录）。' },
       { fi: 5, name: '任务B审核放行', api: 'review/submit', btn: () => mBBtns.children[4] },
-      { fi: 6, name: '签发通行许可（跨链）', api: 'pass/issue', btn: () => passBtns.children[0] },
-      { fi: 7, name: '验证许可（应有效）', api: 'pass/verify', btn: () => passBtns.children[1] },
-      { fi: 7, name: '吊销许可（跨链）', api: 'pass/revoke', btn: () => passBtns.children[2] },
-      { fi: 7, name: '复验许可（应拒绝）', api: 'pass/verify', btn: () => passBtns.children[3] },
+      { fi: 6, name: '签发飞行许可（三链中继）', api: 'pass/issue', btn: () => passBtns.children[0] },
+      { fi: 7, name: '验证许可（应有效）', api: 'pass/verify', btn: () => passBtns.children[1],
+        expectData: { valid: true } },
+      { fi: 7, name: '吊销许可（跨链重发）', api: 'pass/revoke', btn: () => passBtns.children[2] },
+      { fi: 7, name: '复验许可（理论失败：必须拒绝）', api: 'pass/verify', btn: () => passBtns.children[3],
+        expectData: { valid: false },
+        whyOk: '已吊销许可必须 valid=false 且 reasons 给出吊销留痕——拒绝以「数据」表达（恒 code=0），不是错误码。' },
       { fi: 8, name: '跨链流水盘点', api: 'crosschain/list', btn: () => cxBtns.children[0] },
     ];
     async function runAll() {
-      const mon = UI.runMonitor(RUN_STEPS.map(s => ({ name: s.name, detail: s.api })), { title: '▶ 幕一实跑监控台' });
+      /* 重演自检：任务时隙是可复用演示资源——demo/init 不落库任何任务，库里有任务
+         即上次演出残留，会按同一演示时隙与本次 A/B 相撞，干扰「冲突复测 count=0」
+         与「任务B审核放行」（3001）。检测到残留 → 确认后 demo/reset+init
+         （真实三链账本永不复位，P6-R6）；三幕总控模式下出发前已统一复位，跳过询问。 */
+      const preM = await call('/api/mission/list', { page: 1, page_size: 1 });
+      const mTotal = (preM.ok && preM.data && preM.data.total) || 0;
+      if (mTotal > 0 && !(window.SKYTRUST_GLOBAL_RUN && window.SKYTRUST_GLOBAL_RUN.active)) {
+        if (confirm('检测到业务库已有 ' + mTotal + ' 条历史任务（上次演出残留）。直接重演幕一，冲突复测与审核放行会被旧时隙数据干扰。\n\n点「确定」：先 demo/reset+init 复位业务库再重演（真实三链账本不受影响，P6-R6；幕二/幕三产生的告警、授权、审计会一并清空）。\n点「取消」：按现状硬跑，失败步骤如实展示并附解说。')) {
+          toast('正在复位业务库（demo/reset + init）…', 'ok');
+          const r1 = await call('/api/demo/reset', {});
+          const r2 = r1.ok ? await call('/api/demo/init', {}) : r1;
+          if (r1.ok && r2.ok) toast('已复位并重灌基线，开始重演', 'ok');
+          else toast('复位失败 code=' + (r1.ok ? r2.code : r1.code) + '，按现状硬跑', 'err', 5000);
+        }
+      }
+      // 同页重演自适应：换新时间戳 ID，避免 uav/register 幂等守卫（6002）误伤重复演示
+      S.uavId = 'UAV-WEB-' + tsSuffix();
+      const uavIn = uavForm.querySelector('[data-field="uavId"]');
+      if (uavIn) uavIn.value = S.uavId;
+      const snIn = uavForm.querySelector('[data-field="sn"]');
+      if (snIn) snIn.value = 'SN-WEB-' + S.uavId.slice(-6);
+      const mon = UI.runMonitor(RUN_STEPS, { title: '▶ 幕一实跑监控台' });
       runCard.after(mon.el);
       mon.el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       window.SKYTRUST_RUN = { active: true, act: 'act1' };

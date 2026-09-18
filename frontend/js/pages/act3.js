@@ -64,7 +64,7 @@
     /* ===== 一键幕三 ===== */
     const runCard = card(null, null, h('div', { class: 'row' },
       asyncBtn('▶ 一键实跑幕三监管剧本', runAll, 'btn-primary'),
-      h('span', { class: 'small muted' }, '默认目标为演示种子任务 MISSION-2026-001（幕一产生；若已 demo/reset 请先跑幕一）。告警 → 追踪 → 授权 → 开箱核验 → 偏航复测 → 审计导出。监控台逐步展示每次调用的 API / 参数 / 返回 / 延迟。')));
+      h('span', { class: 'small muted' }, '默认目标为演示种子任务 MISSION-2026-001（幕一产生；若已 demo/reset 请先跑幕一）。自动执行 13 步（含 2 个理论失败步：未授权核查必被 5002 封缄拒绝、篡改载荷后验签必 valid=false），约 8 秒。监控台逐步展示每次调用的 API / 参数 / 返回 / 延迟，并附成功/失败解说。')));
     root.append(runCard);
 
     /* ===== ① 告警 ===== */
@@ -318,28 +318,51 @@
       document.body.append(a); a.click(); a.remove();
     }
 
-    /* ===== 一键剧本（runMonitor 可视化：逐步展示实际调用的 API/参数/返回/延迟） ===== */
+    /* ===== 一键剧本（runMonitor 可视化 + 理论失败步：预期拒绝按「◈ 按设计」展示并附解说） ===== */
     const RUN_STEPS = [
-      { fi: 0, sec: 'alert', i: 0, name: '告警登记', api: 'alert/raise' },
+      { fi: 0, sec: 'alert', i: 0, name: '告警登记（匿名化：伪名+证据摘要）', api: 'alert/raise' },
       { fi: 1, el: () => stBtn, name: '状态流转 OPEN→IDENTIFIED', api: 'alert/status' },
       { fi: 1, sec: 'alert', i: 1, name: '告警台账确认', api: 'alert/list' },
       { fi: 2, sec: 'trace', i: 0, name: '七级跨链身份追踪', api: 'trace/identity' },
-      { fi: 3, sec: 'auth', i: 0, name: '核验授权申请', api: 'authorize/apply' },
-      { fi: 4, sec: 'insp', i: 0, name: '未授权核查 → 封缄拒绝（设计内 code=5002）', api: 'inspect/ciphertext', forceOk: true },
+      { fi: 3, sec: 'auth', i: 0, name: '核验授权申请（scope 最小化）', api: 'authorize/apply' },
+      { fi: 4, sec: 'insp', i: 0, name: '未授权核查（理论失败：封缄拒绝 5002）', api: 'inspect/ciphertext',
+        expectCode: 5002 },
       { fi: 5, sec: 'auth', i: 1, name: '授权批准（双签 + 链上存证）', api: 'authorize/review' },
-      { fi: 6, sec: 'insp', i: 1, name: '开箱核验 trajectory=NORMAL（ROUTE_OK）', api: 'inspect/ciphertext' },
-      { fi: 7, sec: 'insp', i: 2, name: '偏航复测 trajectory=DEVIATION（自动告警）', api: 'inspect/ciphertext' },
+      { fi: 6, sec: 'insp', i: 1, name: '开箱核验 trajectory=NORMAL（应 ROUTE_OK）', api: 'inspect/ciphertext',
+        expectFn: d => d && d.authorized === true && d.conclusion && d.conclusion.route_verdict === 'ROUTE_OK' },
+      { fi: 7, sec: 'insp', i: 2, name: '偏航复测 trajectory=DEVIATION（应 ROUTE_DEVIATION + 自动告警）', api: 'inspect/ciphertext',
+        expectFn: d => d && d.conclusion && d.conclusion.route_verdict === 'ROUTE_DEVIATION' },
       { fi: 8, sec: 'audit', i: 0, name: '监管审计台账', api: 'regulatory/audit/list' },
       { fi: 9, sec: 'audit', i: 1, name: '监管审计 CSV 导出', api: 'regulatory/audit/export' },
+      { fi: 10, sec: 'crypto', i: 2, name: 'SM9 签名（取得有效签名自动回填）', api: 'crypto/sm9/sign' },
+      { fi: 10, sec: 'crypto', i: 3, name: '篡改载荷后验签（理论失败：必须 valid=false）', api: 'crypto/sm9/verify',
+        expectData: { valid: false },
+        pre: () => {
+          try {
+            const o = JSON.parse(cPayload.value);
+            o.altitude_max = (Number(o.altitude_max) || 120) + 879;   // 篡改一个字段
+            cPayload.value = JSON.stringify(o);
+          } catch (_) { cPayload.value = '{"mission_id":"MISSION-2026-001","tampered":true}'; }
+        },
+        whyOk: '签名与载荷强绑定：篡改 altitude_max 后验签必须失败——valid=false 是「理论失败」的数据化表达（恒 code=0；畸形签名才是 1002）。' },
     ];
     async function runAll() {
+      /* 前置自检：幕三全程以幕一产生的种子任务 MISSION-2026-001 为核查对象
+         （demo/init 不落库任务；demo/reset 后必须先跑幕一）。缺失则明确提示，
+         避免 13 步连环失败刷屏。 */
+      const preM = await call('/api/mission/query', { mission_id: S.missionId });
+      if (!preM.ok) {
+        toast('未找到演示种子任务 ' + S.missionId + '（code=' + preM.code + '）——请先跑「一键实跑幕一」或用总控「一键跑通三幕全流程」，再回来跑幕三', 'err', 9000);
+        window.SKYTRUST_RUN = { active: false, act: 'act3', aborted: 'missing-seed-mission' };  // 别让三幕总控空等 240s
+        return;
+      }
       /* 只盯被点的那个按钮：一键实跑按钮自身在整个 runAll 期间保持 disabled，
          全局轮询 .btn:disabled 会永远命中它，导致每步空等 25s 超时。 */
       const wait = (btn) => new Promise(res => {
         const t = setInterval(() => { if (!btn.disabled) { clearInterval(t); setTimeout(res, 150); } }, 80);
         setTimeout(() => { clearInterval(t); res(); }, 25000);
       });
-      const mon = UI.runMonitor(RUN_STEPS.map(s => ({ name: s.name, detail: s.api })), { title: '▶ 幕三实跑监控台' });
+      const mon = UI.runMonitor(RUN_STEPS, { title: '▶ 幕三实跑监控台' });
       runCard.after(mon.el);
       mon.el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       window.SKYTRUST_RUN = { active: true, act: 'act3' };
@@ -347,10 +370,11 @@
         for (let i = 0; i < RUN_STEPS.length; i++) {
           const st = RUN_STEPS[i];
           mon.begin(i);
+          if (st.pre) st.pre();
           const btn = st.el ? st.el() : out[st.sec].parentElement.querySelectorAll('.btn-row .btn')[st.i];
           btn.click();
           await wait(btn);
-          mon.end(i, st.forceOk ? true : undefined);
+          mon.end(i);
         }
         toast('幕三监管剧本实跑完毕（告警 ' + S.alertId + ' · 授权 ' + S.authId + '）', 'ok', 6000);
       } finally {

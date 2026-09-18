@@ -156,10 +156,17 @@
        每幕页面内还有粘性监控台，逐步展示该步的参数/返回 JSON。 ---------- */
     async function runThreeActs() {
       if (window.SKYTRUST_RUN && window.SKYTRUST_RUN.active) { toast('已有剧本在运行中，请等待完成', 'err'); return; }
+      /* 全量复位：三幕对业务库有先后依赖（幕二攻防拓扑是一次性消耗品、幕三依赖幕一种子任务），
+         先 demo/reset + demo/init 才能保证任何时刻起跑都确定通过；真实三链账本永不复位（P6-R6）。 */
+      if (!confirm('将先 demo/reset + demo/init 复位业务库（真实三链账本永不复位，P6-R6），再依次实跑三幕（42 步 · 含 7 个理论失败步，按设计拒绝会标 ◈ 而非红叉）。继续？')) return;
+      toast('正在复位业务库（demo/reset + init）…', 'ok');
+      const rr = await call('/api/demo/reset', {});
+      const ri = rr.ok ? await call('/api/demo/init', {}) : rr;
+      if (!rr.ok || !ri.ok) { toast('复位失败 code=' + (rr.ok ? ri.code : rr.code) + '，已中止全流程', 'err', 6000); return; }
       const acts = [
-        ['act1', '幕一 · 任务跨域协同（14 步 · 6 次真实跨链）'],
-        ['act2', '幕二 · 虫洞攻防剧本（11 步 · 拓扑/风险/实验）'],
-        ['act3', '幕三 · 监管密文核查（11 步 · 追踪/授权/开箱/审计）'],
+        ['act1', '幕一 · 任务跨域协同（15 步 · 6 次真实跨链 · 2 理论失败）'],
+        ['act2', '幕二 · 虫洞攻防剧本（14 步 · 拓扑/风险/实验 · 3 理论失败）'],
+        ['act3', '幕三 · 监管密文核查（13 步 · 追踪/授权/开箱/审计 · 2 理论失败）'],
       ];
       let cancelled = false;
       const t0 = Date.now();
@@ -189,8 +196,11 @@
       const tick = setInterval(() => { elapsed.textContent = '⏱ ' + Math.round((Date.now() - t0) / 1000) + 's'; }, 500);
       const offTail = API.onCall(r => {
         if (r.path === '/api/chain/status') return;   // 顶部链状态灯的后台心跳
+        const cur = window.SKYTRUST_CURRENT_STEP;
+        const designed = !r.ok && cur && cur.expectCode !== undefined && r.code === cur.expectCode;
         tail.append(h('div', { class: 'gt-row' },
           r.ok ? h('span', { class: 'badge good' }, h('i', { class: 'bi' }, '✓'))
+               : designed ? h('span', { class: 'badge warning' }, h('i', { class: 'bi' }, '◈'), String(r.code))
                : h('span', { class: 'badge critical' }, h('i', { class: 'bi' }, '✕'), String(r.code)),
           h('code', { class: 'mono' }, 'POST ' + r.path),
           h('span', { class: 'rc-ms' }, r.latencyMs + 'ms')));
@@ -199,6 +209,7 @@
       });
       const sleep = ms => new Promise(r => setTimeout(r, ms));
       let okAll = true;
+      window.SKYTRUST_GLOBAL_RUN = { active: true };   // 幕内残留守卫见此标志即跳过二次 confirm
       try {
         for (let i = 0; i < acts.length; i++) {
           if (cancelled) break;
@@ -234,6 +245,7 @@
         }
       } finally {
         clearInterval(tick); offTail();
+        window.SKYTRUST_GLOBAL_RUN = { active: false };
         if (!cancelled) {
           location.hash = '#/dashboard';
           const total = Math.round((Date.now() - t0) / 1000);

@@ -43,6 +43,7 @@ logs/
 
 # 区块链运行数据
 data/
+!frontend/js/data/
 storage/
 block/
 blocks/
