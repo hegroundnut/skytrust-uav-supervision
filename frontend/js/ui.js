@@ -251,9 +251,112 @@
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
   }
 
+  /* ---------- 一键实跑监控台：逐步展示每次 API 调用的路径/参数/返回/延迟 ----------
+     steps: [{name, detail?}]；begin(i)/end(i,ok,note) 驱动步骤状态；
+     begin 期间自动订阅 API.onCall，把该步骤触发的所有调用实时渲染为子行。 */
+  const SUM_KEYS = /(_id$|^status$|^verdict$|^valid$|^count$|latency_ms$|^risk_score$|success_rate$|^route_verdict$|^payload_verdict$|^resolved$|^wormhole_enabled$|^ciphertext_status$|^conclusion$)/;
+  function summarizeData(data, limit) {
+    if (!data || typeof data !== 'object') return [];
+    const chips = [];
+    const walk = (o, pre) => {
+      for (const [k, v] of Object.entries(o)) {
+        if (chips.length >= (limit || 6)) return;
+        if (v && typeof v === 'object' && !Array.isArray(v) && pre < 1) { walk(v, pre + 1); continue; }
+        if (!SUM_KEYS.test(k)) continue;
+        let s = Array.isArray(v) ? '[' + v.length + ']' : String(v);
+        chips.push([k, trunc(s, 34)]);
+      }
+    };
+    walk(data, 0);
+    return chips;
+  }
+  /* 顶部链状态灯每 15s 轮询 chain/status，属后台心跳，不计入步骤调用行 */
+  const BG_PATHS = ['/api/chain/status'];
+  function runMonitor(steps, opts) {
+    opts = opts || {};
+    const t0 = Date.now();
+    let timer = null, off = null, ended = 0, failed = 0;
+    const progressEl = h('span', { class: 'run-progress' }, '0/' + steps.length);
+    const elapsedEl = h('span', { class: 'run-elapsed' }, '⏱ 0.0s');
+    const body = h('div', { class: 'run-steps' });
+    const panel = h('div', { class: 'card run-panel' },
+      h('div', { class: 'run-head' },
+        h('b', {}, opts.title || '▶ 实跑监控台'),
+        progressEl, elapsedEl,
+        h('span', { class: 'small muted' }, '每步展示实际调用的 API / 参数 / 返回，点 ▸ 看原始 JSON')));
+    const foot = h('div', { class: 'run-foot', style: { display: 'none' } });
+    panel.append(body, foot);
+    const rows = steps.map((s, i) => {
+      const ico = h('span', { class: 'rs-ico' }, '○');
+      const api = h('span', { class: 'rs-api' }, '');
+      const meta = h('span', { class: 'rs-meta' }, '');
+      const calls = h('div', { class: 'rs-calls' });
+      const row = h('div', { class: 'run-step' },
+        ico,
+        h('span', { class: 'rs-name' }, (i + 1) + '. ' + s.name, s.detail ? h('span', { class: 'small muted' }, ' · ' + s.detail) : null),
+        h('span', { class: 'rs-right' }, api, meta),
+        calls);
+      body.append(row);
+      return { row, ico, api, meta, calls, n: 0, ok: null };
+    });
+    function tick() { elapsedEl.textContent = '⏱ ' + ((Date.now() - t0) / 1000).toFixed(1) + 's'; }
+    function begin(i) {
+      const R = rows[i];
+      R.row.className = 'run-step running';
+      R.ico.textContent = '⏳';
+      if (!timer) timer = setInterval(tick, 100);
+      // 面板内滚动到当前步骤（不牵动整页）
+      body.parentElement.scrollTop = R.row.offsetTop - 60;
+      off = window.API.onCall(r => {
+        if (BG_PATHS.includes(r.path)) return;
+        R.n++;
+        R.api.textContent = r.path;
+        if (R.ok === null) R.ok = r.ok; else R.ok = R.ok && r.ok;
+        const chips = summarizeData(r.data);
+        const callRow = h('div', { class: 'run-call' },
+          h('span', { class: 'rc-line' },
+            r.ok ? h('span', { class: 'badge good' }, h('i', { class: 'bi' }, '✓'), 'code=0')
+                 : h('span', { class: 'badge critical' }, h('i', { class: 'bi' }, '✕'), 'code=' + r.code),
+            h('code', { class: 'mono' }, 'POST ' + r.path),
+            h('span', { class: 'rc-ms' }, r.latencyMs + 'ms')),
+          chips.length ? h('div', { class: 'run-sum' }, chips.map(([k, v]) =>
+            h('span', { class: 'chip' }, h('b', {}, k), '=', v))) : null,
+          h('details', {},
+            h('summary', { class: 'small muted' }, '▸ 参数 / 返回 JSON'),
+            h('div', { class: 'small muted mt8' }, '请求参数：'), jsonBlock(r.reqBody, 200),
+            h('div', { class: 'small muted mt8' }, '返回结果：'), jsonBlock(r.raw, 300)));
+        R.calls.append(callRow);
+        body.parentElement.scrollTop = R.row.offsetTop - 60 + R.calls.scrollHeight;
+      });
+    }
+    function end(i, ok, note) {
+      const R = rows[i];
+      if (off) { off(); off = null; }
+      const good = ok === undefined ? R.ok !== false && R.n > 0 : ok;
+      R.row.className = 'run-step ' + (good ? 'done' : 'error');
+      R.ico.textContent = good ? '✓' : '✕';
+      R.meta.textContent = (note || '') + (R.n ? (note ? ' · ' : '') + R.n + ' 次调用' : '');
+      ended++; if (!good) failed++;
+      progressEl.textContent = ended + '/' + steps.length;
+      tick();
+    }
+    function finish(summaryNodes) {
+      if (timer) { clearInterval(timer); timer = null; }
+      if (off) { off(); off = null; }
+      tick();
+      foot.style.display = 'block';
+      foot.innerHTML = '';
+      foot.append(h('span', { class: 'badge ' + (failed ? 'critical' : 'good') },
+        failed ? '✕ ' + failed + ' 步含失败调用' : '✓ 全部 ' + ended + ' 步完成'),
+        h('span', { class: 'small muted' }, '总耗时 ' + ((Date.now() - t0) / 1000).toFixed(1) + 's'),
+        ...(summaryNodes || []));
+    }
+    return { el: panel, begin, end, finish, rows };
+  }
+
   window.UI = {
     h, esc, trunc, mono, statusBadge, chainTag, chainVar, jsonBlock, metaLine, table, kv, card,
     toast, toastResult, showTip, hideTip, hbarChart, cxFlow, asyncBtn, readForm, field, fieldSelect,
-    tsSuffix, datetimeLocal, CHAIN_META,
+    tsSuffix, datetimeLocal, CHAIN_META, runMonitor, summarizeData,
   };
 })();

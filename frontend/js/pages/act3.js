@@ -62,9 +62,10 @@
     }
 
     /* ===== 一键幕三 ===== */
-    root.append(card(null, null, h('div', { class: 'row' },
+    const runCard = card(null, null, h('div', { class: 'row' },
       asyncBtn('▶ 一键实跑幕三监管剧本', runAll, 'btn-primary'),
-      h('span', { class: 'small muted' }, '默认目标为演示种子任务 MISSION-2026-001（幕一产生；若已 demo/reset 请先跑幕一）。告警 → 追踪 → 授权 → 开箱核验 → 偏航复测 → 审计导出。'))));
+      h('span', { class: 'small muted' }, '默认目标为演示种子任务 MISSION-2026-001（幕一产生；若已 demo/reset 请先跑幕一）。告警 → 追踪 → 授权 → 开箱核验 → 偏航复测 → 审计导出。监控台逐步展示每次调用的 API / 参数 / 返回 / 延迟。')));
+    root.append(runCard);
 
     /* ===== ① 告警 ===== */
     const aForm = h('div', { class: 'form-grid' },
@@ -96,14 +97,14 @@
     const stForm = h('div', { class: 'form-grid' },
       fieldSelect('toStatus', '目标状态 to_status', ['IDENTIFIED', 'TRACED', 'REVIEWED', 'RESOLVED', 'ARCHIVED'], 'IDENTIFIED'),
       field('reason', '理由 reason', { value: '网页演示流转' }));
-    root.append(card('告警状态流转 alert/status', null, stForm, h('div', { class: 'btn-row' },
-      asyncBtn('流转状态', () => {
-        const f = readForm(stForm);
-        return run(out.alert, '/api/alert/status', { alert_id: S.alertId, to_status: f.toStatus, operator: 'REG-01', reason: f.reason }, d => {
-          if (f.toStatus === 'IDENTIFIED') markFlow(1, 'done');
-          return alertRow(d);
-        });
-      }))));
+    const stBtn = asyncBtn('流转状态', () => {
+      const f = readForm(stForm);
+      return run(out.alert, '/api/alert/status', { alert_id: S.alertId, to_status: f.toStatus, operator: 'REG-01', reason: f.reason }, d => {
+        if (f.toStatus === 'IDENTIFIED') markFlow(1, 'done');
+        return alertRow(d);
+      });
+    });
+    root.append(card('告警状态流转 alert/status', null, stForm, h('div', { class: 'btn-row' }, stBtn)));
     function alertRow(a) {
       return kv([['告警', h('code', {}, a.alert_id)], ['类型', a.event_type], ['等级', statusBadge(a.risk_level)],
         ['状态', statusBadge(a.status)], ['伪名', h('code', {}, a.uav_pseudonym || '—')],
@@ -317,41 +318,45 @@
       document.body.append(a); a.click(); a.remove();
     }
 
-    /* ===== 一键剧本 ===== */
+    /* ===== 一键剧本（runMonitor 可视化：逐步展示实际调用的 API/参数/返回/延迟） ===== */
+    const RUN_STEPS = [
+      { fi: 0, sec: 'alert', i: 0, name: '告警登记', api: 'alert/raise' },
+      { fi: 1, el: () => stBtn, name: '状态流转 OPEN→IDENTIFIED', api: 'alert/status' },
+      { fi: 1, sec: 'alert', i: 1, name: '告警台账确认', api: 'alert/list' },
+      { fi: 2, sec: 'trace', i: 0, name: '七级跨链身份追踪', api: 'trace/identity' },
+      { fi: 3, sec: 'auth', i: 0, name: '核验授权申请', api: 'authorize/apply' },
+      { fi: 4, sec: 'insp', i: 0, name: '未授权核查 → 封缄拒绝（设计内 code=5002）', api: 'inspect/ciphertext', forceOk: true },
+      { fi: 5, sec: 'auth', i: 1, name: '授权批准（双签 + 链上存证）', api: 'authorize/review' },
+      { fi: 6, sec: 'insp', i: 1, name: '开箱核验 trajectory=NORMAL（ROUTE_OK）', api: 'inspect/ciphertext' },
+      { fi: 7, sec: 'insp', i: 2, name: '偏航复测 trajectory=DEVIATION（自动告警）', api: 'inspect/ciphertext' },
+      { fi: 8, sec: 'audit', i: 0, name: '监管审计台账', api: 'regulatory/audit/list' },
+      { fi: 9, sec: 'audit', i: 1, name: '监管审计 CSV 导出', api: 'regulatory/audit/export' },
+    ];
     async function runAll() {
-      const clickBtn = (sec_, i) => {
-        const cardEl = out[sec_].parentElement;
-        cardEl.querySelectorAll('.btn-row .btn')[i].click();
-      };
-      const wait = () => new Promise(res => {
-        const t = setInterval(() => { if (!document.querySelector('.btn:disabled')) { clearInterval(t); setTimeout(res, 150); } }, 80);
+      /* 只盯被点的那个按钮：一键实跑按钮自身在整个 runAll 期间保持 disabled，
+         全局轮询 .btn:disabled 会永远命中它，导致每步空等 25s 超时。 */
+      const wait = (btn) => new Promise(res => {
+        const t = setInterval(() => { if (!btn.disabled) { clearInterval(t); setTimeout(res, 150); } }, 80);
         setTimeout(() => { clearInterval(t); res(); }, 25000);
       });
-      const steps = [
-        ['alert', 0],   // raise
-        ['alert', 0],   // list（台账确认）
-        ['trace', 0],   // trace
-        ['auth', 0],    // apply
-        ['insp', 0],    // 未授权 5002
-        ['auth', 1],    // approve
-        ['insp', 1],    // 开箱 NORMAL
-        ['insp', 2],    // DEVIATION
-        ['audit', 0],   // list
-        ['audit', 1],   // export
-      ];
-      // alert/status 流转卡片不在 out[] 内，raise 后单独点它的第一颗按钮
-      for (const [s_, i] of steps) {
-        clickBtn(s_, i); await wait();
-        if (s_ === 'alert' && i === 0) { // raise 之后先做状态流转
-          const cards = root.querySelectorAll('.card');
-          for (const c of cards) {
-            const t = c.querySelector('.card-title h3');
-            if (t && t.textContent.includes('alert/status')) { c.querySelector('.btn').click(); markFlow(1, 'done'); break; }
-          }
-          await wait();
+      const mon = UI.runMonitor(RUN_STEPS.map(s => ({ name: s.name, detail: s.api })), { title: '▶ 幕三实跑监控台' });
+      runCard.after(mon.el);
+      mon.el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.SKYTRUST_RUN = { active: true, act: 'act3' };
+      try {
+        for (let i = 0; i < RUN_STEPS.length; i++) {
+          const st = RUN_STEPS[i];
+          mon.begin(i);
+          const btn = st.el ? st.el() : out[st.sec].parentElement.querySelectorAll('.btn-row .btn')[st.i];
+          btn.click();
+          await wait(btn);
+          mon.end(i, st.forceOk ? true : undefined);
         }
+        toast('幕三监管剧本实跑完毕（告警 ' + S.alertId + ' · 授权 ' + S.authId + '）', 'ok', 6000);
+      } finally {
+        mon.finish([h('span', { class: 'small muted' }, '告警 ', h('code', {}, S.alertId), ' · 授权 ', h('code', {}, S.authId))]);
+        window.SKYTRUST_RUN = { active: false, act: 'act3' };
       }
-      toast('幕三监管剧本实跑完毕（告警 ' + S.alertId + ' · 授权 ' + S.authId + '）', 'ok', 6000);
     }
   }
 

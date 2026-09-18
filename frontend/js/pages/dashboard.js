@@ -21,6 +21,7 @@
     const bar = h('div', { class: 'btn-row', style: { marginBottom: '14px' } });
     const refresh = asyncBtn('⟳ 刷新全部', load, 'btn-primary');
     bar.append(refresh,
+      asyncBtn('▶ 一键跑通三幕全流程', runThreeActs, 'btn-primary'),
       asyncBtn('demo/reset 复位业务库', async () => {
         if (!confirm('将清空 20 张业务表并重灌基线（真实链数据不受影响，P6-R6）。继续？')) return;
         const r = await call('/api/demo/reset', {});
@@ -148,6 +149,102 @@
       dlg.classList.add('cx-detail');
       root.append(dlg);
       dlg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /* ---------- 一键跑通三幕全流程：固定悬浮总控（挂 body 上跨页存活），
+       依次导航到每幕并触发其「一键实跑」；尾流实时滚动显示每次 API 调用，
+       每幕页面内还有粘性监控台，逐步展示该步的参数/返回 JSON。 ---------- */
+    async function runThreeActs() {
+      if (window.SKYTRUST_RUN && window.SKYTRUST_RUN.active) { toast('已有剧本在运行中，请等待完成', 'err'); return; }
+      const acts = [
+        ['act1', '幕一 · 任务跨域协同（14 步 · 6 次真实跨链）'],
+        ['act2', '幕二 · 虫洞攻防剧本（11 步 · 拓扑/风险/实验）'],
+        ['act3', '幕三 · 监管密文核查（11 步 · 追踪/授权/开箱/审计）'],
+      ];
+      let cancelled = false;
+      const t0 = Date.now();
+      const elapsed = h('span', { class: 'run-elapsed' }, '⏱ 0s');
+      const rows = acts.map(([k, name], i) => {
+        const ico = h('span', { class: 'rs-ico' }, '○');
+        const meta = h('span', { class: 'rs-meta' }, '');
+        const row = h('div', { class: 'run-step' }, ico,
+          h('span', { class: 'rs-name' }, (i + 1) + '. ' + name),
+          h('span', { class: 'rs-right' }, meta));
+        return { row, ico, meta };
+      });
+      const tail = h('div', { class: 'gro-tail' });
+      const overlay = h('div', { class: 'card global-run-overlay' },
+        h('div', { class: 'run-head' },
+          h('b', {}, '▶ 三幕全流程 · 总控'), elapsed,
+          h('button', { class: 'btn btn-sm btn-ghost gro-close',
+            onClick: () => {
+              cancelled = true; overlay.remove(); offTail();
+              toast('已取消后续幕（当前幕剧本会自行跑完）', 'err');
+            } }, '✕ 取消')),
+        h('div', { class: 'run-steps' }, rows.map(r => r.row)),
+        h('div', { class: 'small muted', style: { marginTop: '8px' } },
+          '实时调用尾流（进入每幕页面可查看逐步监控台：API / 参数 / 返回 / 延迟）：'),
+        tail);
+      document.body.append(overlay);
+      const tick = setInterval(() => { elapsed.textContent = '⏱ ' + Math.round((Date.now() - t0) / 1000) + 's'; }, 500);
+      const offTail = API.onCall(r => {
+        if (r.path === '/api/chain/status') return;   // 顶部链状态灯的后台心跳
+        tail.append(h('div', { class: 'gt-row' },
+          r.ok ? h('span', { class: 'badge good' }, h('i', { class: 'bi' }, '✓'))
+               : h('span', { class: 'badge critical' }, h('i', { class: 'bi' }, '✕'), String(r.code)),
+          h('code', { class: 'mono' }, 'POST ' + r.path),
+          h('span', { class: 'rc-ms' }, r.latencyMs + 'ms')));
+        while (tail.children.length > 8) tail.firstChild.remove();
+        overlay.scrollTop = overlay.scrollHeight;
+      });
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      let okAll = true;
+      try {
+        for (let i = 0; i < acts.length; i++) {
+          if (cancelled) break;
+          const [key] = acts[i];
+          rows[i].ico.textContent = '⏳'; rows[i].row.className = 'run-step running';
+          const tAct = Date.now();
+          window.SKYTRUST_RUN = null;
+          location.hash = '#/' + key;
+          await sleep(100);   // 让 hashchange 先触发路由切换
+          /* 按幕名精确匹配按钮：切页是异步的，此刻 #page 可能还是上一幕的残留，
+             用通用「一键实跑」会误点旧页按钮，导致旧幕脚本重跑而新幕从未启动。 */
+          const label = '一键实跑' + (key === 'act1' ? '幕一' : key === 'act2' ? '幕二' : '幕三');
+          let btn = null;
+          for (let w = 0; w < 100 && !btn; w++) {   // 等待目标幕渲染出其专属按钮
+            btn = [...document.querySelectorAll('#page .btn')].find(b => b.textContent.includes(label));
+            if (!btn) await sleep(200);
+          }
+          if (!btn) {
+            rows[i].ico.textContent = '✕'; rows[i].row.className = 'run-step error';
+            rows[i].meta.textContent = '未找到一键按钮'; okAll = false; continue;
+          }
+          await sleep(400);   // 等页面异步渲染落定，避免分区未构建完就点击
+          btn.click();
+          let done = false;
+          for (let w = 0; w < 800 && !done && !cancelled; w++) {  // 每幕最长 240s
+            done = !!(window.SKYTRUST_RUN && window.SKYTRUST_RUN.active === false && window.SKYTRUST_RUN.act === key);
+            if (!done) await sleep(300);
+          }
+          rows[i].ico.textContent = done ? '✓' : cancelled ? '—' : '✕';
+          rows[i].row.className = 'run-step ' + (done ? 'done' : cancelled ? '' : 'error');
+          rows[i].meta.textContent = ((Date.now() - tAct) / 1000).toFixed(1) + 's' + (done || cancelled ? '' : ' · 超时');
+          if (!done && !cancelled) okAll = false;
+        }
+      } finally {
+        clearInterval(tick); offTail();
+        if (!cancelled) {
+          location.hash = '#/dashboard';
+          const total = Math.round((Date.now() - t0) / 1000);
+          overlay.append(h('div', { class: 'run-foot' },
+            h('span', { class: 'badge ' + (okAll ? 'good' : 'critical') },
+              h('i', { class: 'bi' }, okAll ? '✓' : '✕'), okAll ? '三幕全部完成' : '存在失败步骤'),
+            h('span', { class: 'small muted' }, '总耗时 ' + total + 's · 逐步详情见各幕监控台'),
+            h('button', { class: 'btn btn-sm btn-ghost gro-close', onClick: () => overlay.remove() }, '关闭')));
+          toast(okAll ? '三幕全流程跑通 ✓（总耗时 ' + total + 's）' : '三幕全流程存在失败步骤，详见总控与各幕监控台', okAll ? 'ok' : 'err', 8000);
+        }
+      }
     }
 
     load();

@@ -37,12 +37,17 @@
       latencyMs,
       httpStatus,
       raw,
+      path,                    // 监控台展示用：本次调用的端点与请求体
+      reqBody: body === undefined ? {} : body,
     };
-    listeners.forEach(fn => { try { fn(result); } catch (_) {} });
+    listeners.slice().forEach(fn => { try { fn(result); } catch (_) {} });
     return result;
   }
 
-  function onCall(fn) { listeners.push(fn); }
+  function onCall(fn) {
+    listeners.push(fn);
+    return () => { const i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1); };
+  }
   function getLastLatency() { return lastLatency; }
 
   window.API = { call, onCall, getLastLatency };

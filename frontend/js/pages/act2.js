@@ -124,9 +124,10 @@
     }
 
     /* ===== 一键幕二 ===== */
-    root.append(card(null, null, h('div', { class: 'row' },
+    const runCard = card(null, null, h('div', { class: 'row' },
       asyncBtn('▶ 一键实跑幕二攻防剧本', runAll, 'btn-primary'),
-      h('span', { class: 'small muted' }, '会话建立 → 基线消息×2 → 虫洞 ON → 攻击态消息（延迟骤降）→ 五维风险判定 DETECT+ISOLATE → 路径规避 RECOVERED → 恢复消息 → 虫洞 OFF → DEFENSE 对比实验'))));
+      h('span', { class: 'small muted' }, '会话建立 → 基线消息×2 → 虫洞 ON → 攻击态消息（延迟骤降）→ 五维风险判定 DETECT+ISOLATE → 路径规避 RECOVERED → 恢复消息 → 虫洞 OFF → DEFENSE 对比实验。监控台逐步展示每次调用的 API / 参数 / 返回 / 延迟。')));
+    root.append(runCard);
 
     /* ===== 节点注册 ===== */
     const nForm = h('div', { class: 'form-grid' },
@@ -359,31 +360,50 @@
       document.body.append(a); a.click(); a.remove();
     }
 
-    /* ===== 一键剧本 ===== */
+    /* ===== 一键剧本（runMonitor 可视化：逐步展示实际调用的 API/参数/返回/延迟） ===== */
+    const RUN_STEPS = [
+      { fi: 0, sec: 'sess', i: 0, name: '建立会话（SM9 挑战-响应认证）', api: 'session/open' },
+      { fi: 1, sec: 'msg', i: 0, name: '基线消息 ①（正常多跳延迟）', api: 'message/send' },
+      { fi: 1, sec: 'msg', i: 0, name: '基线消息 ②（建立延迟基线）', api: 'message/send' },
+      { fi: 2, sec: 'atk', i: 0, name: '部署虫洞隧道（伪造邻接）', api: 'wormhole/toggle ON' },
+      { fi: 3, sec: 'msg', i: 0, name: '攻击态消息（延迟骤降 < 物理下限）', api: 'message/send' },
+      { fi: 4, sec: 'atk', i: 1, name: '五维风险判定（DETECT + ISOLATE）', api: 'risk/evaluate' },
+      { fi: 5, sec: 'atk', i: 2, name: '攻防事件流水', api: 'event/list' },
+      { fi: 6, sec: 'atk', i: 3, name: '路径规避切换（Dijkstra 重算）', api: 'path/switch' },
+      { fi: 7, sec: 'msg', i: 0, name: '恢复验证消息（新路径）', api: 'message/send' },
+      { fi: 8, sec: 'atk', i: 4, name: '关闭隧道（隔离处置保持）', api: 'wormhole/toggle OFF' },
+      { fi: 9, sec: 'exp', i: 0, name: 'DEFENSE 对比实验', api: 'experiment/run' },
+    ];
     async function runAll() {
       const clickBtn = (sec_, i) => {
         const cardEl = out[sec_].parentElement;
-        const btns = cardEl.querySelectorAll('.btn-row .btn');
-        btns[i].click();
+        const btn = cardEl.querySelectorAll('.btn-row .btn')[i];
+        btn.click();
+        return btn;
       };
-      const wait = () => new Promise(res => {
-        const t = setInterval(() => { if (!document.querySelector('.btn:disabled')) { clearInterval(t); setTimeout(res, 150); } }, 80);
+      /* 只盯被点的那个按钮：一键实跑按钮自身在整个 runAll 期间保持 disabled，
+         全局轮询 .btn:disabled 会永远命中它，导致每步空等 25s 超时。 */
+      const wait = (btn) => new Promise(res => {
+        const t = setInterval(() => { if (!btn.disabled) { clearInterval(t); setTimeout(res, 150); } }, 80);
         setTimeout(() => { clearInterval(t); res(); }, 25000);
       });
-      const steps = [
-        ['sess', 0],  // 会话
-        ['msg', 0], ['msg', 0],  // 基线×2
-        ['atk', 0],   // 虫洞 ON
-        ['msg', 0],   // 攻击态消息
-        ['atk', 1],   // risk
-        ['atk', 2],   // events
-        ['atk', 3],   // path switch
-        ['msg', 0],   // 恢复消息
-        ['atk', 4],   // 虫洞 OFF
-        ['exp', 0],   // DEFENSE 实验
-      ];
-      for (const [s_, i] of steps) { clickBtn(s_, i); await wait(); }
-      toast('幕二攻防剧本实跑完毕（风险评分 ' + (S.lastRisk ? S.lastRisk.risk_score + ' → ' + S.lastRisk.verdict : '?') + '）', 'ok', 6000);
+      const mon = UI.runMonitor(RUN_STEPS.map(s => ({ name: s.name, detail: s.api })), { title: '▶ 幕二实跑监控台' });
+      runCard.after(mon.el);
+      mon.el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.SKYTRUST_RUN = { active: true, act: 'act2' };
+      try {
+        for (let i = 0; i < RUN_STEPS.length; i++) {
+          const st = RUN_STEPS[i];
+          mon.begin(i);
+          const b = clickBtn(st.sec, st.i);
+          await wait(b);
+          mon.end(i);
+        }
+        toast('幕二攻防剧本实跑完毕（风险评分 ' + (S.lastRisk ? S.lastRisk.risk_score + ' → ' + S.lastRisk.verdict : '?') + '）', 'ok', 6000);
+      } finally {
+        mon.finish([h('span', { class: 'small muted' }, S.lastRisk ? '风险评分 ' + S.lastRisk.risk_score + ' · 判定 ' + S.lastRisk.verdict : '')]);
+        window.SKYTRUST_RUN = { active: false, act: 'act2' };
+      }
     }
   }
 

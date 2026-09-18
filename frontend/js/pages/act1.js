@@ -48,9 +48,12 @@
     }
 
     /* ---------- 一键幕一 ---------- */
-    root.append(card(null, null, h('div', { class: 'row' },
+    const runCard = card(null, null, h('div', { class: 'row' },
       asyncBtn('▶ 一键实跑幕一全流程', runAll, 'btn-primary'),
-      h('span', { class: 'small muted' }, '按报告剧本顺序自动执行：注册无人机 UAV-WEB-' + TS + ' → 任务A申请审核 → 任务B冲突消解 → 许可签发/吊销 → 盘点（约 8 秒，含 6 次真实跨链）'))));
+      h('span', { class: 'small muted' }, '按报告剧本顺序自动执行 14 步：注册无人机 UAV-WEB-' + TS +
+        ' → 任务A申请审核 → 任务B冲突消解 → 许可签发/吊销 → 盘点（约 8 秒，含 6 次真实跨链）。',
+        '下方监控台逐步展示每次调用的 API / 参数 / 返回 / 延迟。')));
+    root.append(runCard);
 
     const out = {};
     function sec(id, title, sub, ...body) {
@@ -298,37 +301,53 @@
       }, d => cxFlow(d.crosschain || d))));
     sec('cx', '⑥ 跨链网关盘点', '本幕全部跨链闭环流水；crosschain/send 可手动发起一条存证消息（网关通用入口）。', cxBtns);
 
-    /* ===== 一键全流程 ===== */
+    /* ===== 一键全流程（runMonitor 可视化：逐步展示实际调用的 API/参数/返回/延迟） ===== */
+    const RUN_STEPS = [
+      { fi: 1, name: '无人机注册 + 跨链存证', api: 'uav/register', btn: () => uavBtns.children[0] },
+      { fi: 2, name: '创建任务A（密文落库）', api: 'mission/create', btn: () => mABtns.children[0] },
+      { fi: 2, name: '提交任务A申请（跨链闭环）', api: 'mission/submit', btn: () => mABtns.children[2] },
+      { fi: 3, name: '任务A审核通过（跨链回传）', api: 'review/submit', btn: () => mABtns.children[3] },
+      { fi: 4, name: '创建任务B（重叠窗口）', api: 'mission/create', btn: () => mBBtns.children[0] },
+      { fi: 4, name: '提交任务B申请', api: 'mission/submit', btn: () => mBBtns.children[1] },
+      { fi: 4, name: '冲突检测（R205 航段重叠）', api: 'conflict/detect', btn: () => mBBtns.children[2] },
+      { fi: 5, name: '冲突消解（时间窗后移）', api: 'conflict/resolve', btn: () => mBBtns.children[3] },
+      { fi: 5, name: '任务B审核放行', api: 'review/submit', btn: () => mBBtns.children[4] },
+      { fi: 6, name: '签发通行许可（跨链）', api: 'pass/issue', btn: () => passBtns.children[0] },
+      { fi: 7, name: '验证许可（应有效）', api: 'pass/verify', btn: () => passBtns.children[1] },
+      { fi: 7, name: '吊销许可（跨链）', api: 'pass/revoke', btn: () => passBtns.children[2] },
+      { fi: 7, name: '复验许可（应拒绝）', api: 'pass/verify', btn: () => passBtns.children[3] },
+      { fi: 8, name: '跨链流水盘点', api: 'crosschain/list', btn: () => cxBtns.children[0] },
+    ];
     async function runAll() {
-      const seq = [
-        [1, () => uavBtns.children[0].click()],
-        [2, () => mABtns.children[0].click()],
-        [2, () => mABtns.children[2].click()],
-        [3, () => mABtns.children[3].click()],
-        [4, () => mBBtns.children[0].click()],
-        [4, () => mBBtns.children[1].click()],
-        [4, () => mBBtns.children[2].click()],
-        [5, () => mBBtns.children[3].click()],
-        [5, () => mBBtns.children[4].click()],
-        [6, () => passBtns.children[0].click()],
-        [7, () => passBtns.children[1].click()],
-        [7, () => passBtns.children[2].click()],
-        [7, () => passBtns.children[3].click()],
-        [8, () => cxBtns.children[0].click()],
-      ];
+      const mon = UI.runMonitor(RUN_STEPS.map(s => ({ name: s.name, detail: s.api })), { title: '▶ 幕一实跑监控台' });
+      runCard.after(mon.el);
+      mon.el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.SKYTRUST_RUN = { active: true, act: 'act1' };
       markFlow(0, 'done');
-      for (const [fi, fn] of seq) {
-        markFlow(fi, 'current');
-        fn();
-        await waitDone();
+      try {
+        for (let i = 0; i < RUN_STEPS.length; i++) {
+          const st = RUN_STEPS[i];
+          markFlow(st.fi, 'current');
+          mon.begin(i);
+          const b = st.btn();
+          b.click();
+          await waitDone(b);
+          mon.end(i);
+          markFlow(st.fi, 'done');
+        }
+        toast('幕一全流程实跑完毕：链式 ID ' + [S.uavId, S.midA, S.appA, S.midB, S.cfl, S.passA].filter(Boolean).join(' · '), 'ok', 6000);
+      } finally {
+        mon.finish([h('span', { class: 'small muted' }, '链式 ID：',
+          h('code', { class: 'mono' }, [S.uavId, S.midA, S.appA, S.midB, S.cfl, S.passA].filter(Boolean).join(' · ')))]);
+        window.SKYTRUST_RUN = { active: false, act: 'act1' };
       }
-      toast('幕一全流程实跑完毕：链式 ID ' + [S.uavId, S.midA, S.appA, S.midB, S.cfl, S.passA].filter(Boolean).join(' · '), 'ok', 6000);
     }
-    function waitDone() {
+    /* 只盯被点的那个按钮：一键实跑按钮自身在整个 runAll 期间保持 disabled，
+       全局轮询 .btn:disabled 会永远命中它，导致每步空等超时。 */
+    function waitDone(btn) {
       return new Promise(res => {
         const t = setInterval(() => {
-          const busy = document.querySelector('.btn:disabled');
-          if (!busy) { clearInterval(t); setTimeout(res, 120); }
+          if (!btn.disabled) { clearInterval(t); setTimeout(res, 120); }
         }, 80);
         setTimeout(() => { clearInterval(t); res(); }, 20000);
       });

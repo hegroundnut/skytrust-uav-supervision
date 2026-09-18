@@ -24,6 +24,18 @@
 | `#/act3` | 幕三 · 监管密文核查 | alert/*、trace/identity（七级追踪时间线）、authorize/*、inspect/ciphertext（封缄卡/开箱卡）、regulatory/audit/*、audit/*、crypto/*（含一键实跑） |
 | `#/explorer` | API 浏览器 | 64 端点全量：按 tag 分组检索、请求体可编辑实发、openapi 录制的成功/错误样例对照 |
 
+## 一键实跑可视化
+
+「一键实跑」不是进度条，而是**实跑监控台**：
+
+- **每幕监控台**（幕一/二/三页内，粘性面板）：剧本逐步推进，每步实时展示
+  实际调用的 API 路径、`code` 徽章、延迟、返回关键字段摘要 chips，
+  点「▸ 参数 / 返回 JSON」可展开该次调用的完整请求体与响应信封。
+- **三幕总控**（驾驶舱「▶ 一键跑通三幕全流程」）：右下角固定悬浮窗跨页存活，
+  三幕各一行状态（⏳/✓/✕ + 耗时），下方尾流实时滚动最近 8 次调用；
+  依次自动导航到每幕并触发其剧本，全部完成回到驾驶舱给出汇总；可随时取消。
+- 顶部三链状态灯的 15s `chain/status` 心跳不计入监控台调用行。
+
 ## 结构
 
 ```
@@ -34,7 +46,8 @@ frontend/
     ├── data/endpoints.js # 由 openapi.json 生成（scripts/gen-endpoints.sh，勿手改）
     ├── api.js            # 统一 POST 客户端：永不 throw，返回 {ok,code,data,latencyMs,raw,…}
     ├── ui.js             # 共享组件：状态徽章(图标+文字)、链色标签、JSON 高亮、条形图
-    │                     #（hover 提示+表格视图兜底）、跨链四段流、表单工具、toast
+    │                     #（hover 提示+表格视图兜底）、跨链四段流、表单工具、toast、
+    │                     # runMonitor 实跑监控台（订阅 API.onCall 逐调用渲染）
     ├── pages/*.js        # 5 个页面模块，注册到 window.PAGES，hash 路由
     └── app.js            # 路由、主题（OS 偏好 > localStorage 显式选择）、三链灯 15s 巡检
 ```
