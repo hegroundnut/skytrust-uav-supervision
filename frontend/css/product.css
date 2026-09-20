@@ -262,3 +262,180 @@ body { background: var(--p-bg); }
 .p-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .p-row + .p-row { margin-top: 8px; }
 .p-ok-line { color: var(--p-good); font-size: 13px; font-weight: 700; }
+
+/* ==========================================================================
+   PUI 组件样式（数据段）——form / dataTable / 统计卡 / 条形 / 评分条 /
+   跨链四段存证 / 逐跳时延 / 链下拓扑。全部仅用 --p-* 令牌。
+   ========================================================================== */
+
+/* ---------- 表单：两列网格 ---------- */
+.p-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.p-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.p-field-wide { grid-column: span 2; }
+.p-field-label { font-size: 12px; color: var(--p-ink-3); }
+.p-req { font-style: normal; color: var(--p-critical); margin-left: 2px; }
+.p-field-hint { font-size: 11px; color: var(--p-ink-3); }
+.p-form input[type="text"], .p-form input[type="number"],
+.p-form select, .p-form textarea {
+  height: 30px; padding: 0 8px; border: 1px solid var(--p-line);
+  border-radius: var(--p-radius-sm); background: var(--p-panel);
+  color: var(--p-ink); font-size: 13px; font-family: inherit;
+  outline: none; transition: border-color .12s, box-shadow .12s;
+}
+.p-form textarea { height: auto; padding: 6px 8px; line-height: 1.6; resize: vertical; }
+.p-form input:focus, .p-form select:focus, .p-form textarea:focus {
+  border-color: var(--p-brand); box-shadow: 0 0 0 2px var(--p-brand-soft);
+}
+.p-multi { display: flex; flex-wrap: wrap; gap: 6px; }
+.p-multi-item {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  padding: 3px 10px; border-radius: 999px; border: 1px solid var(--p-line);
+  background: var(--p-panel-2); font-size: 12px; color: var(--p-ink-2);
+}
+.p-multi-item input { margin: 0; accent-color: var(--p-brand); }
+.p-multi-item:has(input:checked) {
+  border-color: var(--p-brand); background: var(--p-brand-soft); color: var(--p-brand);
+}
+
+/* ---------- 数据表：过滤条 + 表格 + 分页 ---------- */
+.p-dt { display: flex; flex-direction: column; gap: 10px; }
+.p-dt-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; flex-wrap: wrap;
+}
+.p-dt-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.p-dt-filter select, .p-dt-filter input {
+  height: 28px; padding: 0 8px; border: 1px solid var(--p-line);
+  border-radius: var(--p-radius-sm); background: var(--p-panel);
+  color: var(--p-ink); font-size: 12.5px; font-family: inherit; outline: none;
+}
+.p-dt-filter select:focus, .p-dt-filter input:focus { border-color: var(--p-brand); }
+.p-dt-body { min-height: 48px; }
+.p-tbl-wrap {
+  overflow-x: auto; border: 1px solid var(--p-line);
+  border-radius: var(--p-radius-sm);
+}
+.p-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.p-tbl th {
+  height: 30px; padding: 0 10px; text-align: left; white-space: nowrap;
+  font-size: 12px; font-weight: 600; color: var(--p-ink-3);
+  background: var(--p-panel-2); border-bottom: 1px solid var(--p-line);
+}
+.p-tbl td {
+  height: var(--p-row-h); padding: 0 10px; vertical-align: middle;
+  color: var(--p-ink); border-bottom: 1px solid var(--p-line);
+}
+.p-tbl tbody tr:nth-child(even) { background: var(--p-panel-2); }
+.p-tbl tbody tr:last-child td { border-bottom: none; }
+.p-tbl tr.clickable { cursor: pointer; }
+.p-tbl tr.clickable:hover { background: var(--p-brand-soft); }
+.p-tbl .num {
+  text-align: right; font-family: var(--p-mono); font-variant-numeric: tabular-nums;
+}
+.p-dt-pager { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.p-dt-total { font-size: 12px; color: var(--p-ink-3); }
+
+/* ---------- 统计卡：自适应网格，p-tone-* 左边框 3px 语义色 ---------- */
+.p-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.p-stat {
+  padding: 10px 14px; background: var(--p-panel);
+  border: 1px solid var(--p-line); border-left: 3px solid var(--p-line-strong);
+  border-radius: var(--p-radius); box-shadow: var(--p-shadow-1);
+}
+.p-stat-label { font-size: 12px; color: var(--p-ink-3); }
+.p-stat-value {
+  margin: 2px 0; font-size: 22px; font-weight: 700; color: var(--p-ink);
+  font-family: var(--p-mono); font-variant-numeric: tabular-nums;
+}
+.p-stat-sub { font-size: 11px; color: var(--p-ink-3); }
+.p-stat.p-tone-good     { border-left-color: var(--p-good);     background: var(--p-panel); color: var(--p-ink); }
+.p-stat.p-tone-warning  { border-left-color: var(--p-warning);  background: var(--p-panel); color: var(--p-ink); }
+.p-stat.p-tone-critical { border-left-color: var(--p-critical); background: var(--p-panel); color: var(--p-ink); }
+.p-stat.p-tone-serious  { border-left-color: var(--p-serious);  background: var(--p-panel); color: var(--p-ink); }
+.p-stat.p-tone-info     { border-left-color: var(--p-info);     background: var(--p-panel); color: var(--p-ink); }
+.p-stat.p-tone-neutral  { border-left-color: var(--p-line-strong); background: var(--p-panel); color: var(--p-ink); }
+
+/* ---------- 横向条形（hbars / scoreBars / pathHops 共用轨道） ---------- */
+.p-hbars { display: flex; flex-direction: column; gap: 6px; }
+.p-hbar { display: flex; align-items: center; gap: 8px; }
+.p-hbar-label {
+  width: 130px; flex: none; font-size: 12px; color: var(--p-ink-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.p-hbar-track {
+  position: relative; flex: 1; min-width: 40px; height: 6px;
+  border-radius: 999px; background: var(--p-panel-2); border: 1px solid var(--p-line);
+}
+.p-hbar-fill { display: block; height: 100%; border-radius: 999px; background: var(--p-brand); }
+.p-hbar-fill.p-tone-good     { background: var(--p-good); }
+.p-hbar-fill.p-tone-warning  { background: var(--p-warning); }
+.p-hbar-fill.p-tone-critical { background: var(--p-critical); }
+.p-hbar-fill.p-tone-serious  { background: var(--p-serious); }
+.p-hbar-fill.p-tone-info     { background: var(--p-info); }
+.p-hbar-fill.p-tone-neutral  { background: var(--p-ink-3); }
+.p-hbar-val { width: 44px; flex: none; text-align: right; font-size: 12px; color: var(--p-ink); }
+
+/* ---------- 评分条：行式布局 + 阈值竖虚线 ---------- */
+.p-scores { display: flex; flex-direction: column; gap: 6px; }
+.p-score-row { display: flex; align-items: center; gap: 8px; }
+.p-score-name { width: 90px; flex: none; font-size: 12px; color: var(--p-ink-2); }
+.p-score-row b { width: 42px; flex: none; text-align: right; font-size: 12px; color: var(--p-ink); }
+.p-score-thr {
+  position: absolute; top: -3px; bottom: -3px; width: 0;
+  border-left: 2px dashed var(--p-critical); pointer-events: none;
+}
+
+/* ---------- 跨链四段存证 ---------- */
+.p-cx {
+  padding: 12px 14px; background: var(--p-panel);
+  border: 1px solid var(--p-line); border-radius: var(--p-radius);
+  box-shadow: var(--p-shadow-1);
+}
+.p-cx-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.p-cx-head code { font-size: 12px; color: var(--p-ink); }
+.p-cx-sub { font-size: 12px; color: var(--p-ink-3); }
+.p-cx-flow { display: flex; flex-wrap: wrap; gap: 8px; }
+.p-cx-seg {
+  flex: 1 1 150px; min-width: 0; padding: 8px 10px; cursor: pointer;
+  background: var(--p-panel-2); border: 1px solid var(--p-line);
+  border-radius: var(--p-radius-sm); transition: border-color .12s;
+}
+.p-cx-seg:hover { border-color: var(--p-brand); }
+.p-cx-seg + .p-cx-seg { position: relative; margin-left: 14px; }
+.p-cx-seg + .p-cx-seg::before {
+  content: "→"; position: absolute; left: -14px; top: 50%;
+  transform: translateY(-50%); font-size: 12px; color: var(--p-ink-3);
+}
+.p-cx-seg.missing { border-style: dashed; opacity: .55; }
+.p-cx-role {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 4px; font-size: 12px; font-weight: 600; color: var(--p-ink-2);
+}
+.p-cx-tx {
+  margin-bottom: 6px; font-size: 11px; color: var(--p-ink-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ---------- 逐跳时延（hbars 紧凑版） ---------- */
+.p-hops { display: flex; flex-direction: column; gap: 4px; }
+.p-hop { display: flex; align-items: center; gap: 8px; }
+.p-hop-label {
+  width: 150px; flex: none; font-size: 11.5px; color: var(--p-ink-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.p-hop b { width: 52px; flex: none; text-align: right; font-size: 12px; color: var(--p-ink); }
+
+/* ---------- 抽屉内 kv / cx 间距 ---------- */
+.p-drawer-body > .p-cx { margin-bottom: 14px; }
+.p-drawer-body > .p-kv { margin-bottom: 14px; }
+
+/* ---------- 链下拓扑 SVG ---------- */
+.p-topo { display: block; width: 100%; height: auto; }
+.p-topo-edge { stroke: var(--p-line-strong); stroke-width: 2; }
+.p-topo-wormhole { stroke: var(--p-critical); stroke-width: 2; stroke-dasharray: 6 4; }
+.p-topo-active { stroke: var(--p-brand); stroke-width: 3; }
+.p-topo-node circle { cursor: pointer; }
+.p-topo-label {
+  font-size: 11px; fill: var(--p-ink-2); text-anchor: middle;
+  pointer-events: none; font-family: var(--p-font);
+}
