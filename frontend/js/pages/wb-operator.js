@@ -242,10 +242,9 @@
         placeholder: 'CARGO / CAMERA…' },
       { name: 'description', label: '任务描述', type: 'textarea', required: true,
         hint: '描述经 SM9 加密入库——界面与台账只显示脱敏值 masked_value，明文不出运营商域' },
-      /* 注记：pui.js setOptions 的 multi 分支经 e.inp[0].closest('.p-multi') 定位容器，
-         初始 options 不能为空数组——放占位项保证容器存在；route/list 返回后被整体替换。 */
+      // 航段列表异步加载（form.setOptions）
       { name: 'route_segments', label: '航段（多选）', type: 'multi',
-        options: [['', '⏳ 加载航段中…']], required: true,
+        options: [], required: true,
         hint: '选项自动取自 route/list' },
       { name: 'altitude_min', label: '高度下限(m)', type: 'number', value: 120 },
       { name: 'altitude_max', label: '高度上限(m)', type: 'number', value: 300 },

@@ -212,12 +212,14 @@
   function form(fields) {
     const els = {};
     const root = h('div', { class: 'p-form' }, fields.map(f => {
-      let inp;
+      let inp, wrap;
       if (f.type === 'select') {
         inp = h('select', { 'data-f': f.name },
           (f.options || []).map(o => optEl(o, f.value)));
       } else if (f.type === 'multi') {
         inp = (f.options || []).map(o => multiBox(o, f.value, f.name));
+        // 容器引用随字段条目留存：初始 options 为空时 setOptions 仍可定位
+        wrap = h('span', { class: 'p-multi' }, ...inp);
       } else if (f.type === 'textarea') {
         inp = h('textarea', { 'data-f': f.name, rows: f.rows || 3, placeholder: f.placeholder || '' },
           f.value || '');
@@ -227,12 +229,12 @@
           value: f.value ?? '', placeholder: f.placeholder || '', step: f.step || null,
         });
       }
-      els[f.name] = { f, inp };
+      els[f.name] = { f, inp, wrap };
       const wide = f.type === 'textarea' || f.type === 'multi';
       return h('label', { class: 'p-field' + (wide ? ' p-field-wide' : '') },
         h('span', { class: 'p-field-label' }, f.label,
           f.required ? h('i', { class: 'p-req' }, '*') : null),
-        f.type === 'multi' ? h('span', { class: 'p-multi' }, ...inp) : inp,
+        f.type === 'multi' ? wrap : inp,
         f.hint ? h('span', { class: 'p-field-hint' }, f.hint) : null);
     }));
     function optEl(o, cur) {
@@ -278,7 +280,8 @@
         e.inp.innerHTML = '';
         options.forEach(o => e.inp.append(optEl(o, e.inp.value)));
       } else if (e.f.type === 'multi') {
-        const wrap = e.inp[0] && e.inp[0].closest('.p-multi');
+        // 优先用建表时留存的容器引用；e.inp[0].closest 仅作兜底（原行为不变）
+        const wrap = e.wrap || (e.inp[0] && e.inp[0].closest('.p-multi'));
         if (!wrap) return;
         wrap.innerHTML = '';
         options.forEach(o => {
@@ -286,6 +289,8 @@
           wrap.append(h('label', { class: 'p-multi-item' },
             h('input', { type: 'checkbox', 'data-mf': name, value: v }), h('span', {}, t)));
         });
+        // 刷新 e.inp 防条目过期（read/set 本就经 root+data-mf 定位，行为一致）
+        e.inp = Array.from(wrap.querySelectorAll('input[data-mf="' + name + '"]'));
       }
     }
     return { root, read, set, setOptions };
