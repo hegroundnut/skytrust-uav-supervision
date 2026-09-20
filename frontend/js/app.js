@@ -6,7 +6,8 @@
 
   /* ---------- 主题：显式切换 > OS 偏好 ---------- */
   const saved = localStorage.getItem('skytrust-theme');
-  if (saved) document.body.setAttribute('data-theme', saved);
+  const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.body.setAttribute('data-theme', theme);
   document.getElementById('theme-toggle').addEventListener('click', () => {
     const cur = document.body.getAttribute('data-theme') ||
       (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
