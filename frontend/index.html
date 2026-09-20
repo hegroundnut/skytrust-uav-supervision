@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>云巡信链 SkyTrust · 三链监管演示台</title>
+<title>云巡信链 SkyTrust · 无人机跨域协同与可信监管平台</title>
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/product.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🛰️</text></svg>">
 </head>
 <body><!-- 主题：无 data-theme 时跟随 OS 偏好（CSS 媒体查询）；app.js 会从 localStorage 恢复显式选择 -->
@@ -28,16 +29,26 @@
 
 <div class="layout">
   <nav class="sidebar" id="sidebar">
-    <a class="nav-item" href="#/dashboard" data-page="dashboard"><span class="nav-ico">▦</span>总览驾驶舱</a>
-    <div class="nav-group">三大系统 · 三幕演示</div>
-    <a class="nav-item" href="#/act1" data-page="act1"><span class="nav-ico">①</span>幕一 · 任务跨域协同</a>
-    <a class="nav-item" href="#/act2" data-page="act2"><span class="nav-ico">②</span>幕二 · 虫洞攻防</a>
-    <a class="nav-item" href="#/act3" data-page="act3"><span class="nav-ico">③</span>幕三 · 监管密文核查</a>
-    <div class="nav-group">工具</div>
-    <a class="nav-item" href="#/explorer" data-page="explorer"><span class="nav-ico">⇄</span>API 浏览器（64 端点）</a>
+    <a class="nav-item" href="#/overview" data-page="overview"><span class="nav-ico">▦</span>平台总览</a>
+    <div class="nav-group">四方角色工作台</div>
+    <a class="nav-item" href="#/wb-operator" data-page="wb-operator"><span class="nav-ico">✈</span>运营商工作台</a>
+    <a class="nav-item" href="#/wb-manager" data-page="wb-manager"><span class="nav-ico">✓</span>管理方审核台</a>
+    <a class="nav-item" href="#/wb-security" data-page="wb-security"><span class="nav-ico">⬢</span>链网安全运营中心</a>
+    <a class="nav-item" href="#/wb-regulator" data-page="wb-regulator"><span class="nav-ico">§</span>监管门户</a>
+    <details class="nav-fold" data-fold="ref">
+      <summary>参考流程 · 三幕演示</summary>
+      <a class="nav-item" href="#/dashboard" data-page="dashboard"><span class="nav-ico">▶</span>演示总控台</a>
+      <a class="nav-item" href="#/act1" data-page="act1"><span class="nav-ico">①</span>幕一 · 任务跨域协同</a>
+      <a class="nav-item" href="#/act2" data-page="act2"><span class="nav-ico">②</span>幕二 · 虫洞攻防</a>
+      <a class="nav-item" href="#/act3" data-page="act3"><span class="nav-ico">③</span>幕三 · 监管密文核查</a>
+    </details>
+    <details class="nav-fold" data-fold="tools">
+      <summary>工具</summary>
+      <a class="nav-item" href="#/explorer" data-page="explorer"><span class="nav-ico">⇄</span>API 浏览器（64 端点）</a>
+    </details>
     <div class="nav-foot">
       <div>契约：docs/apifox</div>
-      <div>实跑报告：docs/demo-api-report.md</div>
+      <div>验收脚本：docs/demo-script.md</div>
     </div>
   </nav>
   <main id="page" class="page"></main>

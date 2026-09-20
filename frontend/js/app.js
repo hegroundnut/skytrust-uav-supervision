@@ -51,24 +51,40 @@
   pollChains();
   setInterval(pollChains, 15000);
 
-  /* ---------- hash 路由 ---------- */
+  /* ---------- hash 路由（支持 #/name?tab=key；新页面消费 query，旧页面忽略第二参） ---------- */
   function route() {
-    const hash = location.hash || '#/dashboard';
-    const name = hash.replace(/^#\//, '') || 'dashboard';
-    const page = PAGES[name] || PAGES.dashboard;
+    const raw = (location.hash || '#/overview').replace(/^#\//, '');
+    const qi = raw.indexOf('?');
+    const name = (qi >= 0 ? raw.slice(0, qi) : raw) || 'overview';
+    const query = new URLSearchParams(qi >= 0 ? raw.slice(qi + 1) : '');
+    const page = PAGES[name] || PAGES.overview || PAGES.dashboard;
     document.querySelectorAll('.nav-item').forEach(a =>
       a.classList.toggle('active', a.dataset.page === name));
+    expandFoldFor(name);
     const root = document.getElementById('page');
     root.innerHTML = '';
     hideTipSafe();
     try {
-      page.render(root);
+      page.render(root, { query: query, name: name });
     } catch (e) {
       root.append(h('div', { class: 'card' }, '页面渲染失败：' + e.message));
       console.error(e);
     }
     window.scrollTo(0, 0);
   }
+  /* 折叠组：当前页在组内则自动展开；开合状态 localStorage 持久化 */
+  const FOLDS = { ref: ['dashboard', 'act1', 'act2', 'act3'], tools: ['explorer'] };
+  function expandFoldFor(name) {
+    document.querySelectorAll('.nav-fold').forEach(d => {
+      const key = d.dataset.fold;
+      if (FOLDS[key] && FOLDS[key].includes(name)) d.open = true;
+      else if (localStorage.getItem('skytrust-fold-' + key) === '1') d.open = true;
+    });
+  }
+  document.querySelectorAll('.nav-fold').forEach(d => {
+    d.addEventListener('toggle', () =>
+      localStorage.setItem('skytrust-fold-' + d.dataset.fold, d.open ? '1' : '0'));
+  });
   function hideTipSafe() { try { window.UI.hideTip(); } catch (_) {} }
   window.addEventListener('hashchange', route);
   route();

@@ -1,0 +1,80 @@
+/* product.css —— 新产品设计系统（p- 前缀组件 + --p-* 令牌）。
+   与 app.css 同壳共存：只覆盖壳级类（.topbar、.sidebar、.nav-*、.layout、.page），
+   绝不改 :root 旧令牌——旧页面（三幕/浏览器/总控台）观感保持完全不变。 */
+
+:root {
+  /* 表面与线条 */
+  --p-bg: #f4f5f9;          --p-panel: #ffffff;        --p-panel-2: #fafbfd;
+  --p-line: #e3e6ef;        --p-line-strong: #c9cfe0;
+  /* 文字 */
+  --p-ink: #1c2333;         --p-ink-2: #4a5468;        --p-ink-3: #8a93a8;
+  /* 品牌（靛蓝） */
+  --p-brand: #4338ca;       --p-brand-ink: #ffffff;    --p-brand-soft: #eef0ff;
+  /* 语义色（成对：前景/浅底） */
+  --p-good: #15803d;        --p-good-soft: #ecfdf3;
+  --p-warning: #b45309;     --p-warning-soft: #fffbeb;
+  --p-critical: #b91c1c;    --p-critical-soft: #fef2f2;
+  --p-serious: #c2410c;     --p-serious-soft: #fff7ed;
+  --p-info: #1d4ed8;        --p-info-soft: #eff6ff;
+  /* 三链身份色（语义与旧系统一致：chainmaker 紫 / fabric 蓝 / fisco 青） */
+  --p-chain-chainmaker: #7c3aed;
+  --p-chain-fabric: #2563eb;
+  --p-chain-fisco: #0891b2;
+  /* 侧边栏（深靛） */
+  --p-side-bg: #1e1b4b;     --p-side-ink: #c7d2fe;     --p-side-active: #312e81;
+  --p-side-line: #312e81;
+  /* 形状与层级 */
+  --p-radius: 10px;         --p-radius-sm: 6px;
+  --p-shadow-1: 0 1px 2px rgba(16,24,40,.06);
+  --p-shadow-2: 0 8px 24px rgba(16,24,40,.14);
+  /* 排版（B 端密度：13px 基准） */
+  --p-font: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --p-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --p-row-h: 34px;
+}
+[data-theme="dark"] {
+  --p-bg: #0f1117;          --p-panel: #171a23;        --p-panel-2: #1d212c;
+  --p-line: #2a2f3d;        --p-line-strong: #3a4152;
+  --p-ink: #e6e9f2;         --p-ink-2: #aab2c5;        --p-ink-3: #6f7891;
+  --p-brand: #818cf8;       --p-brand-ink: #14122e;    --p-brand-soft: #232647;
+  --p-good: #4ade80;        --p-good-soft: #12261c;
+  --p-warning: #fbbf24;     --p-warning-soft: #26200f;
+  --p-critical: #f87171;    --p-critical-soft: #2a1416;
+  --p-serious: #fb923c;     --p-serious-soft: #291a10;
+  --p-info: #60a5fa;        --p-info-soft: #122036;
+  --p-side-bg: #14122e;     --p-side-ink: #a5b4fc;     --p-side-active: #272458;
+  --p-shadow-1: 0 1px 2px rgba(0,0,0,.4);
+  --p-shadow-2: 0 8px 24px rgba(0,0,0,.55);
+}
+
+/* ---------- 壳覆盖（仅这几个旧类名允许直接重绘） ---------- */
+body { background: var(--p-bg); }
+.topbar {
+  background: var(--p-panel); border-bottom: 1px solid var(--p-line);
+  box-shadow: var(--p-shadow-1);
+}
+.sidebar {
+  background: var(--p-side-bg); border-right: none;
+  font-family: var(--p-font);
+}
+.sidebar .nav-group { color: #8b8fd4; }
+.sidebar .nav-item { color: var(--p-side-ink); border-radius: var(--p-radius-sm); }
+.sidebar .nav-item:hover { background: rgba(255,255,255,.06); color: #fff; }
+.sidebar .nav-item.active {
+  background: var(--p-side-active); color: #fff;
+  box-shadow: inset 3px 0 0 var(--p-brand);
+}
+.sidebar .nav-foot { color: #6d71b8; border-top: 1px solid var(--p-side-line); }
+/* 折叠组（原生 details，零 JS 也能开合；开合状态由 app.js 持久化） */
+.nav-fold { margin: 4px 0; }
+.nav-fold > summary {
+  cursor: pointer; list-style: none; user-select: none;
+  padding: 8px 14px; font-size: 12px; letter-spacing: .05em;
+  color: #8b8fd4; display: flex; align-items: center; gap: 6px;
+}
+.nav-fold > summary::-webkit-details-marker { display: none; }
+.nav-fold > summary::before { content: "▸"; transition: transform .15s; }
+.nav-fold[open] > summary::before { transform: rotate(90deg); }
+.nav-fold .nav-item { padding-left: 30px; font-size: 12.5px; }
+/* 工作区：新页面用 p-page 容器；旧页面结构不变 */
+.page { font-family: var(--p-font); }
