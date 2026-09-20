@@ -78,3 +78,187 @@ body { background: var(--p-bg); }
 .nav-fold .nav-item { padding-left: 30px; font-size: 12.5px; }
 /* 工作区：新页面用 p-page 容器；旧页面结构不变 */
 .page { font-family: var(--p-font); }
+
+/* ==========================================================================
+   PUI 组件样式（基础段）——类名一律 p- 前缀，配色只用 --p-* 令牌，
+   明暗主题自动成立；与 app.css 旧组件零交集。
+   ========================================================================== */
+
+/* ---------- 状态徽章：圆角胶囊，语义色前景 + 浅底 ---------- */
+.p-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 9px; border-radius: 999px;
+  font-size: 12px; line-height: 18px; font-weight: 600; white-space: nowrap;
+}
+.p-tone-good     { color: var(--p-good);     background: var(--p-good-soft); }
+.p-tone-warning  { color: var(--p-warning);  background: var(--p-warning-soft); }
+.p-tone-critical { color: var(--p-critical); background: var(--p-critical-soft); }
+.p-tone-serious  { color: var(--p-serious);  background: var(--p-serious-soft); }
+.p-tone-info     { color: var(--p-info);     background: var(--p-info-soft); }
+.p-tone-neutral  { color: var(--p-ink-3);    background: var(--p-panel-2); }
+
+/* ---------- 链身份标签：左边框 3px 链色 ---------- */
+.p-chain-tag {
+  display: inline-flex; align-items: center;
+  padding: 1px 9px 1px 8px; border-radius: var(--p-radius-sm);
+  font-size: 12px; line-height: 18px; font-weight: 600; white-space: nowrap;
+  background: var(--p-panel-2); color: var(--p-ink-2);
+  border: 1px solid var(--p-line);
+}
+.p-chain-tag[data-chain="chainmaker"] { border-left: 3px solid var(--p-chain-chainmaker); }
+.p-chain-tag[data-chain="fabric"]     { border-left: 3px solid var(--p-chain-fabric); }
+.p-chain-tag[data-chain="fisco-bcos"] { border-left: 3px solid var(--p-chain-fisco); }
+
+/* ---------- 键值对：两列网格 ---------- */
+.p-kv {
+  display: grid; grid-template-columns: max-content 1fr;
+  gap: 6px 16px; margin: 0; align-items: baseline;
+}
+.p-kv dt { color: var(--p-ink-3); font-size: 12px; white-space: nowrap; }
+.p-kv dd { margin: 0; font-size: 13px; color: var(--p-ink); word-break: break-all; }
+
+/* 等宽（ID / 哈希 / TxID 铁律） */
+.p-mono { font-family: var(--p-mono); font-size: .94em; word-break: break-all; }
+
+/* ---------- 空态 ---------- */
+.p-empty {
+  height: 40px; display: flex; align-items: center; justify-content: center;
+  color: var(--p-ink-3); font-size: 13px;
+}
+
+/* ---------- 响应元信息行 ---------- */
+.p-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  font-size: 12px; color: var(--p-ink-3);
+}
+.p-meta-ts { font-variant-numeric: tabular-nums; margin-left: auto; }
+
+/* ---------- 按钮 ---------- */
+.p-btn {
+  height: 30px; padding: 0 12px; border-radius: var(--p-radius-sm);
+  border: 1px solid var(--p-line-strong); background: var(--p-panel);
+  color: var(--p-ink); font-size: 13px; font-family: inherit;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; white-space: nowrap;
+  transition: border-color .12s, color .12s, background .12s, opacity .12s;
+}
+.p-btn:hover { border-color: var(--p-brand); color: var(--p-brand); }
+.p-btn:disabled { opacity: .55; cursor: wait; }
+.p-btn-primary {
+  background: var(--p-brand); color: var(--p-brand-ink);
+  border-color: var(--p-brand); font-weight: 600;
+}
+.p-btn-primary:hover { background: var(--p-brand); color: var(--p-brand-ink); opacity: .9; }
+.p-btn-danger {
+  background: var(--p-critical); color: #fff;
+  border-color: var(--p-critical); font-weight: 600;
+}
+.p-btn-danger:hover { background: var(--p-critical); color: #fff; opacity: .9; }
+.p-btn-ghost { background: transparent; border-color: var(--p-line-strong); color: var(--p-ink-2); }
+.p-btn-ghost:hover { background: transparent; border-color: var(--p-brand); color: var(--p-brand); }
+.p-btn-sm { height: 24px; padding: 0 8px; font-size: 12px; }
+
+/* ---------- 结果面板 / 错误卡 / 原始 JSON ---------- */
+.p-result { display: flex; flex-direction: column; gap: 10px; }
+.p-err {
+  background: var(--p-critical-soft); border-left: 3px solid var(--p-critical);
+  border-radius: var(--p-radius-sm); padding: 10px 12px;
+}
+.p-err-head { color: var(--p-critical); font-size: 13px; font-weight: 700; }
+.p-err-why { color: var(--p-ink-2); font-size: 12px; line-height: 1.7; margin-top: 6px; }
+.p-rawjson summary { font-size: 12px; color: var(--p-ink-3); cursor: pointer; user-select: none; }
+.p-rawjson summary:hover { color: var(--p-brand); }
+.p-rawjson pre { margin: 8px 0 0; }
+
+/* ---------- 模态确认 ---------- */
+.p-modal-mask {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(15, 17, 23, .45);
+  display: flex; align-items: center; justify-content: center;
+}
+.p-modal {
+  width: min(420px, calc(100vw - 40px));
+  background: var(--p-panel); border: 1px solid var(--p-line);
+  border-radius: var(--p-radius); box-shadow: var(--p-shadow-2);
+  padding: 18px 20px;
+}
+.p-modal-title { font-size: 15px; font-weight: 700; color: var(--p-ink); }
+.p-modal-msg { font-size: 13px; color: var(--p-ink-2); line-height: 1.7; margin: 10px 0 16px; }
+.p-modal-btns { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ---------- 右侧抽屉 ---------- */
+.p-drawer-mask {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(15, 17, 23, .4);
+  display: flex; justify-content: flex-end;
+}
+.p-drawer {
+  width: min(480px, 100vw); height: 100%;
+  background: var(--p-panel); border-left: 1px solid var(--p-line);
+  box-shadow: var(--p-shadow-2);
+  display: flex; flex-direction: column;
+  animation: p-drawer-in .18s ease-out;
+}
+@keyframes p-drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.p-drawer-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 12px 16px; border-bottom: 1px solid var(--p-line); flex: none;
+}
+.p-drawer-head h3 { margin: 0; font-size: 14px; color: var(--p-ink); }
+.p-drawer-body { padding: 16px; overflow-y: auto; flex: 1; }
+
+/* ---------- chipBar：当前业务对象 ---------- */
+.p-chipbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 14px; }
+.p-chipbar-label { font-size: 12px; color: var(--p-ink-3); }
+.p-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 999px;
+  border: 1px solid var(--p-line-strong); background: var(--p-panel);
+  font-size: 12px; font-family: inherit; color: var(--p-ink);
+  cursor: pointer; transition: border-color .12s;
+}
+.p-chip:hover { border-color: var(--p-brand); }
+.p-chip i { font-style: normal; color: var(--p-ink-3); font-size: 11px; }
+.p-chip b { font-weight: 600; }
+.p-chip-empty { color: var(--p-ink-3); border-style: dashed; cursor: default; }
+.p-chip-empty:hover { border-color: var(--p-line-strong); }
+.p-chip-clear {
+  color: var(--p-critical); background: var(--p-critical-soft);
+  border-color: transparent;
+}
+.p-chip-clear:hover { border-color: var(--p-critical); }
+
+/* ---------- 页头 ---------- */
+.p-page-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.p-page-head h1 { margin: 0; font-size: 20px; color: var(--p-ink); }
+.p-page-sub { margin: 4px 0 0; font-size: 13px; color: var(--p-ink-3); }
+.p-page-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+/* ---------- tabs：底边框导航，active 品牌色 + 2px 下划线 ---------- */
+.p-tabs-wrap { min-width: 0; }
+.p-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--p-line); flex-wrap: wrap; }
+.p-tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 8px 12px; margin-bottom: -1px;
+  font-size: 13px; font-family: inherit; color: var(--p-ink-2);
+  cursor: pointer; transition: color .12s, border-color .12s;
+}
+.p-tab:hover { color: var(--p-brand); }
+.p-tab.active { color: var(--p-brand); border-bottom-color: var(--p-brand); font-weight: 600; }
+.p-tab-body { padding-top: 14px; }
+
+/* ---------- 操作区 / 卡片 / 行 / 成功行 ---------- */
+.p-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.p-card {
+  background: var(--p-panel); border: 1px solid var(--p-line);
+  border-radius: var(--p-radius); box-shadow: var(--p-shadow-1);
+  padding: 16px;
+}
+.p-card + .p-card { margin-top: 12px; }
+.p-card-title { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: var(--p-ink); }
+.p-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.p-row + .p-row { margin-top: 8px; }
+.p-ok-line { color: var(--p-good); font-size: 13px; font-weight: 700; }
