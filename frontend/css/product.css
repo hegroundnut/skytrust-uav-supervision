@@ -439,3 +439,7 @@ body { background: var(--p-bg); }
   font-size: 11px; fill: var(--p-ink-2); text-anchor: middle;
   pointer-events: none; font-family: var(--p-font);
 }
+
+/* ---------- Task 5 补充：卡片小标题 / 分隔横线 ---------- */
+.p-card-sub { margin: 8px 0; font-size: 12px; font-weight: 600; color: var(--p-ink-3); }
+.p-hr { height: 1px; margin: 12px 0; border: none; background: var(--p-line); }
