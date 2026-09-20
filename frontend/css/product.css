@@ -443,3 +443,14 @@ body { background: var(--p-bg); }
 /* ---------- Task 5 补充：卡片小标题 / 分隔横线 ---------- */
 .p-card-sub { margin: 8px 0; font-size: 12px; font-weight: 600; color: var(--p-ink-3); }
 .p-hr { height: 1px; margin: 12px 0; border: none; background: var(--p-line); }
+
+/* ---------- Task 7 补充：信息提示条 / 抽屉内分节标题 ---------- */
+.p-note {
+  padding: 10px 12px; margin: 0 0 12px;
+  font-size: 13px; line-height: 1.7; color: var(--p-info);
+  background: var(--p-info-soft); border-left: 3px solid var(--p-info);
+  border-radius: var(--p-radius-sm);
+}
+/* 分节标题为裸文本节点 + 内容同容器：容器担标题样式，直接子元素复位常规字重 */
+.p-drawer-sec { margin-top: 14px; font-size: 13px; font-weight: 700; color: var(--p-ink-2); }
+.p-drawer-sec > * { margin-top: 8px; font-weight: 400; }
