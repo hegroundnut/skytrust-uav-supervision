@@ -19,6 +19,7 @@
     DENIED: ['critical', '✕'], DETECT: ['critical', '⚠'], BLOCK: ['critical', '⛔'],
     ROUTE_DEVIATION: ['critical', '⚠'], EXPIRED: ['critical', '◷'], ABORTED: ['critical', '✕'],
     REGISTERED: ['info', '◌'], GENERATING: ['info', '◌'], USED: ['info', '✔'],
+    INIT: ['info', '◌'],
     MISSION_MISMATCH: ['serious', '⚠'], COMPLETED: ['info', '▣'], ARCHIVED: ['warning', '▣'],
     OPEN: ['serious', '◉'], IDENTIFIED: ['serious', '◉'], TRACED: ['serious', '◉'],
     REVIEWED: ['serious', '◉'], HIGH: ['critical', '▲'], MEDIUM: ['warning', '▲'], LOW: ['good', '▲'],

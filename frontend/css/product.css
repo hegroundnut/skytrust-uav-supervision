@@ -454,3 +454,17 @@ body { background: var(--p-bg); }
 /* 分节标题为裸文本节点 + 内容同容器：容器担标题样式，直接子元素复位常规字重 */
 .p-drawer-sec { margin-top: 14px; font-size: 13px; font-weight: 700; color: var(--p-ink-2); }
 .p-drawer-sec > * { margin-top: 8px; font-weight: 400; }
+
+/* ---------- Task 8 补充：拓扑面板容器 / 风险判定大徽章 ---------- */
+.p-topo-box {
+  padding: 8px; overflow: auto; text-align: center;
+  background: var(--p-panel); border: 1px solid var(--p-line);
+  border-radius: var(--p-radius);
+}
+.p-topo-box .p-topo { margin: 0 auto; }
+.p-verdict {
+  display: inline-block; padding: 6px 14px;
+  font-size: 15px; font-weight: 700; border-radius: 8px;
+}
+.p-verdict.p-tone-good     { color: var(--p-good);     background: var(--p-good-soft); }
+.p-verdict.p-tone-critical { color: var(--p-critical); background: var(--p-critical-soft); }
