@@ -468,3 +468,39 @@ body { background: var(--p-bg); }
 }
 .p-verdict.p-tone-good     { color: var(--p-good);     background: var(--p-good-soft); }
 .p-verdict.p-tone-critical { color: var(--p-critical); background: var(--p-critical-soft); }
+
+/* ---------- Task 9 补充：追踪时间线 / 封缄卡 / 规范化串 ---------- */
+.p-trace { list-style: none; margin: 10px 0 0; padding: 0; }
+.p-trace-level {
+  position: relative;
+  margin-left: 5px; padding: 0 0 14px 18px;
+  border-left: 2px solid var(--p-line);
+}
+.p-trace-level:last-child { border-left-color: transparent; padding-bottom: 2px; }
+.p-trace-level::before {
+  content: ''; position: absolute; left: -6px; top: 3px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--p-good); box-shadow: 0 0 0 2px var(--p-panel);
+}
+.p-trace-level.broken { border-left: 2px dashed var(--p-critical); color: var(--p-critical); }
+.p-trace-level.broken::before { background: var(--p-critical); }
+.p-trace-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.p-trace-head b { font-size: 13px; }
+.p-trace-src { font-size: 11px; color: var(--p-ink-3); }
+.p-trace-val {
+  margin-top: 4px; font-family: var(--p-mono); font-size: 12px;
+  color: var(--p-ink-2); word-break: break-all;
+}
+.p-trace-reason { margin-top: 4px; font-size: 12px; color: var(--p-critical); }
+.p-sealed {
+  margin-top: 10px; padding: 12px;
+  background: var(--p-warning-soft);
+  border: 1px dashed var(--p-warning);
+  border-radius: var(--p-radius);
+}
+.p-canon {
+  margin: 6px 0 0; padding: 10px;
+  font-family: var(--p-mono); font-size: 12px;
+  background: var(--p-panel-2); border-radius: var(--p-radius-sm);
+  overflow-x: auto; word-break: break-all; white-space: pre-wrap;
+}
