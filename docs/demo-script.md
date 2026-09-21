@@ -68,7 +68,7 @@ FISCO BCOS 承载行业管理。任何跨域动作都必须经监管链签收、
 **操作**：
 1. 同 tab 再创建任务：`Operator-B` / `UAV-B-001` / 类型 `LOGISTICS` / 载荷 `CARGO` /
    描述「常规物资补给」/ 航段 `R-MED-01` / 高度 150–260 / 时窗 18:30–19:30 → 提交（提交人 Operator-B）。
-2. 冲突检测：对**医疗任务号**执行「检测冲突」→ **指** 命中卡：conflict_id、类型（TIME/ROUTE/ALTITUDE）、任务 A×B、协调建议。
+2. 冲突检测：对**医疗任务号**执行「检测冲突」→ **指** 命中卡：conflict_id、类型（徽章恒为 ROUTE，时间/航路/高度三维重叠由判定标题与三条建议 adjust_time/adjust_route/adjust_altitude 承载）、任务 A×B、协调建议。
 3. 冲突消解：resolution 填「医疗任务优先，物流航班顺延至 20:00 后执行」→ RESOLVED。
 4. **设计内拒绝**：同 conflict_id 再次消解 → 红色错误卡 **3004**。
    **台词**：这不是 bug——重复消解被幂等拒绝，说明协调记录不可被篡改或重放。
@@ -101,7 +101,7 @@ FISCO BCOS 承载行业管理。任何跨域动作都必须经监管链签收、
 2. 会话监控 tab：建立会话 uav_id=`UAV-MED-01`、任务号/许可号用 chips → **指** SM9 挑战认证 ✓、nonce、初始路径 `UAV-MED-01-NODE → N1 → … → MGR`。
 3. 消息流量 tab：发 3 条 `POSITION_UPDATE` + 1 条 `HEARTBEAT` → **指** 逐跳时延条与 stats 统计卡（亚秒级、成功率 100%）。
 
-**预期证据**：会话 INIT/ACTIVE；消息 SUCCESS；p95 时延毫秒级。
+**预期证据**：会话 ACTIVE；消息 SUCCESS；p95 时延毫秒级。
 
 ## 第 6 章 · 虫洞攻防：网络里出现了一条不该存在的捷径（安全运营中心，约 4 分钟）
 
@@ -138,7 +138,7 @@ FISCO BCOS 承载行业管理。任何跨域动作都必须经监管链签收、
 审批摘要上链，然后**在授权范围内**开箱。开箱那一刻的核验结论，又回到了链上。
 
 **操作**（`#/wb-regulator?tab=authz` → `?tab=inspect`）：
-1. 授权申请 `AUTH-MED-01`（Regulator-A / MISSION / 任务号用 chips / scope 勾 `ROUTE`+`PAYLOAD` / 事由「虫洞告警调查，需核验航迹与载荷一致性」）→ **指** audit_hash 与有效窗。
+1. 授权申请 `AUTH-MED-01`（Regulator-A / MISSION / 任务号用 chips / scope 勾 `MISSION`+`ROUTE`+`PAYLOAD`+`IDENTITY` 四项 / 事由「虫洞告警调查，需核验航迹与载荷一致性」）→ **指** audit_hash 与有效窗。
 2. 授权审批：Regulator-B / APPROVE（确认弹窗）→ **指** chain_tx_id 与 ChainMaker 链标签（审计摘要上链）。
 3. 密文核验 tab：**authorization_id 留空**执行 → **5002** 封缄卡。**台词**：没有授权，监管者看到的也只有密文元信息——隐私保护对特权角色同样生效。
 4. 填入 `AUTH-MED-01` 再执行，payload_type 填 `SPECIAL_BLOOD`、trajectory 填 `R-MED-01` → **指** 明文视图（description 重现「特殊血样」）、digest_match/signature_valid 双 ✓、conclusion ROUTE_OK + PAYLOAD_OK、chain_tx_id 与 reg_audit_id（开箱行为本身也被审计）。
