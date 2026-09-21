@@ -20,18 +20,20 @@ cd services/skytrust-backend && go run ./cmd/server
 
 ## 演示前端（原生 HTML+CSS+JS，零构建）
 
-位于 [`frontend/`](frontend/)：单页应用，5 个页面（总览驾驶舱 / 幕一任务协同 /
-幕二虫洞攻防 / 幕三监管核查 / API 浏览器 64 端点全量），配套三幕实跑报告
-[`docs/demo-api-report.md`](docs/demo-api-report.md)（每步的 API / 参数 / 真实返回 / 解说）。
+位于 [`frontend/`](frontend/)：单页应用，主体是**四方角色工作台产品界面**
+（平台总览 / 运营商工作台 / 管理方审核台 / 链网安全运营中心 / 监管门户），
+全量覆盖 64 个 API；三幕参考流程（幕一任务协同 / 幕二虫洞攻防 / 幕三监管核查）、
+演示总控台与 API 浏览器原样保留，收纳于侧边栏折叠组。
+验收故事脚本见 [`docs/demo-script.md`](docs/demo-script.md)
+（《紧急医疗运输：一次跨域飞行的全程可信监管》，十章 + 设计内拒绝汇总），
+三幕实跑报告见 [`docs/demo-api-report.md`](docs/demo-api-report.md)。
 
 后端未开 CORS，前端经同源代理访问（Python 标准库，无第三方依赖）：
 
-```bash
-./scripts/serve-frontend.sh        # 默认 :8090，代理 /api/* → :8080（PORT/BACKEND 可覆盖）
-```
+    ./scripts/serve-frontend.sh        # 默认 :8090，代理 /api/* → :8080（PORT/BACKEND 可覆盖）
 
-浏览器打开 <http://127.0.0.1:8090/> 即可；三链状态灯每 15s 自动巡检，
-幕一/幕二/幕三页面各有「一键实跑」按钮按剧本顺序调用真实后端。
+浏览器打开 <http://127.0.0.1:8090/>（默认落地平台总览）；三链状态灯每 15s 自动巡检。
+幕一/幕二/幕三参考页各保留「一键实跑」排练工具，正式验收按 demo-script.md 纯手动执行。
 
 ## 真实三链部署（ChainMaker 监管链 / Fabric 运营链 / FISCO BCOS 管理链）
 
