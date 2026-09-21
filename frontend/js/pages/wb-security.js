@@ -11,6 +11,28 @@
   }
   const monoTrunc = (s, n) => h('code', { class: 'p-mono' }, UI.trunc(s, n || 40));
   const splitList = s => String(s || '').split(/[,，]/).map(x => x.trim()).filter(Boolean);
+  // failure_reasons 后端为 JSON 对象字符串（原因→次数）；解析失败回退原文
+  function fmtReasons(s) {
+    if (s == null || s === '') return '无';
+    try {
+      const m = JSON.parse(s);
+      const es = Object.entries(m);
+      return es.length ? es.map(([k, v]) => k + '×' + v).join('；') : '无';
+    } catch (e) { return String(s); }
+  }
+  // config 后端已是 JSON 字符串；解析后缩进美化展示，解析失败回退原文
+  function fmtConfig(s) {
+    if (s == null || s === '') return '—';
+    try { return JSON.stringify(JSON.parse(s), null, 2); }
+    catch (e) { return String(s); }
+  }
+  // risk verdict 动态标注：PASS/DETECT/BLOCK 固定文案，其余值防御性回退
+  function verdictLabel(v) {
+    if (v === 'PASS') return '✓ PASS 无异常';
+    if (v === 'DETECT') return '⚠ DETECT 检出攻击';
+    if (v === 'BLOCK') return '⛔ BLOCK 已阻断';
+    return '⚠ ' + v;
+  }
 
   function render(root) {
     root.append(P.pageHead({
@@ -38,6 +60,8 @@
       if (!r.ok) { svgBox.append(P.errCard(r)); return; }
       const t = r.data;
       svgBox.append(P.topoSVG(t, null));
+      // 竞态修复：并发 loadTopo（初次渲染 + node/list onLoaded）时，回调内先清空再追加，徽章不随到达顺序叠加
+      metaBox.innerHTML = '';
       metaBox.append(
         h('span', { class: 'p-badge ' + (t.wormhole_enabled ? 'p-tone-critical' : 'p-tone-good') },
           t.wormhole_enabled ? '⚠ 虫洞开启' : '● 虫洞关闭'),
@@ -264,7 +288,7 @@
         render: d => h('div', {},
           h('div', { class: 'p-row' },
             h('span', { class: 'p-verdict p-tone-' + (d.verdict === 'PASS' ? 'good' : 'critical') },
-              d.verdict === 'PASS' ? '✓ PASS 无异常' : '⚠ DETECT 检出攻击'),
+              verdictLabel(d.verdict)),
             h('span', { class: 'p-badge p-tone-neutral' },
               'risk_score ' + Number(d.risk_score).toFixed(2) + ' / 阈值 ' + d.threshold),
             P.badge(d.session_status)),
@@ -374,7 +398,7 @@
             ['run_id', monoTrunc(d.run_id, 32)], ['类型 / 场景', d.experiment_type + ' / ' + (d.scenario || '—')],
             ['状态', P.badge(d.status)],
             ['时延 avg/p50/p95/max', [d.avg_latency_ms, d.p50_latency_ms, d.p95_latency_ms, d.max_latency_ms].join(' / ') + 'ms'],
-            ['失败原因', (d.failure_reasons || []).join('；') || '无']]),
+            ['失败原因', fmtReasons(d.failure_reasons)]]),
           (d.experiment_type === 'MESSAGE_FLOW' && d.scenario === 'ATTACK')
             ? h('p', { class: 'p-field-hint' }, 'ATTACK 场景的低成功率恰是检测体系生效的证明。') : null),
         onOk: () => tbl.reload() }) }]),
@@ -404,9 +428,9 @@
         ['count', String(x.count)], ['状态', P.badge(x.status)],
         ['时延 avg', x.avg_latency_ms + 'ms'], ['p50', x.p50_latency_ms + 'ms'],
         ['p95', x.p95_latency_ms + 'ms'], ['max', x.max_latency_ms + 'ms'],
-        ['失败原因', (x.failure_reasons || []).join('；') || '无'],
+        ['失败原因', fmtReasons(x.failure_reasons)],
         ['开始 / 完成', x.started_at + ' → ' + x.completed_at],
-        ['config', x.config ? JSON.stringify(x.config) : '—']]),
+        ['config', fmtConfig(x.config)]]),
       h('details', { class: 'p-rawjson' }, h('summary', {}, '原始响应 JSON'), UI.jsonBlock(r.raw)));
   }
 
