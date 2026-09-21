@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="css/product.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🛰️</text></svg>">
 </head>
-<body><!-- 主题：无 data-theme 时跟随 OS 偏好（CSS 媒体查询）；app.js 会从 localStorage 恢复显式选择 -->
+<body><!-- 主题：app.js 启动即显式解析并设置 data-theme（localStorage 显式选择 > OS matchMedia 偏好）；启动前帧由 app.css 的 prefers-color-scheme 媒体查询兜底 -->
 
 <header class="topbar">
   <div class="brand">
