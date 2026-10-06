@@ -1,0 +1,33 @@
+/* theme-op.css — 运营商端令牌：政务蓝白（贴 UOM，spec §4.3）。
+   加载于 drone.css 之后；只覆盖令牌值，不写结构规则。
+   --p-* 覆盖 = pui 组件（dataTable/form/drawer/errCard…）随端换肤。 */
+:root {
+  --d-bg: #f4f6fa;
+  --d-panel: #ffffff;
+  --d-panel-2: #f0f4fa;
+  --d-line: #dde5f0;
+  --d-line-strong: #c3d0e4;
+  --d-ink: #1c2b41;
+  --d-ink-2: #46586f;
+  --d-ink-3: #77879c;
+  --d-brand: #0b4ea2;
+  --d-brand-ink: #ffffff;
+  --d-brand-soft: #e7eff9;
+  --d-hero-grad: linear-gradient(135deg, #0b4ea2, #1668c9);
+  --d-side-bg: #0b4ea2;
+  --d-seal-ink: #c0392b;
+  /* pui 组件换肤（product.css :root 同名令牌的政务蓝版本） */
+  --p-bg: #f4f6fa;
+  --p-panel: #ffffff;
+  --p-panel-2: #f0f4fa;
+  --p-line: #dde5f0;
+  --p-line-strong: #c3d0e4;
+  --p-ink: #1c2b41;
+  --p-ink-2: #46586f;
+  --p-ink-3: #77879c;
+  --p-brand: #0b4ea2;
+  --p-brand-ink: #ffffff;
+  --p-brand-soft: #e7eff9;
+  --p-info: #1d4ed8;
+  --p-info-soft: #e8eefc;
+}

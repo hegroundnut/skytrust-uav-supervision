@@ -1,0 +1,35 @@
+/* theme-au.css — 管理当局端令牌：深蓝权威浅色（高密度表格叙事，spec §4.3）。
+   加载于 drone.css 之后；只覆盖令牌值。 */
+:root {
+  --d-bg: #f2f4f8;
+  --d-panel: #ffffff;
+  --d-panel-2: #eef1f7;
+  --d-line: #dbe1ec;
+  --d-line-strong: #bfc9db;
+  --d-ink: #182539;
+  --d-ink-2: #41506a;
+  --d-ink-3: #71809a;
+  --d-brand: #143d75;
+  --d-brand-ink: #ffffff;
+  --d-brand-soft: #e9eff8;
+  --d-hero-grad: linear-gradient(135deg, #143d75, #1f5aa8);
+  --d-side-bg: #16305c;
+  --d-side-ink: #c3d2e8;
+  --d-side-line: rgba(255, 255, 255, .14);
+  --d-seal-ink: #a93226;
+  /* pui 组件换肤 */
+  --p-bg: #f2f4f8;
+  --p-panel: #ffffff;
+  --p-panel-2: #eef1f7;
+  --p-line: #dbe1ec;
+  --p-line-strong: #bfc9db;
+  --p-ink: #182539;
+  --p-ink-2: #41506a;
+  --p-ink-3: #71809a;
+  --p-brand: #143d75;
+  --p-brand-ink: #ffffff;
+  --p-brand-soft: #e9eff8;
+  --p-info: #1d4ed8;
+  --p-info-soft: #e8eefc;
+  --p-row-h: 32px; /* 管理端高密度表格 */
+}

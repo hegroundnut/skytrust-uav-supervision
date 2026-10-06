@@ -1,0 +1,51 @@
+/* theme-rg.css — 监管当局端令牌：深藏青驾驶舱大屏（spec §4.3）。
+   regulator.html 的 <body data-theme="dark"> 为固定属性（无切换）。
+   --p-* 深色覆盖必须挂在 body[data-theme="dark"] 选择器上：
+   product.css 的暗色块即此选择器（同特异性、本文件后加载 → 覆盖生效）；
+   --d-* 无竞争者，:root 即可。告警红/黄语义、不用霓虹青。 */
+:root {
+  --d-bg: #0a1628;
+  --d-panel: #101f36;
+  --d-panel-2: #0d1a2e;
+  --d-line: #1d3252;
+  --d-line-strong: #2a4470;
+  --d-ink: #dbe7f5;
+  --d-ink-2: #9fb2cc;
+  --d-ink-3: #6f83a1;
+  --d-brand: #3d7fd6;
+  --d-brand-ink: #ffffff;
+  --d-brand-soft: #14294a;
+  --d-good: #3f9e5f;     --d-good-soft: #12291c;
+  --d-warning: #d99a2b;  --d-warning-soft: #2c2113;
+  --d-critical: #e5484d; --d-critical-soft: #31161a;
+  --d-serious: #d97a3c;  --d-serious-soft: #2e1c11;
+  --d-info: #5b8def;     --d-info-soft: #13233f;
+  --d-hero-grad: linear-gradient(135deg, #12294d, #1b4a8a);
+  --d-side-bg: #081120;
+  --d-side-ink: #8fa5c4;
+  --d-side-line: rgba(255, 255, 255, .1);
+  --d-map-grid: #122036;
+  --d-map-grid-line: rgba(219, 231, 245, .06);
+  --d-seal-ink: #e07a6a;
+  --d-shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 4px 14px rgba(0, 0, 0, .3);
+}
+body[data-theme="dark"] {
+  /* pui 组件深色藏青化（覆盖 product.css 暗色块的靛蓝系） */
+  --p-bg: #0a1628;
+  --p-panel: #101f36;
+  --p-panel-2: #0d1a2e;
+  --p-line: #1d3252;
+  --p-line-strong: #2a4470;
+  --p-ink: #dbe7f5;
+  --p-ink-2: #9fb2cc;
+  --p-ink-3: #6f83a1;
+  --p-brand: #3d7fd6;
+  --p-brand-ink: #ffffff;
+  --p-brand-soft: #14294a;
+  --p-info: #5b8def;
+  --p-info-soft: #13233f;
+  /* 链色暗底提亮一档（保持紫/蓝/青语义，不用霓虹青） */
+  --p-chain-chainmaker: #9d7bef;
+  --p-chain-fabric: #5b8def;
+  --p-chain-fisco: #2ba3c2;
+}
