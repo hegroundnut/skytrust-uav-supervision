@@ -2045,11 +2045,11 @@ for p in operator.html authority.html regulator.html js/portal.js js/shell-op.js
   [ "$code" = 200 ] && echo "OK  $p" || echo "FAIL($code) $p"
 done
 curl -s http://127.0.0.1:18099/operator.html | grep -c 'd-portal d-op'      # 预期 1
-curl -s http://127.0.0.1:18099/regulator.html | grep -c 'data-theme="dark"' # 预期 1
+curl -s http://127.0.0.1:18099/regulator.html | grep -c 'data-theme="dark"' # 预期 2（head 注释行 1 + body 标签行 1——grep 命中含注释行，代码级属性恰 1）
 kill $SERVE_PID   # 只杀本步骤自己起的隔离实例；生产 :8090/:8080 进程绝不触碰
 ```
 
-预期：全部 `OK` + 两个 grep 各输出 1。serve-frontend.py 无 SPA fallback——每个 .html 显式命中即为通过（Global Constraints：三端为独立静态入口）。
+预期：全部 `OK` + op grep 输出 1、dark grep 输出 2（head 注释行同样命中字面量，代码级属性恰 1）。serve-frontend.py 无 SPA fallback——每个 .html 显式命中即为通过（Global Constraints：三端为独立静态入口）。
 
 - [ ] **Step 10: 提交**
 
@@ -6122,7 +6122,7 @@ sleep 1
 for p in regulator.html js/pages/rg/cockpit.js js/pages/rg/alerts.js js/pages/rg/trace.js; do
   echo "$p -> $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18099/$p)"   # 预期各 200
 done
-curl -s http://127.0.0.1:18099/regulator.html | grep -c 'data-theme="dark"'   # 预期 1（深藏青大屏固定主题）
+curl -s http://127.0.0.1:18099/regulator.html | grep -c 'data-theme="dark"'   # 预期 2（深藏青大屏固定主题；head 注释行 1 + body 标签行 1——grep 命中含注释行）
 kill $SRV 2>/dev/null; wait $SRV 2>/dev/null; echo SMOKE_DONE
 ```
 
