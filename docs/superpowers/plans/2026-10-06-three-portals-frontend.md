@@ -1125,7 +1125,8 @@ MSG
         routes: L.layerGroup().addTo(map),
         zones: L.layerGroup().addTo(map),
         nodes: L.layerGroup().addTo(map),
-        marks: L.layerGroup().addTo(map)
+        marks: L.layerGroup().addTo(map),
+        drones: L.layerGroup().addTo(map)   /* 无人机独立层组：clear/clear('marks') 均不触碰（Produces 契约「不动 drones」的物理保证） */
       },
       _drones: {},      /* uav_id → L.marker */
       _tiles: null,
@@ -1194,7 +1195,7 @@ MSG
       return mx;
     };
     mx.clearDrones = function () {
-      Object.keys(mx._drones).forEach(function (id) { map.removeLayer(mx._drones[id]); });
+      mx._layers.drones.clearLayers();
       mx._drones = {};
       return mx;
     };
@@ -1315,12 +1316,12 @@ MSG
         keyboard: false
       });
       m.bindTooltip('<b>' + uavId + '</b> · 飞行中', { direction: 'top', offset: [0, -16] });
-      m.addTo(mx._layers.marks);
+      m.addTo(mx._layers.drones);
       mx._drones[uavId] = m;
       return true;
     };
     mx.removeDrone = function (uavId) {
-      if (mx._drones[uavId]) { map.removeLayer(mx._drones[uavId]); delete mx._drones[uavId]; }
+      if (mx._drones[uavId]) { mx._layers.drones.removeLayer(mx._drones[uavId]); delete mx._drones[uavId]; }
       return mx;
     };
 
@@ -1403,11 +1404,12 @@ grep -n 'skytrust-tianditu-key' frontend/js/map.js     # 预期 2 处命中：�
 grep -c 'tk=' frontend/js/map.js                        # 预期 1（URL 模板拼接，运行时注入）
 # 脱离 DOM 零尺寸容器校正（P.tabs box 挂载时序）
 grep -c 'invalidateSize' frontend/js/map.js             # 预期 2（注释 1 + 功能调用 1）
+grep -c '_layers\.drones' frontend/js/map.js            # 预期 3（drone 挂载 / clearDrones / removeDrone——drones 独立层组，clear 不动）
 # 退化与红线关键词
 grep -n 'is-fallback\|tileerror\|wormhole_edge' frontend/js/map.js | head
 ```
 
-预期：`SYNTAX_OK`、`API_SCAN_DONE` 前零 MISSING、key 常量代码级恰 1 处（另有头部红线注释提及 1 次）。浏览器行为（瓦片加载/退化徽章/标记旋转/虫洞样式）= **DEFERRED-HUMAN**（记入实施报告，Task 15 汇总）。
+预期：`SYNTAX_OK`、`API_SCAN_DONE` 前零 MISSING、key 常量代码级恰 1 处（另有头部红线注释提及 1 次）、`_layers.drones` 恰 3 处。浏览器行为（瓦片加载/退化徽章/标记旋转/虫洞样式）= **DEFERRED-HUMAN**（记入实施报告，Task 15 汇总）。
 
 - [ ] **Step 3: 提交**
 
@@ -5562,7 +5564,7 @@ MSG
 - Consumes:
   - Task 6 页面公共惯例 8 条（`var RG = window.RG_PAGES = window.RG_PAGES || {};` 替代 OP；页面契约 `render(root, ctx)`；惯例③ 从不调 P.chipBar；惯例④ cockpit 是 shell-rg 唯一 mapPage——模块级 `var mx = null`，render 入口必先 `mx.destroy()`；惯例⑤ 轮询=模块 timer + DOM-detach 自清）。
   - `PORTAL.{jp,need}`（Task 5）；`UI.{h,toast,trunc,jsonBlock}`；`API.call`（永不 throw）；`STORE.{get,note}`（ALERT/MISSION 槽位预填）。
-  - `MAPX.create(el,{view})→mx{drawZones(routes),drawRoutes(routes,{opacity,active,onPick}),drawNodes(nodes,{onPick}),drawWormholes(edges,nodes),drone(uavId,lat,lon,headingDeg)→bool,removeDrone(uavId),clearDrones(),alertPin(lat,lon,text?,onClick?)→marker|null,clear(kind),setEmpty(text),clearEmpty(),fitPoints(pts),destroy()}`（Task 4 签名逐字）。**drone/alertPin/虫洞边全在 marks 层**：`clear('marks')` 会把无人机图标一并摘下而 `_drones` 注册表仍指向死标记（invisible icon 陷阱）——重绘 marks 前必先 `clearDrones()` 清注册表，本页 loadBase 固化该顺序。create 自带 rAF invalidateSize 零尺寸校正（cockpit 地图直挂 root 非 tabs，本就用不到，但无害）。
+  - `MAPX.create(el,{view})→mx{drawZones(routes),drawRoutes(routes,{opacity,active,onPick}),drawNodes(nodes,{onPick}),drawWormholes(edges,nodes),drone(uavId,lat,lon,headingDeg)→bool,removeDrone(uavId),clearDrones(),alertPin(lat,lon,text?,onClick?)→marker|null,clear(kind),setEmpty(text),clearEmpty(),fitPoints(pts),destroy()}`（Task 4 签名逐字）。**alertPin/虫洞边在 marks 层；drone 在独立 `_layers.drones` 层组**（Task 4 评审 I1 修复：`clear('marks')` 不再摘下无人机标记，Produces 契约「省略=全清但不动 drones」成立）；本页 loadBase 仍固化「重绘 marks 前先 `clearDrones()`」顺序——属注册表卫生而非陷阱规避。create 自带 rAF invalidateSize 零尺寸校正（cockpit 地图直挂 root 非 tabs，本就用不到，但无害）。
   - `GEO.{DEFAULT_VIEW,telemetryCoord(t)→[lat,lon]|null,hasCoord(lat,lon),nodeCoord}`（Task 3）。
   - `PUI.{pageHead,tabs 不用,form,dataTable,statCards,hbars([{label,value,tone}]),badge,chainTag(chain),kv,drawer(title,...body)→{root,close},confirm(title,msg,okLabel)→Promise<bool>,actionBar([{label,kind,confirm,run(el)}]),runOp,resultPanel,errCard,empty}`（签名以 pui.js 源码为准，均已核实行号：hbars pui.js:397、chainTag pui.js:34、confirm pui.js:77）。
   - 契约档案（`.git/sdd/planB-endpoint-contracts.md`）§3（Alert 10 键 `{alert_id,created_at,event_type,evidence_hash,mission_id,risk_level,source_system,status,uav_pseudonym,updated_at}`；levels item `{level:1..7,name,value,source,status:RESOLVED|BROKEN,latency_ms,reason(仅断链)}`）、§10（mission/query → Mission 平铺 19 键，route_segments/zones 为 JSON 字符串）、§15（session/list status 六态过滤，裁决 22）、§17（telemetry/latest `{telemetry:null}` code 0 合法=裁决 17；按 session_id 查）、§19（alert/raise 必填 5=uav_pseudonym/event_type/risk_level/source_system/operator——**裁决 8：以后端 binding 为准，不学旧页把 alert_id/mission_id 也列必填**；event_type 封闭 6 枚举；alert/status 线性单步跨级 6002；alert/list 五维过滤）、§20（trace/identity 三入口 `{alert_id}|{pseudo}|{device_address}`+operator*，优先级 alert_id>pseudo>device_address；resp `{entry,entry_type,pseudonym,resolved,break_level,trace_latency_ms,levels[恰7]}`；七级 name 依次 PSEUDO/DEVICE_ADDRESS/PASS_ID/SM9_IDENTITY/UAV_ID/OPERATOR_ID/MANUFACTURER_ID；source L1-4=CHAINMAKER_INDEX、L5-6=FABRIC_DETAIL、L7=FISCO_BCOS_DETAIL；**5001=断链+data 部分 TraceResult 留痕：断点级 BROKEN+reason、后续级 reason='skipped: break at level N'、resolved:false、break_level:N——禁止拼造**）、§26（dashboard/summary body-ignoring → `{alerts:{total,open,identified,traced,reviewed,resolved,archived,high_open,by_type(类型→计数 map)},authorizations:{total,pending,authorized,denied,expired},sessions:{total,init,authenticated,active,degraded,recovered,closed},wormhole_events:{total,detect,isolate,recover},recent_alerts[最新5条完整Alert],generated_at}`——**裁决 1：没有 missions/passes 键**）、§29（alert/raise→note('ALERT', id, {mission_id})；alert/status→note('ALERT', id)；**trace note:null 明确不落 STORE**）。
@@ -5588,8 +5590,8 @@ MSG
    alert.mission_id → mission/query → route_segments[0] → route 缓存 → start_lat/start_lon。
    在飞无人机 = session 状态 ∈ ACTIVE|DEGRADED|RECOVERED → telemetry/latest(session_id) → mx.drone；
    {telemetry:null}（裁决 17）= 暂无遥测跳过；坐标未设不画。
-   marks 层重绘惯例：drone/告警 pin/虫洞边同在 marks 层——clear('marks') 前先 clearDrones()
-   清注册表，否则 _drones 指向死标记（invisible icon 陷阱）。
+   marks 层重绘惯例：告警 pin/虫洞边在 marks 层；drone 在独立 drones 层组
+   （clear/clear('marks') 均不触碰——Task 4 评审 I1 修复后）；重绘前先 clearDrones() 属注册表卫生。
    端点：dashboard/summary、route/list、topology/get、session/list、telemetry/latest、mission/query。 */
 (function () {
   'use strict';
@@ -6101,7 +6103,7 @@ grep -c 'RG.alerts = { render' js/pages/rg/alerts.js         # 预期 1
 grep -c 'RG.trace = { render' js/pages/rg/trace.js           # 预期 1
 grep -c 'P.chipBar(' js/pages/rg/cockpit.js js/pages/rg/alerts.js js/pages/rg/trace.js   # 预期全 0（惯例③）
 grep -rn 'tk=' js/pages/rg/*.js; echo "TK_EXIT=$?"           # 预期无输出 + TK_EXIT=1（红线：key 不入源码）
-grep -c 'clearDrones' js/pages/rg/cockpit.js                 # 预期 1（marks 层重绘前先清无人机注册表——invisible icon 陷阱防护）
+grep -c 'clearDrones' js/pages/rg/cockpit.js                 # 预期 2（头部惯例注释 1 + loadBase 调用 1——重绘 marks 前先清无人机注册表，注册表卫生）
 grep -c "node_type !== 'ATTACKER'" js/pages/rg/cockpit.js    # 预期 0（监管端全量可见——运营端过滤惯例的反面）
 grep -c "'REG-01'" js/pages/rg/alerts.js js/pages/rg/trace.js   # 预期各 ≥1（监管端 operator 惯例）
 grep -c '5001' js/pages/rg/trace.js                          # 预期 ≥1（断链特判）
