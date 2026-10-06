@@ -160,7 +160,9 @@ func (s *Service) corridorOf(ctx context.Context, missionID string) ([]tlmWaypoi
 		if !ok {
 			return nil, false
 		}
-		if r.StartLat == 0 && r.StartLon == 0 && r.EndLat == 0 && r.EndLon == 0 {
+		// 与 masterdata 逐端点回填对齐：解析失败仅该端点两值留 0，任一端点缺结构化坐标即跳过不造假
+		// （(0,0) 非本演示空域的合法坐标），否则部分缺坐标会拼出飞向 (0,0) 的假遥测。
+		if (r.StartLat == 0 && r.StartLon == 0) || (r.EndLat == 0 && r.EndLon == 0) {
 			return nil, false // 缺坐标段 → 该会话跳过
 		}
 		alt := (r.AltitudeMin + r.AltitudeMax) / 2

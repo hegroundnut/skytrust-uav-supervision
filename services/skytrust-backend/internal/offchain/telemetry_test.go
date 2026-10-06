@@ -139,6 +139,26 @@ func TestCorridorOf(t *testing.T) {
 	if _, ok := svc.corridorOf(ctx, "MISSION-C0"); ok {
 		t.Error("缺坐标任务应 ok=false（跳过不造假）")
 	}
+	// 部分缺坐标：起点解析成功、终点解析失败留 0（masterdata 逐端点回填的部分缺失形态）→ false
+	svc.db.Create(&model.RouteSegment{
+		RouteID: "R-CP1", Zone: "Zone-T", StartPoint: "P1(30.500,114.300)", EndPoint: "P2",
+		StartLat: 30.500, StartLon: 114.300,
+		AltitudeMin: 60, AltitudeMax: 120, CorridorStatus: "OPEN",
+	})
+	svc.db.Create(&model.Mission{MissionID: "MISSION-CP1", RouteSegments: `["R-CP1"]`, Status: "APPROVED"})
+	if _, ok := svc.corridorOf(ctx, "MISSION-CP1"); ok {
+		t.Error("终点缺坐标段应 ok=false（逐端点判缺，跳过不造假）")
+	}
+	// 部分缺坐标反向：起点缺、终点有效 → 同样 false
+	svc.db.Create(&model.RouteSegment{
+		RouteID: "R-CP2", Zone: "Zone-T", StartPoint: "P3", EndPoint: "P4(30.520,114.320)",
+		EndLat: 30.520, EndLon: 114.320,
+		AltitudeMin: 60, AltitudeMax: 120, CorridorStatus: "OPEN",
+	})
+	svc.db.Create(&model.Mission{MissionID: "MISSION-CP2", RouteSegments: `["R-CP2"]`, Status: "APPROVED"})
+	if _, ok := svc.corridorOf(ctx, "MISSION-CP2"); ok {
+		t.Error("起点缺坐标段应 ok=false（逐端点判缺，跳过不造假）")
+	}
 }
 
 func TestAdvanceOne(t *testing.T) {
@@ -244,6 +264,27 @@ func TestTelemetryAutopilotSkipsMissionWithoutCoords(t *testing.T) {
 	svc.db.Model(&model.TelemetryReport{}).Where("session_id = ?", sid).Count(&cnt)
 	if cnt != 0 {
 		t.Errorf("缺坐标任务不得生成假遥测, got %d 行", cnt)
+	}
+}
+
+func TestTelemetryAutopilotSkipsPartialCoordSegment(t *testing.T) {
+	svc := newTestSvc(t)
+	sid := openTestSession(t, svc)
+	// 起点解析成功、终点解析失败留 0：部分缺坐标不得拼出飞向 (0,0) 的假遥测
+	svc.db.Create(&model.RouteSegment{
+		RouteID: "R-TP", Zone: "Zone-T", StartPoint: "T-START(30.500,114.300)", EndPoint: "T-END",
+		StartLat: 30.500, StartLon: 114.300,
+		AltitudeMin: 60, AltitudeMax: 120, CorridorStatus: "OPEN",
+	})
+	svc.db.Create(&model.Mission{MissionID: "MISSION-TP", RouteSegments: `["R-TP"]`, Status: "APPROVED"})
+	svc.db.Model(&model.OffchainSession{}).Where("session_id = ?", sid).Update("mission_id", "MISSION-TP")
+
+	ap := NewTelemetryAutopilot(svc, 1000)
+	ap.tick()
+	var cnt int64
+	svc.db.Model(&model.TelemetryReport{}).Where("session_id = ?", sid).Count(&cnt)
+	if cnt != 0 {
+		t.Errorf("部分缺坐标任务不得生成假遥测, got %d 行", cnt)
 	}
 }
 
