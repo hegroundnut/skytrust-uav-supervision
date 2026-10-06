@@ -1,4 +1,4 @@
-// 由 docs/apifox/skytrust-backend.openapi.json 生成（64 端点全量，含录制样例）。
+// 由 docs/apifox/skytrust-backend.openapi.json 生成（73 端点全量，含录制样例）。
 // 请勿手改：重新生成命令 ./scripts/gen-endpoints.sh。
 window.ENDPOINTS = [
  {

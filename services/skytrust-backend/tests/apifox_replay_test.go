@@ -100,8 +100,8 @@ func TestApifoxReplayScenarios(t *testing.T) {
 	}
 }
 
-// TestApifoxEndpointSamples 端点表回放录制：64 样例（故事序，capture/resolve）
-// + 64 个 `[]` 探针（绑定层判定，状态无关）→ 内存组装 OpenAPI 健全性 →
+// TestApifoxEndpointSamples 端点表回放录制：73 样例（故事序，capture/resolve）
+// + 73 个 `[]` 探针（绑定层判定，状态无关）→ 内存组装 OpenAPI 健全性 →
 // APIFOX_GEN=1 时渲染写盘 docs/apifox/（快照提交，P5-R13）。
 func TestApifoxEndpointSamples(t *testing.T) {
 	srv := bootServerS1(t)
