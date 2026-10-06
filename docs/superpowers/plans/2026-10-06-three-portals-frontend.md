@@ -5502,7 +5502,7 @@ grep -c 'AU.masterdata = { render' js/pages/au/masterdata.js  # 预期 1
 grep -c 'AU.netsec = { render' js/pages/au/netsec.js          # 预期 1
 grep -c 'P.chipBar(' js/pages/au/registry.js js/pages/au/masterdata.js js/pages/au/netsec.js   # 预期全 0（惯例③：chipBar 仅 shell 单例）
 grep -rn 'tk=' js/pages/au/registry.js js/pages/au/masterdata.js js/pages/au/netsec.js; echo "TK_EXIT=$?"   # 预期无输出 + TK_EXIT=1（红线：天地图 key 不入源码）
-grep -c 'SM9-ID-FISCO-ADMIN' js/pages/au/registry.js          # 预期 1（管理端验签方身份 = crypto.SM9IdentityOf("FISCO-ADMIN")）
+grep -c 'SM9-ID-FISCO-ADMIN' js/pages/au/registry.js          # 预期 2（头注释 1 + PILOT_SIGNER 常量 1——grep 命中含注释行，代码级常量恰 1；管理端验签方身份 = crypto.SM9IdentityOf("FISCO-ADMIN")）
 grep -c "'SecOps'" js/pages/au/netsec.js                      # 预期 ≥3（会话关闭/虫洞/路径切换 operator 惯例）
 grep -c 'enabled: enabled' js/pages/au/netsec.js              # 预期 1（wormhole/toggle 显式 bool——关闭必须发 false）
 grep -c 'MESSAGE_FLOW' js/pages/au/netsec.js                  # 预期 ≥3（scenario 双向严格守卫）
@@ -5530,7 +5530,7 @@ kill $SRV 2>/dev/null; wait $SRV 2>/dev/null; echo SMOKE_DONE
 ```
 【计划 B Task 10 DEFERRED-HUMAN】（浏览器访问 http://127.0.0.1:8090/authority.html，天地图 key 已存 localStorage）
 - #/registry：实名主体台账类型过滤（ENTERPRISE/INDIVIDUAL）；点主体行 → 右侧 7 行详情 + 「模拟证件号」免责声明；执照台账类别过滤（多旋翼）；点执照行或「详情」按钮 → 8 行详情 + 「SM9 验签」按钮 → 统计卡「✓ 通过」（绿）+ 七键验签材料 JSON 块；验签失败时统计卡「✗ 未通过」（红）。
-- #/masterdata：地图单击两次 → 「起」「止」蓝点标记 + 四坐标自动回填（6 位小数）；第三次单击 → 标记清除、坐标清空；只填两个坐标提交 → toast「坐标半套视为缺失」拦截不发请求；四坐标齐全提交 → 回执 kv 起终坐标非零 + ROUTE 上下文 chip + 台账/地图刷新（新航段高亮）；台账行点击 → 地图高亮 + fitPoints；「重置地图选点」→ 状态机归零；厂商/运营商注册 → 各自台账 reload + 对应 chip。
+- #/masterdata：地图单击两次 → 「起」「止」蓝点标记 + 四坐标自动回填（6 位小数）；第三次单击 → 标记清除、坐标清空；只填两个坐标提交 → toast「坐标半套视为缺失」拦截不发请求；四坐标齐全提交 → 回执 kv 起终坐标非零 + ROUTE 上下文 chip + 台账/地图刷新（新航段高亮）；台账行点击 → 地图高亮 + fitPoints；第三次单击即重置（代码无独立「重置地图选点」按钮）→ 选点状态机归零；厂商/运营商注册 → 各自台账 reload + 对应 chip。
 - #/netsec?tab=topo：4 统计卡（虫洞未开=绿色「未开启」）；真地图渲染 8 个种子节点全量——NODE-X/NODE-Y 红色 ⚠ ATTACKER 可见（管理端全貌，与运营端过滤相反）、离线空心；注册节点填 lat/lon → 地图刷新新节点可见；不填 lat/lon → 不上图（红线提示文案）；节点台账双过滤器 + ISOLATED 状态过滤。
 - #/netsec?tab=traffic：建立会话 → SM9 认证 ✓ + 初始路径「A → B → …」+ SESSION chip；会话行点击 → session_id 预填消息表单；发送 POSITION_UPDATE → 消息 kv + 逐跳时延条；「关闭」按钮 → 确认框 → 行 badge CLOSED + 按钮 disabled；对 CLOSED 会话再发消息 → 4002 errCard（设计内）；「加载流量统计」→ 5 统计卡（成功率 = 小数×100 保留 1 位，非 100% 时红色）。
 - #/netsec?tab=drill：「⚠ 开启虫洞攻击」→ danger 确认框 → 回执受影响节点列表；切到 topo 页签 → NODE-X⇄NODE-Y 红虚线 + 中点 ⚠（页签切换重渲染后加载）；建会话后「评估风险」→ 裁定标签 + 5 维评分条 + 阈值线 + 联动事件；对健康会话「切换路径」→ 4002 errCard（设计内）；会话 DEGRADED 后切换 → RECOVERED + 原/新路径 + 恢复时延 + RECOVER 事件；事件台账行点击 → 抽屉含原/新路径。
