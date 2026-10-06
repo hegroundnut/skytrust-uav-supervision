@@ -785,21 +785,21 @@ body[data-theme="dark"] {
 ```bash
 cd /root/codes/skytrust-uav-supervision/frontend
 # 1) drone.css 不得定义任何 p- 类结构规则（注释行除外）
-grep -n '\.p-' css/drone.css | grep -v '^\s*[0-9]*:\s*/\*\|product.css' ; test $? -ne 0 -e 0 && echo NO_P_CLASS_OK
+grep -qn '\.p-' css/drone.css && { echo P_CLASS_FOUND; grep -n '\.p-' css/drone.css; } || echo NO_P_CLASS_OK
 # 2) 令牌基座完备（Task 2 Produces 清单的 --d-* 全部在 drone.css :root 定义）
 for t in bg panel panel-2 line line-strong ink ink-2 ink-3 brand brand-ink brand-soft good warning critical serious info side-bg side-ink side-active side-line radius radius-sm shadow font mono topbar-h subbar-h side-w map-grid map-grid-line hero-grad seal-ink; do
   grep -q -- "--d-$t:" css/drone.css || echo "MISSING --d-$t"
 done; echo TOKEN_SCAN_DONE
 # 3) 三份主题文件各覆盖 --d-brand；rg 用 body[data-theme="dark"] 覆盖 --p-brand
 grep -c -- '--d-brand:' css/theme-op.css css/theme-au.css css/theme-rg.css   # 预期各 ≥1
-grep -q 'body\[data-theme="dark"\]' css/theme-rg.css && grep -A3 'body\[data-theme="dark"\]' css/theme-rg.css | grep -q -- '--p-brand:' && echo RG_DARK_OK
+grep -q 'body\[data-theme="dark"\]' css/theme-rg.css && grep -A15 'body\[data-theme="dark"\]' css/theme-rg.css | grep -q -- '--p-brand:' && echo RG_DARK_OK
 # 4) 兼容层四件套齐
 for s in '#toast-box' '.toast' '.tip' '.json-block'; do grep -q -- "$s" css/drone.css || echo "MISSING $s"; done; echo COMPAT_OK
 # 5) z-index 纪律：drone.css 中壳层 chrome <1000、toast/tip >1000
 grep -n 'z-index' css/drone.css
 ```
 
-预期：`NO_P_CLASS_OK`、`TOKEN_SCAN_DONE` 前零 MISSING、`RG_DARK_OK`、`COMPAT_OK` 前零 MISSING；z-index 清单=900/890/5/4/1200/1300（人工比对：壳层 ≤900 < product.css 模态 1000 < toast 1200 < tip 1300）。
+预期：`NO_P_CLASS_OK`、`TOKEN_SCAN_DONE` 前零 MISSING、`RG_DARK_OK`、`COMPAT_OK` 前零 MISSING；z-index 清单=900/890/5/4/1200/1300（人工比对：壳层 ≤900 < product.css 模态 1000 < toast 1200 < tip 1300；`.d-map` 的 `z-index: 0` 为隔离层叠基线非壳层，不计入清单）。
 
 - [ ] **Step 6: 提交**
 
