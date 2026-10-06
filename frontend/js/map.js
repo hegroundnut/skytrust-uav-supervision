@@ -56,7 +56,8 @@
         routes: L.layerGroup().addTo(map),
         zones: L.layerGroup().addTo(map),
         nodes: L.layerGroup().addTo(map),
-        marks: L.layerGroup().addTo(map)
+        marks: L.layerGroup().addTo(map),
+        drones: L.layerGroup().addTo(map)   /* 无人机独立层组：clear/clear('marks') 均不触碰（Produces 契约「不动 drones」的物理保证） */
       },
       _drones: {},      /* uav_id → L.marker */
       _tiles: null,
@@ -125,7 +126,7 @@
       return mx;
     };
     mx.clearDrones = function () {
-      Object.keys(mx._drones).forEach(function (id) { map.removeLayer(mx._drones[id]); });
+      mx._layers.drones.clearLayers();
       mx._drones = {};
       return mx;
     };
@@ -246,12 +247,12 @@
         keyboard: false
       });
       m.bindTooltip('<b>' + uavId + '</b> · 飞行中', { direction: 'top', offset: [0, -16] });
-      m.addTo(mx._layers.marks);
+      m.addTo(mx._layers.drones);
       mx._drones[uavId] = m;
       return true;
     };
     mx.removeDrone = function (uavId) {
-      if (mx._drones[uavId]) { map.removeLayer(mx._drones[uavId]); delete mx._drones[uavId]; }
+      if (mx._drones[uavId]) { mx._layers.drones.removeLayer(mx._drones[uavId]); delete mx._drones[uavId]; }
       return mx;
     };
 
