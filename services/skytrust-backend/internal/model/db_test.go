@@ -18,7 +18,7 @@ func TestOpenMemoryAndMigrate(t *testing.T) {
 		t.Fatal(err)
 	}
 	m := db.Migrator()
-	for _, want := range []string{"manufacturers", "uavs", "realname_subjects", "missions", "crosschain_txes",
+	for _, want := range []string{"manufacturers", "uavs", "realname_subjects", "pilot_licenses", "missions", "crosschain_txes",
 		"flight_passes", "network_nodes", "offchain_messages", "telemetry_reports", "security_events",
 		"identity_mappings", "regulatory_auths", "regulatory_audits", "experiment_runs", "audit_logs"} {
 		if !m.HasTable(want) {

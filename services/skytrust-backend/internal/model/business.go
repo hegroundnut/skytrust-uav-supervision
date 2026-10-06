@@ -29,8 +29,9 @@ type Mission struct {
 	AltitudeMax       float64    `json:"altitude_max"`
 	Zones             string     `gorm:"type:text" json:"zones"` // JSON数组
 	PayloadType       string     `gorm:"size:32" json:"payload_type"`
-	MissionCiphertext string     `gorm:"type:text" json:"-"`           // SM9加密的任务描述，不对外输出
-	MaskedValue       string     `gorm:"size:256" json:"masked_value"` // 脱敏展示值
+	PilotLicenseID    string     `gorm:"size:64" json:"pilot_license_id"` // 关联操控员执照（可选；不进 canonical 签名材料——inspection 逐字段重算，加字段会破坏既有密文核验）
+	MissionCiphertext string     `gorm:"type:text" json:"-"`              // SM9加密的任务描述，不对外输出
+	MaskedValue       string     `gorm:"size:256" json:"masked_value"`    // 脱敏展示值
 	SM3Hash           string     `gorm:"size:64" json:"sm3_hash"`
 	SM9Identity       string     `gorm:"size:128" json:"sm9_identity"`
 	Signature         string     `gorm:"type:text" json:"signature"` // Base64

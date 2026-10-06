@@ -10,7 +10,7 @@ import (
 
 func AllModels() []any {
 	return []any{
-		&Manufacturer{}, &Operator{}, &UAV{}, &RealnameSubject{},
+		&Manufacturer{}, &Operator{}, &UAV{}, &RealnameSubject{}, &PilotLicense{},
 		&RouteSegment{}, &Mission{}, &MissionApplication{}, &ReviewRecord{},
 		&ConflictRecord{}, &FlightPass{},
 		&CrosschainTx{},

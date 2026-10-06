@@ -43,6 +43,15 @@ func GenRegistrationMark() string {
 	return "UAS-" + fmt.Sprintf("%08d", binary.BigEndian.Uint32(b)%100000000)
 }
 
+func GenLicenseID() string { return "PIL-" + randHex(12) }
+
+// GenLicenseNo 执照编号 "UAV-PILOT-<年份>-<4位随机数字>"（crypto/rand 大端取模，spec §3.4）。
+func GenLicenseNo(year int) string {
+	b := make([]byte, 2)
+	rand.Read(b)
+	return fmt.Sprintf("UAV-PILOT-%d-%04d", year, binary.BigEndian.Uint16(b)%10000)
+}
+
 func IdempotencyKey(msgType, businessID, sourceTxID string) string {
 	h := sha256.Sum256([]byte(msgType + "|" + businessID + "|" + sourceTxID))
 	return hex.EncodeToString(h[:])

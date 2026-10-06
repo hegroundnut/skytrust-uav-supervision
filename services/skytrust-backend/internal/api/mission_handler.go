@@ -7,17 +7,18 @@ import (
 )
 
 type missionCreateReq struct {
-	MissionID     string   `json:"mission_id"` // 可选，缺省自动生成
-	OperatorID    string   `json:"operator_id" binding:"required"`
-	UAVID         string   `json:"uav_id" binding:"required"`
-	MissionType   string   `json:"mission_type" binding:"required"`
-	StartTime     string   `json:"start_time" binding:"required"`
-	EndTime       string   `json:"end_time" binding:"required"`
-	RouteSegments []string `json:"route_segments" binding:"required,min=1"`
-	AltitudeMin   float64  `json:"altitude_min"` // 0 合法，不用 binding required
-	AltitudeMax   float64  `json:"altitude_max" binding:"required"`
-	PayloadType   string   `json:"payload_type" binding:"required"`
-	Description   string   `json:"description"`
+	MissionID      string   `json:"mission_id"` // 可选，缺省自动生成
+	OperatorID     string   `json:"operator_id" binding:"required"`
+	UAVID          string   `json:"uav_id" binding:"required"`
+	MissionType    string   `json:"mission_type" binding:"required"`
+	StartTime      string   `json:"start_time" binding:"required"`
+	EndTime        string   `json:"end_time" binding:"required"`
+	RouteSegments  []string `json:"route_segments" binding:"required,min=1"`
+	AltitudeMin    float64  `json:"altitude_min"` // 0 合法，不用 binding required
+	AltitudeMax    float64  `json:"altitude_max" binding:"required"`
+	PayloadType    string   `json:"payload_type" binding:"required"`
+	Description    string   `json:"description"`
+	PilotLicenseID string   `json:"pilot_license_id"` // 可选：关联操控员执照（不存在/过期→7002）
 }
 
 func missionCreateHandler(deps *Deps) gin.HandlerFunc {
@@ -31,7 +32,7 @@ func missionCreateHandler(deps *Deps) gin.HandlerFunc {
 			MissionID: req.MissionID, OperatorID: req.OperatorID, UAVID: req.UAVID,
 			MissionType: req.MissionType, StartTime: req.StartTime, EndTime: req.EndTime,
 			RouteSegments: req.RouteSegments, AltitudeMin: req.AltitudeMin, AltitudeMax: req.AltitudeMax,
-			PayloadType: req.PayloadType, Description: req.Description,
+			PayloadType: req.PayloadType, Description: req.Description, PilotLicenseID: req.PilotLicenseID,
 		})
 		if err != nil {
 			Fail(c, crosschainErrCode(err), err.Error())

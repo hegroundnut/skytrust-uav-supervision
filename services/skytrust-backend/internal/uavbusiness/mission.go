@@ -17,17 +17,18 @@ import (
 )
 
 type MissionInput struct {
-	MissionID     string // 可选，缺省生成 MISSION-<年>-%03d
-	OperatorID    string
-	UAVID         string
-	MissionType   string
-	StartTime     string // "2006-01-02 15:04:05" 或带毫秒
-	EndTime       string
-	RouteSegments []string
-	AltitudeMin   float64
-	AltitudeMax   float64
-	PayloadType   string
-	Description   string // 明文描述 → SM9 加密落库 + 脱敏展示
+	MissionID      string // 可选，缺省生成 MISSION-<年>-%03d
+	OperatorID     string
+	UAVID          string
+	MissionType    string
+	StartTime      string // "2006-01-02 15:04:05" 或带毫秒
+	EndTime        string
+	RouteSegments  []string
+	AltitudeMin    float64
+	AltitudeMax    float64
+	PayloadType    string
+	Description    string // 明文描述 → SM9 加密落库 + 脱敏展示
+	PilotLicenseID string // 可选：关联操控员执照（提供则校验存在且未过期，否则→7002；不进 canonical 签名材料）
 }
 
 // genMissionID 自动生成 MISSION-<年>-%03d（count+1 探测）。
@@ -93,6 +94,14 @@ func (s *Service) CreateMission(ctx context.Context, traceID string, in MissionI
 	}
 	if uav.OperatorID != in.OperatorID {
 		return nil, crosschain.NewError(errcode.InvalidUAV, "UAV %s 不属于运营方 %s", uav.UAVID, in.OperatorID)
+	}
+	// 可选操控员执照关联（spec §3.4）：提供则校验存在且未过期（不存在/过期→7002）。
+	// 注意：PilotLicenseID 不进 canonical 签名材料——regulatory/inspection.go:176-194 会逐字段
+	// 重算任务 canonical 做 SM3/SM9 双验证，加字段会破坏既有密文核验（Global Constraints 红线）。
+	if in.PilotLicenseID != "" {
+		if _, err := s.CheckPilotLicense(ctx, traceID, in.PilotLicenseID); err != nil {
+			return nil, err
+		}
 	}
 	var routes []model.RouteSegment
 	if err := s.db.WithContext(ctx).Where("route_id IN ?", in.RouteSegments).Find(&routes).Error; err != nil {
@@ -173,7 +182,7 @@ func (s *Service) CreateMission(ctx context.Context, traceID string, in MissionI
 			MissionID: missionID, OperatorID: in.OperatorID, UAVID: in.UAVID,
 			MissionType: in.MissionType, StartTime: timex.New(start), EndTime: timex.New(end),
 			RouteSegments: string(segJSON), AltitudeMin: in.AltitudeMin, AltitudeMax: in.AltitudeMax,
-			Zones: string(zoneJSON), PayloadType: in.PayloadType,
+			Zones: string(zoneJSON), PayloadType: in.PayloadType, PilotLicenseID: in.PilotLicenseID,
 			MissionCiphertext: cipher, MaskedValue: masked,
 			SM3Hash: crypto.SM3Hex(cb), SM9Identity: crypto.SM9IdentityOf(in.UAVID), Signature: sig,
 			Status: "DRAFT",

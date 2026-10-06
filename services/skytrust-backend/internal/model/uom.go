@@ -34,3 +34,19 @@ type RealnameSubject struct {
 	CreatedAt   timex.Time `json:"created_at"`
 	UpdatedAt   timex.Time `json:"updated_at"`
 }
+
+// PilotLicense 操控员执照（spec §3.4）：模拟即审即发；canonical 内容由管理方（FISCO-ADMIN）SM9 签名，
+// 前端可经 crypto/sm9/verify 以同一 canonical 材料复核防篡改。
+type PilotLicense struct {
+	LicenseID string     `gorm:"primaryKey;size:64" json:"license_id"` // PIL- 前缀
+	LicenseNo string     `gorm:"size:64;index" json:"license_no"`      // UAV-PILOT-<年份>-<4位随机数字>
+	Name      string     `gorm:"size:128" json:"name"`
+	IdNumber  string     `gorm:"size:64;index" json:"id_number"` // 模拟证件号
+	Category  string     `gorm:"size:32" json:"category"`        // 多旋翼 | 固定翼 | 垂直起降
+	Status    string     `gorm:"size:32;default:ISSUED" json:"status"`
+	IssuedAt  timex.Time `json:"issued_at"`
+	ExpiresAt timex.Time `json:"expires_at"`                 // 默认签发+2年
+	Signature string     `gorm:"type:text" json:"signature"` // SM9 管理方签名（canonical JSON）
+	CreatedAt timex.Time `json:"created_at"`
+	UpdatedAt timex.Time `json:"updated_at"`
+}
