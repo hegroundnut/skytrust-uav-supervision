@@ -7177,8 +7177,8 @@ grep -c 'pc-card' frontend/index.html                    # 预期 5（style 块 
 grep -c '64 端点\|64 个 API' frontend/index.html frontend/README.md   # 两文件均预期 0
 grep -q 'operator.html' frontend/index.html && grep -q 'authority.html' frontend/index.html && grep -q 'regulator.html' frontend/index.html && echo PORTAL_LINKS_OK
 grep -q '四方角色工作台' frontend/index.html && echo GROUP_RENAME_FAIL || echo GROUP_RENAMEED_OK
-# script 区零改动（13 个 js 脚本行仍在，app.js 仍最后）
-grep -c '<script src=' frontend/index.html               # 预期 13
+# script 区零改动（18 个 js 脚本行仍在——计划撰写后 ed21ccc/3994aab/f5a20a2/af4cc1a 四旧工作台提交增补脚本，基数 13 已过时；七处编辑不触 script 区，app.js 仍最后）
+grep -c '<script src=' frontend/index.html               # 预期 18（控制器模拟七处编辑实证：new_string 均不含 script 标签，终态必 18）
 tail -3 frontend/index.html | grep -q app.js && echo APPJS_LAST_OK
 # 2) README 计数
 grep -c '73' frontend/README.md                          # 预期 ≥4（73 个 API/73 端点全量/26 错误码 + 73 端点 ×2）
@@ -7188,12 +7188,12 @@ git status --short CLAUDE.md                             # 预期 '?? CLAUDE.md'
 # 4) 隔离端口 smoke（红线 #11：只起 18099 第二实例，只 GET，用完杀掉自己起的进程）
 PORT=18099 BACKEND=http://127.0.0.1:1 python3 scripts/serve-frontend.py >/tmp/serve-18099.log 2>&1 &
 SERVE_PID=$!; sleep 1
-curl -s http://127.0.0.1:18099/index.html | grep -c 'pc-strip'   # 预期 1
+curl -s http://127.0.0.1:18099/index.html | grep -c 'pc-strip'   # 预期 2（style 块 .pc-strip CSS 规则 1 行 + <section class="pc-strip"> 用法 1 行——grep 命中含 CSS 规则行，pc-card/dark-grep 同型先例）
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:18099/index.html   # 预期 200
 kill $SERVE_PID
 ```
 
-预期：5、两处 0、`PORTAL_LINKS_OK`、`GROUP_RENAMEED_OK`、13、`APPJS_LAST_OK`、`README_COUNTS_OK`、`?? CLAUDE.md`、1、200。浏览器目检（卡片布局/暗色主题下卡片可读性/旧 SPA 路由不受影响）= **DEFERRED-HUMAN**。
+预期：5、两处 0、`PORTAL_LINKS_OK`、`GROUP_RENAMEED_OK`、18、`APPJS_LAST_OK`、`README_COUNTS_OK`、`?? CLAUDE.md`、2、200。浏览器目检（卡片布局/暗色主题下卡片可读性/旧 SPA 路由不受影响）= **DEFERRED-HUMAN**。
 
 - [ ] **Step 5: 提交（暂存区只准两个文件；CLAUDE.md 永不 stage）**
 
