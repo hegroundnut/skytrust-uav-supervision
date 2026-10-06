@@ -6,8 +6,10 @@ type NetworkNode struct {
 	NodeID      string     `gorm:"primaryKey;size:64" json:"node_id"`
 	NodeType    string     `gorm:"size:32" json:"node_type"` // UAV|EDGE|MANAGEMENT|ATTACKER
 	SM9Identity string     `gorm:"size:128" json:"sm9_identity"`
-	Neighbors   string     `gorm:"type:text" json:"neighbors"`           // JSON数组
-	Position    string     `gorm:"size:128" json:"position"`             // JSON {"x":..,"y":..}
+	Neighbors   string     `gorm:"type:text" json:"neighbors"` // JSON数组
+	Position    string     `gorm:"size:128" json:"position"`   // JSON {"x":..,"y":..}
+	Lat         float64    `json:"lat"`                        // 结构化经纬度（spec §3.1）：0=未设；仅供前端地图与遥测推进使用
+	Lon         float64    `json:"lon"`
 	Status      string     `gorm:"size:32;default:ONLINE" json:"status"` // ONLINE|ISOLATED|OFFLINE
 	RiskScore   float64    `json:"risk_score"`
 	CreatedAt   timex.Time `json:"created_at"`

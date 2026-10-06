@@ -7,6 +7,10 @@ type RouteSegment struct {
 	Zone           string     `gorm:"size:32;index" json:"zone"`
 	StartPoint     string     `gorm:"size:64" json:"start_point"`
 	EndPoint       string     `gorm:"size:64" json:"end_point"`
+	StartLat       float64    `json:"start_lat"` // 结构化坐标（spec §3.1）：0=未设；创建时可由内嵌 "NAME(lat,lon)" 自动解析
+	StartLon       float64    `json:"start_lon"`
+	EndLat         float64    `json:"end_lat"`
+	EndLon         float64    `json:"end_lon"`
 	AltitudeMin    float64    `json:"altitude_min"`
 	AltitudeMax    float64    `json:"altitude_max"`
 	CorridorStatus string     `gorm:"size:32;default:OPEN" json:"corridor_status"` // OPEN|RESTRICTED|CLOSED

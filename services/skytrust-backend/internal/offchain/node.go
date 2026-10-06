@@ -21,6 +21,8 @@ type NodeRegisterRequest struct {
 	Neighbors   []string  `json:"neighbors"`
 	SM9Identity string    `json:"sm9_identity"`
 	Status      string    `json:"status"`
+	Lat         float64   `json:"lat"` // 可选：结构化经纬度（spec §3.1），0=未设
+	Lon         float64   `json:"lon"`
 }
 
 func (s *Service) NodeRegister(ctx context.Context, traceID string, req *NodeRegisterRequest) (*model.NetworkNode, error) {
@@ -58,7 +60,7 @@ func (s *Service) NodeRegister(ctx context.Context, traceID string, req *NodeReg
 	}
 	node := model.NetworkNode{
 		NodeID: req.NodeID, NodeType: req.NodeType, SM9Identity: sm9,
-		Neighbors: string(nbrsJSON), Position: string(posJSON), Status: status,
+		Neighbors: string(nbrsJSON), Position: string(posJSON), Lat: req.Lat, Lon: req.Lon, Status: status,
 	}
 	if err := s.db.WithContext(ctx).Create(&node).Error; err != nil {
 		return nil, errcode.NewError(errcode.Internal, "create node: %v", err)

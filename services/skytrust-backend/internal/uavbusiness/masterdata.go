@@ -2,6 +2,8 @@ package uavbusiness
 
 import (
 	"context"
+	"strconv"
+	"strings"
 
 	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/errcode"
@@ -177,9 +179,33 @@ type RouteInput struct {
 	AltitudeMin    float64
 	AltitudeMax    float64
 	CorridorStatus string
+	StartLat       float64 // 可选：结构化起点坐标（显式值优先，不被内嵌解析覆盖）
+	StartLon       float64
+	EndLat         float64
+	EndLon         float64
 }
 
 var validCorridorStatus = map[string]bool{"OPEN": true, "RESTRICTED": true, "CLOSED": true}
+
+// parsePointCoords 解析 "NAME(lat,lon)" 内嵌坐标。任何畸形（无括号/缺值/非数字）返回 ok=false——
+// 永不报错（spec §3.1：解析失败保持 0 即可）。
+func parsePointCoords(s string) (lat, lon float64, ok bool) {
+	l := strings.LastIndex(s, "(")
+	r := strings.LastIndex(s, ")")
+	if l < 0 || r <= l+1 {
+		return 0, 0, false
+	}
+	parts := strings.Split(s[l+1:r], ",")
+	if len(parts) != 2 {
+		return 0, 0, false
+	}
+	latV, err1 := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+	lonV, err2 := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+	if err1 != nil || err2 != nil {
+		return 0, 0, false
+	}
+	return latV, lonV, true
+}
 
 // CreateRoute 航线创建；ID 重复 → 6002；altitude_min 负值或 >= altitude_max → 6002；
 // corridor_status 仅允许 OPEN|RESTRICTED|CLOSED（空 → OPEN）。
@@ -203,8 +229,21 @@ func (s *Service) CreateRoute(ctx context.Context, traceID string, in RouteInput
 	if cnt > 0 {
 		return nil, crosschain.NewError(errcode.Param, "route_id %q 已存在", in.RouteID)
 	}
+	// 结构化坐标回填（spec §3.1）：显式入参优先；未设时解析内嵌 "NAME(lat,lon)"，解析失败保持 0 不报错。
+	startLat, startLon, endLat, endLon := in.StartLat, in.StartLon, in.EndLat, in.EndLon
+	if startLat == 0 && startLon == 0 {
+		if la, lo, ok := parsePointCoords(in.StartPoint); ok {
+			startLat, startLon = la, lo
+		}
+	}
+	if endLat == 0 && endLon == 0 {
+		if la, lo, ok := parsePointCoords(in.EndPoint); ok {
+			endLat, endLon = la, lo
+		}
+	}
 	r := &model.RouteSegment{
 		RouteID: in.RouteID, Zone: in.Zone, StartPoint: in.StartPoint, EndPoint: in.EndPoint,
+		StartLat: startLat, StartLon: startLon, EndLat: endLat, EndLon: endLon,
 		AltitudeMin: in.AltitudeMin, AltitudeMax: in.AltitudeMax, CorridorStatus: in.CorridorStatus,
 	}
 	if err := s.db.WithContext(ctx).Create(r).Error; err != nil {

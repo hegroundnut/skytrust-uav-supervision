@@ -132,6 +132,10 @@ type routeCreateReq struct {
 	AltitudeMin    float64 `json:"altitude_min"` // 0 合法，不用 binding required
 	AltitudeMax    float64 `json:"altitude_max"`
 	CorridorStatus string  `json:"corridor_status"`
+	StartLat       float64 `json:"start_lat"` // 可选：结构化坐标（0=未设；缺省时服务端解析 start_point/end_point 内嵌坐标）
+	StartLon       float64 `json:"start_lon"`
+	EndLat         float64 `json:"end_lat"`
+	EndLon         float64 `json:"end_lon"`
 }
 
 func routeCreateHandler(deps *Deps) gin.HandlerFunc {
@@ -143,6 +147,7 @@ func routeCreateHandler(deps *Deps) gin.HandlerFunc {
 		}
 		r, err := deps.Business.CreateRoute(c.Request.Context(), TraceIDFrom(c), uavbusiness.RouteInput{
 			RouteID: req.RouteID, Zone: req.Zone, StartPoint: req.StartPoint, EndPoint: req.EndPoint,
+			StartLat: req.StartLat, StartLon: req.StartLon, EndLat: req.EndLat, EndLon: req.EndLon,
 			AltitudeMin: req.AltitudeMin, AltitudeMax: req.AltitudeMax, CorridorStatus: req.CorridorStatus,
 		})
 		if err != nil {

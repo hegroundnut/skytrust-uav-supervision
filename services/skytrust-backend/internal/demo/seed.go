@@ -96,11 +96,11 @@ func (s *Seeder) Init() (*SeedReport, error) {
 
 	// 4. 航路（altitude 60–150，corridor_status=OPEN）
 	routes := []model.RouteSegment{
-		{RouteID: "R101", Zone: "Zone-A", StartPoint: "A-ENTRY(30.510,114.310)", EndPoint: "A-EXIT(30.540,114.340)", AltitudeMin: 60, AltitudeMax: 120, CorridorStatus: "OPEN"},
-		{RouteID: "R205", Zone: "Zone-A", StartPoint: "A-EXIT(30.540,114.340)", EndPoint: "B-GATE(30.572,114.372)", AltitudeMin: 80, AltitudeMax: 120, CorridorStatus: "OPEN"},
-		{RouteID: "R208", Zone: "Zone-B", StartPoint: "B-WEST(30.570,114.370)", EndPoint: "B-EAST(30.590,114.390)", AltitudeMin: 60, AltitudeMax: 100, CorridorStatus: "OPEN"},
-		{RouteID: "R209", Zone: "Zone-B", StartPoint: "B-GATE(30.555,114.365)", EndPoint: "B-NORTH(30.600,114.410)", AltitudeMin: 90, AltitudeMax: 150, CorridorStatus: "OPEN"},
-		{RouteID: "R306", Zone: "Zone-B", StartPoint: "B-EAST(30.585,114.385)", EndPoint: "B-LAND(30.620,114.420)", AltitudeMin: 60, AltitudeMax: 120, CorridorStatus: "OPEN"},
+		{RouteID: "R101", Zone: "Zone-A", StartPoint: "A-ENTRY(30.510,114.310)", EndPoint: "A-EXIT(30.540,114.340)", StartLat: 30.510, StartLon: 114.310, EndLat: 30.540, EndLon: 114.340, AltitudeMin: 60, AltitudeMax: 120, CorridorStatus: "OPEN"},
+		{RouteID: "R205", Zone: "Zone-A", StartPoint: "A-EXIT(30.540,114.340)", EndPoint: "B-GATE(30.572,114.372)", StartLat: 30.540, StartLon: 114.340, EndLat: 30.572, EndLon: 114.372, AltitudeMin: 80, AltitudeMax: 120, CorridorStatus: "OPEN"},
+		{RouteID: "R208", Zone: "Zone-B", StartPoint: "B-WEST(30.570,114.370)", EndPoint: "B-EAST(30.590,114.390)", StartLat: 30.570, StartLon: 114.370, EndLat: 30.590, EndLon: 114.390, AltitudeMin: 60, AltitudeMax: 100, CorridorStatus: "OPEN"},
+		{RouteID: "R209", Zone: "Zone-B", StartPoint: "B-GATE(30.555,114.365)", EndPoint: "B-NORTH(30.600,114.410)", StartLat: 30.555, StartLon: 114.365, EndLat: 30.600, EndLon: 114.410, AltitudeMin: 90, AltitudeMax: 150, CorridorStatus: "OPEN"},
+		{RouteID: "R306", Zone: "Zone-B", StartPoint: "B-EAST(30.585,114.385)", EndPoint: "B-LAND(30.620,114.420)", StartLat: 30.585, StartLon: 114.385, EndLat: 30.620, EndLon: 114.420, AltitudeMin: 60, AltitudeMax: 120, CorridorStatus: "OPEN"},
 	}
 	for i := range routes {
 		rec := routes[i]
@@ -111,14 +111,14 @@ func (s *Seeder) Init() (*SeedReport, error) {
 
 	// 5. 网络节点（Neighbors/Position 为 JSON 文本；NODE-X/NODE-Y 为虫洞攻击节点，默认 OFFLINE）
 	nodes := []model.NetworkNode{
-		{NodeID: "UAV-A-001-NODE", NodeType: "UAV", SM9Identity: crypto.SM9IdentityOf("UAV-A-001-NODE"), Neighbors: `["N1"]`, Position: `{"x":0,"y":0}`, Status: "ONLINE"},
-		{NodeID: "N1", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N1"), Neighbors: `["UAV-A-001-NODE","N2"]`, Position: `{"x":10,"y":10}`, Status: "ONLINE"},
-		{NodeID: "N2", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N2"), Neighbors: `["N1","N3"]`, Position: `{"x":20,"y":20}`, Status: "ONLINE"},
-		{NodeID: "N3", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N3"), Neighbors: `["N2","N4"]`, Position: `{"x":30,"y":30}`, Status: "ONLINE"},
-		{NodeID: "N4", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N4"), Neighbors: `["N3","MGR"]`, Position: `{"x":40,"y":40}`, Status: "ONLINE"},
-		{NodeID: "MGR", NodeType: "MANAGEMENT", SM9Identity: crypto.SM9IdentityOf("MGR"), Neighbors: `["N4"]`, Position: `{"x":50,"y":50}`, Status: "ONLINE"},
-		{NodeID: "NODE-X", NodeType: "ATTACKER", SM9Identity: crypto.SM9IdentityOf("NODE-X"), Neighbors: `[]`, Position: `{"x":1,"y":50}`, Status: "OFFLINE"},
-		{NodeID: "NODE-Y", NodeType: "ATTACKER", SM9Identity: crypto.SM9IdentityOf("NODE-Y"), Neighbors: `[]`, Position: `{"x":99,"y":51}`, Status: "OFFLINE"},
+		{NodeID: "UAV-A-001-NODE", NodeType: "UAV", SM9Identity: crypto.SM9IdentityOf("UAV-A-001-NODE"), Neighbors: `["N1"]`, Position: `{"x":0,"y":0}`, Lat: 30.510, Lon: 114.310, Status: "ONLINE"},
+		{NodeID: "N1", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N1"), Neighbors: `["UAV-A-001-NODE","N2"]`, Position: `{"x":10,"y":10}`, Lat: 30.530, Lon: 114.330, Status: "ONLINE"},
+		{NodeID: "N2", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N2"), Neighbors: `["N1","N3"]`, Position: `{"x":20,"y":20}`, Lat: 30.548, Lon: 114.348, Status: "ONLINE"},
+		{NodeID: "N3", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N3"), Neighbors: `["N2","N4"]`, Position: `{"x":30,"y":30}`, Lat: 30.572, Lon: 114.372, Status: "ONLINE"},
+		{NodeID: "N4", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N4"), Neighbors: `["N3","MGR"]`, Position: `{"x":40,"y":40}`, Lat: 30.598, Lon: 114.398, Status: "ONLINE"},
+		{NodeID: "MGR", NodeType: "MANAGEMENT", SM9Identity: crypto.SM9IdentityOf("MGR"), Neighbors: `["N4"]`, Position: `{"x":50,"y":50}`, Lat: 30.620, Lon: 114.420, Status: "ONLINE"},
+		{NodeID: "NODE-X", NodeType: "ATTACKER", SM9Identity: crypto.SM9IdentityOf("NODE-X"), Neighbors: `[]`, Position: `{"x":1,"y":50}`, Lat: 30.556, Lon: 114.356, Status: "OFFLINE"},
+		{NodeID: "NODE-Y", NodeType: "ATTACKER", SM9Identity: crypto.SM9IdentityOf("NODE-Y"), Neighbors: `[]`, Position: `{"x":99,"y":51}`, Lat: 30.640, Lon: 114.440, Status: "OFFLINE"},
 	}
 	for i := range nodes {
 		rec := nodes[i]
