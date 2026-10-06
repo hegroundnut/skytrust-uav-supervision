@@ -5702,7 +5702,7 @@ MSG
         sessions = (sr.data.records || []).filter(function (s) { return FLYING[s.status]; });
       }
       if (mx) {
-        /* 顺序固化：先清无人机注册表再清 marks 层（drone/pin/虫洞边同层），tick() 重建 */
+        /* 顺序固化：clearDrones 清 drones 层组+注册表，再清 nodes/marks（告警 pin/虫洞边在 marks），tick() 重建 */
         mx.clearDrones();
         mx.clear('nodes'); mx.clear('marks');
         if (tr.ok) {
