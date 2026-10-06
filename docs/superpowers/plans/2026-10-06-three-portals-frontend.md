@@ -1399,15 +1399,15 @@ for f in 'MAPX.create\|create: create' 'fitPoints' 'setView' 'mx.clear =' 'clear
   grep -q "$f" frontend/js/map.js || echo "MISSING $f"
 done; echo API_SCAN_DONE
 # key 只从 localStorage 读，绝无写死值（红线 #8）
-grep -n 'skytrust-tianditu-key' frontend/js/map.js     # 预期恰 1 处（KEY_LS 常量定义）
+grep -n 'skytrust-tianditu-key' frontend/js/map.js     # 预期 2 处命中：头部红线注释 1 + KEY_LS 常量定义 1（代码级定义恰 1 处）
 grep -c 'tk=' frontend/js/map.js                        # 预期 1（URL 模板拼接，运行时注入）
 # 脱离 DOM 零尺寸容器校正（P.tabs box 挂载时序）
-grep -c 'invalidateSize' frontend/js/map.js             # 预期 1
+grep -c 'invalidateSize' frontend/js/map.js             # 预期 2（注释 1 + 功能调用 1）
 # 退化与红线关键词
 grep -n 'is-fallback\|tileerror\|wormhole_edge' frontend/js/map.js | head
 ```
 
-预期：`SYNTAX_OK`、`API_SCAN_DONE` 前零 MISSING、key 常量恰 1 处。浏览器行为（瓦片加载/退化徽章/标记旋转/虫洞样式）= **DEFERRED-HUMAN**（记入实施报告，Task 15 汇总）。
+预期：`SYNTAX_OK`、`API_SCAN_DONE` 前零 MISSING、key 常量代码级恰 1 处（另有头部红线注释提及 1 次）。浏览器行为（瓦片加载/退化徽章/标记旋转/虫洞样式）= **DEFERRED-HUMAN**（记入实施报告，Task 15 汇总）。
 
 - [ ] **Step 3: 提交**
 
