@@ -6103,13 +6103,13 @@ grep -c 'RG.alerts = { render' js/pages/rg/alerts.js         # 预期 1
 grep -c 'RG.trace = { render' js/pages/rg/trace.js           # 预期 1
 grep -c 'P.chipBar(' js/pages/rg/cockpit.js js/pages/rg/alerts.js js/pages/rg/trace.js   # 预期全 0（惯例③）
 grep -rn 'tk=' js/pages/rg/*.js; echo "TK_EXIT=$?"           # 预期无输出 + TK_EXIT=1（红线：key 不入源码）
-grep -c 'clearDrones' js/pages/rg/cockpit.js                 # 预期 2（头部惯例注释 1 + loadBase 调用 1——重绘 marks 前先清无人机注册表，注册表卫生）
+grep -c 'clearDrones' js/pages/rg/cockpit.js                 # 预期 3（头部惯例注释 1 + loadBase 内联注释 1 + 调用 1——7c2bd11 措辞修正后内联注释含字面量；grep 命中含注释行，代码级调用恰 1）
 grep -c "node_type !== 'ATTACKER'" js/pages/rg/cockpit.js    # 预期 0（监管端全量可见——运营端过滤惯例的反面）
 grep -c "'REG-01'" js/pages/rg/alerts.js js/pages/rg/trace.js   # 预期各 ≥1（监管端 operator 惯例）
 grep -c '5001' js/pages/rg/trace.js                          # 预期 ≥1（断链特判）
 grep -c 'skipped\|拼造' js/pages/rg/trace.js                 # 预期 ≥1（断点留痕红线文案）
 grep -c 'RG.alerts.alertKv\|RG.alerts.alertDrawer' js/pages/rg/cockpit.js   # 预期 ≥2（复用 alerts.js 导出，零重复）
-grep -c 'telemetry/latest' js/pages/rg/cockpit.js            # 预期 1
+grep -c 'telemetry/latest' js/pages/rg/cockpit.js            # 预期 3（头部流程注释 1 + 头部端点清单注释 1 + API.call 1——grep 命中含注释行，代码级调用恰 1）
 awk '/cockpit\.js/{a=NR} /alerts\.js/{b=NR} /trace\.js/{c=NR} /shell-rg\.js/{d=NR} END{if(a>0&&a<b&&b<c&&c<d)print "ORDER_OK";else print "ORDER_BAD"}' regulator.html   # 预期 ORDER_OK
 ```
 
