@@ -197,6 +197,9 @@ func (s *Service) RegisterUAV(ctx context.Context, traceID string, in UAVInput) 
 	if err := s.transitionUAV(traceID, in.OperatorID, uav, "VERIFIED", "REGISTER_PROOF_OK"); err != nil {
 		return uav, tx, err
 	}
+	// 追踪映射根治（spec §3.5）：跨链证明成功即建 IdentityMapping；
+	// 失败已提前 return（停留 REGISTERED）——链上无凭据，追踪就该断，不建映射。
+	s.createIdentityMapping(ctx, traceID, uav)
 	return uav, tx, nil
 }
 
@@ -281,6 +284,9 @@ func (s *Service) StatusUAV(ctx context.Context, traceID, uavID, action string) 
 		if err := s.transitionUAV(traceID, uav.OperatorID, uav, to, "VERIFY"); err != nil {
 			return uav, tx, err
 		}
+		// VERIFY 仅能从 REGISTERED 进入 = 此前注册跨链失败 = 尚无映射；补建之。
+		// createIdentityMapping 内部按 uav_id 查重，重复调用无害。
+		s.createIdentityMapping(ctx, traceID, uav)
 		return uav, tx, nil
 	}
 	if err := s.transitionUAV(traceID, uav.OperatorID, uav, to, action); err != nil {

@@ -52,6 +52,12 @@ func GenLicenseNo(year int) string {
 	return fmt.Sprintf("UAV-PILOT-%d-%04d", year, binary.BigEndian.Uint16(b)%10000)
 }
 
+// GenPseudo 追踪伪名 "PSEUDO-UAV-<5位大写hex>"（与 seed IDM-DEMO-0001 形状一致，spec §3.5）。
+func GenPseudo() string { return "PSEUDO-UAV-" + strings.ToUpper(randHex(6)[:5]) }
+
+// GenDeviceAddress 模拟设备链上地址 "0xADDR<5位大写hex>"（与 seed 形状一致，spec §3.5）。
+func GenDeviceAddress() string { return "0xADDR" + strings.ToUpper(randHex(6)[:5]) }
+
 func IdempotencyKey(msgType, businessID, sourceTxID string) string {
 	h := sha256.Sum256([]byte(msgType + "|" + businessID + "|" + sourceTxID))
 	return hex.EncodeToString(h[:])

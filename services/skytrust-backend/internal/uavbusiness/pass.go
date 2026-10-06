@@ -159,6 +159,9 @@ func (s *Service) IssuePass(ctx context.Context, traceID string, in PassIssueInp
 	s.logAudit(traceID, in.Issuer, "PASS_ISSUE", "PASS", p.PassID,
 		map[string]any{"mission_id": p.MissionID, "uav_id": p.UAVID, "cross_tx_id": tx.CrossTxID,
 			"window": []string{timex.FormatTime(p.ValidFrom.Time), timex.FormatTime(p.ValidTo.Time)}})
+	// 追踪映射根治（spec §3.5）：签发成功即回填最新映射的 pass_id，否则追踪 L3 恒断；
+	// best-effort，不影响签发结果；已有 pass_id 不覆盖。
+	s.backfillMappingPassID(ctx, traceID, p.UAVID, p.PassID, in.Issuer)
 	return &p, tx, nil
 }
 
