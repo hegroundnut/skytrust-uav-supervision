@@ -2697,7 +2697,7 @@ grep -c "'/api/pilot/apply'" js/pages/op/realname.js       # =1
 grep -c "'/api/pilot/list'" js/pages/op/realname.js        # =1
 grep -c "'/api/pilot/query'" js/pages/op/realname.js       # =1
 grep -c "label: '操控员执照'" js/pages/op/realname.js       # =1（第三页签）
-grep -c '垂直起降' js/pages/op/realname.js                 # =2（表单默认值 + 台账过滤）
+grep -c '垂直起降' js/pages/op/realname.js                 # =4（头注释 + 表单默认值 + 表单 options + 台账过滤——grep 命中含注释行，Task 4/5 同型先例）
 grep -c 'd.license' js/pages/op/realname.js                # ≥1（apply {license} 包裹层）
 grep -c "node_type !== 'ATTACKER'" js/pages/op/home.js     # =1（运营端信息边界：hero 地图不画攻击节点）
 grep -c 'drawWormholes' js/pages/op/home.js                # =0（虫洞伪造边属管理端 netsec 全量视图）
