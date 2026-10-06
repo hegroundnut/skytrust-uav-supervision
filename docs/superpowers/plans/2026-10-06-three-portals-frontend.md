@@ -116,7 +116,7 @@ CLAUDE.md                      # [Task 13] 「前端」段重写为三门户结�
 - Consumes: 无（首个任务）。
 - Produces:
   - 全局 `L`（Leaflet 1.9.4 UMD，`vendor/leaflet/leaflet.js`）——Task 4 map.js 依赖；`leaflet.css` 与 `images/` **必须保持同级**（CSS url() 与 JS 默认图标按相对路径探测五个 png）。
-  - 全局函数 `qrcode(typeNumber, errorCorrectionLevel)`（`vendor/qrcode/qrcode.js`，qrcode-generator 2.0.4）→ 实例方法 `addData(str)` / `make()` / `createSvgTag(cellSize, margin)` / `createDataURL(cellSize, margin)` / `createImgTag(cellSize, margin)` / `createCanvas(canvas)`——Task 6 aircraft/license 页依赖。
+  - 全局函数 `qrcode(typeNumber, errorCorrectionLevel)`（`vendor/qrcode/qrcode.js`，qrcode-generator 2.0.4）→ 实例方法 `addData(str)` / `make()` / `createSvgTag(cellSize, margin)`（亦支持对象入参 `createSvgTag({cellSize, margin, scalable})`——portal.js renderQR 用此形式）/ `createDataURL(cellSize, margin)` / `createImgTag(cellSize, margin)` / `renderTo2dContext(context, cellSize)`——Task 6 aircraft/license 页依赖（经 PORTAL.renderQR，不直接调用）。**注意：2.0.4 无 `createCanvas` 方法**（Task 1 评审实证：canvas 能力即 `renderTo2dContext`，qrcode.js:719）。
   - `bash scripts/serve-frontend.sh` 与 `./scripts/serve-frontend.sh` 均可用。
 
 **背景事实（照抄执行，勿另行发明）：** sha256 值来自锚点档案 `.git/sdd/planB-frontend-anchors.md` §13（2026-10-06 实测下载核验，Leaflet SRI 与官方公布值一致）；qrcode-generator 必须取 **2.0.4**（相对 1.4.4 仅一行差异=canvas `fillRect(row,col)→(col,row)` 转置 bug 修复）。
