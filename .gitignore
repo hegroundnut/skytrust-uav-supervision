@@ -14,6 +14,7 @@ out/
 *.test
 coverage.out
 vendor/
+!frontend/vendor/
 
 # Node / React
 node_modules/
