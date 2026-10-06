@@ -22,7 +22,7 @@ export GOPROXY=https://goproxy.cn,direct
 cd services/skytrust-backend && go run ./cmd/server
 ```
 
-服务默认监听 `:8080`（见下方环境变量表）。首次启动会自动创建 `data/skytrust.db`、AutoMigrate 20 张表，并在 `data/sm9` 下生成 SM9 主密钥。
+服务默认监听 `:8080`（见下方环境变量表）。首次启动会自动创建 `data/skytrust.db`、AutoMigrate 23 张表，并在 `data/sm9` 下生成 SM9 主密钥。
 
 > 说明：`data/`、`*.db`、`*.pem`、`tools/` 均不入库；端到端冒烟验证由 `tests/` 覆盖，无需手动起服务。
 
@@ -42,6 +42,7 @@ cd services/skytrust-backend && go run ./cmd/server
 | `APP_TIMEZONE` | `Asia/Shanghai` | 响应时间戳时区 |
 | `LOG_LEVEL` | `info` | 日志级别 |
 | `OFFCHAIN_AUTOPILOT_MS` | `0` | 系统二后台 HEARTBEAT 间隔（毫秒）。`0`=关闭（测试默认）；生产入口 main.go 在值为 0 时自动采用 2000ms；设为负值 = 显式关闭生产后台流量 |
+| `TELEMETRY_AUTOPILOT_MS` | `0` | 遥测 SIM 推进间隔（毫秒）。语义同 `OFFCHAIN_AUTOPILOT_MS`：`0`=关闭（测试默认）；生产入口 main.go 在值为 0 时自动采用 2000ms；设为负值 = 显式关闭生产遥测推进 |
 
 > **三链真实在线属部署期验收门**：`CHAIN_MODE=real`（或分链 `CHAINMAKER_MODE`/`FABRIC_MODE`/`FISCO_MODE`=real）需 Docker / cgo（CGO_ENABLED=1，MinGW-w64）/ Java 与三链网络就绪，并按 [`docs/real-chain-migration.md`](../../docs/real-chain-migration.md) 注册真实 SDK 传输；hermetic 构建不携带任何链 SDK，未注册传输时启动即 fail-fast（`config.ChainModeFor` 决定每链生效模式，绝不静默仿真冒充真实链）。三链合约工件与索引见 [`contracts/README.md`](../../contracts/README.md)。
 
@@ -63,7 +64,7 @@ cd services/skytrust-backend && go run ./cmd/server
   }
   ```
 
-**共 64 个端点**（分组：health×2 / chain×1 / crypto×4 / demo×2 / audit×2 / crosschain×3 / masterdata×6 / uav×5 / mission×4 / review×2 / conflict×2 / pass×5 / offchain×12 / regulatory×10 / experiment×4）：
+**共 73 个端点**（分组：health×2 / chain×1 / crypto×4 / demo×2 / audit×2 / crosschain×3 / masterdata×6 / uom×6 / uav×5 / mission×4 / review×2 / conflict×2 / pass×5 / offchain×12 / telemetry×3 / regulatory×10 / experiment×4）：
 
 | 分组 | 端点 | 说明 |
 | --- | --- | --- |
@@ -85,14 +86,20 @@ cd services/skytrust-backend && go run ./cmd/server
 | masterdata | `POST /api/manufacturer/list` | 厂商列表 |
 | masterdata | `POST /api/operator/register` | 注册运营方 |
 | masterdata | `POST /api/operator/list` | 运营方列表 |
-| masterdata | `POST /api/route/create` | 创建航段（走廊状态 OPEN/RESTRICTED/CLOSED） |
+| masterdata | `POST /api/route/create` | 创建航段（走廊状态 OPEN/RESTRICTED/CLOSED）；可选结构化坐标 start_lat/start_lon/end_lat/end_lon，缺省自动解析起终点内嵌 "NAME(lat,lon)"，解析失败留 0 不报错 |
 | masterdata | `POST /api/route/list` | 航段列表（zone / corridor_status 过滤） |
-| uav | `POST /api/uav/register` | 无人机注册 + UAV_REGISTER_PROOF 跨链（fabric→chainmaker）→ VERIFIED |
+| uom | `POST /api/realname/register` | 实名登记（个人/企业，模拟证件号；→REGISTERED） |
+| uom | `POST /api/realname/list` | 实名主体分页列表（subject_type 可选过滤） |
+| uom | `POST /api/realname/query` | 实名主体查询（不存在→7001） |
+| uom | `POST /api/pilot/apply` | 操控员执照申请（即申即发；LicenseNo=UAV-PILOT-<年份>-<4位数字>；SM9 管理方签名；默认有效期+2年） |
+| uom | `POST /api/pilot/list` | 执照分页列表（category 可选过滤） |
+| uom | `POST /api/pilot/query` | 执照查询（不存在→7002） |
+| uav | `POST /api/uav/register` | 无人机注册 + UAV_REGISTER_PROOF 跨链（fabric→chainmaker）→ VERIFIED；自动签发国籍登记标志 registration_mark（UAS-8位数字）；可选 realname_id 关联实名主体（不存在→7001）；成功后自动建 IdentityMapping 追踪映射 |
 | uav | `POST /api/uav/query` | 按 uav_id 查询 |
 | uav | `POST /api/uav/list` | 列表（operator_id / manufacturer_id / status 过滤） |
 | uav | `POST /api/uav/status` | 状态流转（VERIFY / ACTIVATE / SUSPEND / RESUME） |
 | uav | `POST /api/uav/revoke` | 注销（→ REVOKED，终态） |
-| mission | `POST /api/mission/create` | 任务创建（描述 SM9 加密落库，对外仅脱敏值；SM3+SM9 签名）→ DRAFT |
+| mission | `POST /api/mission/create` | 任务创建（描述 SM9 加密落库，对外仅脱敏值；SM3+SM9 签名）→ DRAFT；可选 pilot_license_id 关联操控员执照（不存在/过期→7002；该字段不进 canonical 签名材料） |
 | mission | `POST /api/mission/query` | 按 mission_id 查询（永不返回密文） |
 | mission | `POST /api/mission/list` | 分页列表（operator_id / uav_id / status 过滤） |
 | mission | `POST /api/mission/submit` | 提交：源链交易 + MISSION_APPLICATION 跨链（fabric→fisco-bcos）；失败自动撤回 DRAFT |
@@ -106,7 +113,7 @@ cd services/skytrust-backend && go run ./cmd/server
 | pass | `POST /api/pass/verify` | 放行验证（SM3/SM9 重算 + 窗口检查；过期自动 EXPIRED）；永远 code=0，有效性看 `valid/reasons` |
 | pass | `POST /api/pass/revoke` | 吊销（本地先行立即生效 + PASS_REVOKE 跨链 best-effort） |
 | offchain | `POST /api/topology/get` | 链下网络拓扑视图（nodes/edges/wormhole_enabled/isolated/active_sessions） |
-| offchain | `POST /api/node/register` | 链下节点注册（node_type 四类；sm9_identity 空=自动派生；重复→6002） |
+| offchain | `POST /api/node/register` | 链下节点注册（node_type 四类；sm9_identity 空=自动派生；重复→6002）；可选 lat/lon 结构化坐标 |
 | offchain | `POST /api/node/list` | 节点分页列表（node_type / status 过滤） |
 | offchain | `POST /api/session/open` | 会话开启：SM9 挑战认证（signature 空=平台代签 nonce）+ Dijkstra 初始可信路径，落库即 ACTIVE |
 | offchain | `POST /api/session/close` | 会话关闭（仅 ACTIVE/DEGRADED/RECOVERED 可关，非法→4002） |
@@ -117,6 +124,9 @@ cd services/skytrust-backend && go run ./cmd/server
 | offchain | `POST /api/risk/evaluate` | 5 维虫洞风险评分（identity/adjacency/latency/challenge/path，阈值 0.7）；DETECT/BLOCK → 隔离 X/Y + 会话降级 |
 | offchain | `POST /api/path/switch` | 可信路径重算（仅 DEGRADED；new_path 空=自动 Dijkstra）→ RECOVERED + RECOVER 事件（recovery_latency_ms 实测） |
 | offchain | `POST /api/event/list` | 虫洞事件分页列表（session_id / action(DETECT\|ISOLATE\|RECOVER) 过滤） |
+| telemetry | `POST /api/telemetry/report` | 遥测上报（会话须 ACTIVE，否则→7003；seq 服务端自增；source=MANUAL） |
+| telemetry | `POST /api/telemetry/list` | 遥测分页列表（session_id / uav_id 过滤） |
+| telemetry | `POST /api/telemetry/latest` | 最新遥测（session_id/uav_id 至少一个，否则→6002；无记录→code 0 + telemetry=null） |
 | regulatory | `POST /api/alert/raise` | 安全告警登记（6 类 event_type 枚举；支持显式 alert_id；WORMHOLE_ALERT 可关联系统二事件派生证据哈希） |
 | regulatory | `POST /api/alert/list` | 告警分页列表（event_type / status / risk_level / source_system / mission_id 过滤） |
 | regulatory | `POST /api/alert/status` | 告警状态迁移（OPEN→IDENTIFIED→TRACED→REVIEWED→RESOLVED→ARCHIVED 线性状态机，非法迁移→6002） |
@@ -158,6 +168,9 @@ cd services/skytrust-backend && go run ./cmd/server
 | 5003 | AuthScope | 授权 scope 或目标违规（scope 缺 ROUTE/PAYLOAD、授权目标与任务不匹配） |
 | 5004 | AuthExpired | 授权已过期或尚未生效（valid_from/valid_to 窗口检查；过期惰性置 EXPIRED） |
 | 6002 | Param | 参数非法 / 资源不存在 |
+| 7001 | RealnameNotFound | 实名主体不存在 |
+| 7002 | LicenseInvalid | 执照不存在或已过期 |
+| 7003 | TelemetrySession | 遥测上报会话状态错误（须 ACTIVE） |
 | 9001 | Internal | 内部错误 |
 
 ## 系统一业务流程（演示闭环）
@@ -198,7 +211,7 @@ cd services/skytrust-backend && go run ./cmd/server
 9. 恢复后首条消息成功 → 会话自动回归 ACTIVE；ISOLATED 节点被 `wormhole/toggle` 拒绝重新上线（4001，永久出局）；
 10. `event/list` / `message/list` 复盘攻防全程：DETECT/ISOLATE/RECOVER 事件链 + 消息统计（成功率、avg/p50/p95/max 时延）；`session/close` 关闭会话。
 
-**后台流量（autopilot）：** 生产入口默认每 2000ms 为全部 ACTIVE 会话发送 HEARTBEAT（持续供给检测观测流量）；`OFFCHAIN_AUTOPILOT_MS` 控制（0=默认启用 2000ms，负值=关闭），测试环境不启动。
+**后台流量（autopilot）：** 生产入口默认每 2000ms 为全部 ACTIVE 会话发送 HEARTBEAT（持续供给检测观测流量）；`OFFCHAIN_AUTOPILOT_MS` 控制（0=默认启用 2000ms，负值=关闭），测试环境不启动。遥测 SIM 推进以同一节奏并行（`TELEMETRY_AUTOPILOT_MS`，语义相同）：沿任务航段经纬度链插值推进并落遥测（source=SIM），任务缺坐标则跳过、绝不造假；飞完全程回到起点循环。
 
 **端点请求/响应样例**（统一信封 `{code,message,data,trace_id,timestamp}`，下列仅展示 `data`；`…` 为运行时生成值示意）：
 
@@ -426,8 +439,8 @@ services/skytrust-backend/
 ├── cmd/
 │   └── server/            # 服务入口 main.go（go run ./cmd/server）
 ├── internal/
-│   ├── api/               # 路由、中间件、统一响应/错误码别名、64 端点 handler、api.Deps
-│   ├── apidoc/            # Apifox 文档渲染：Schema 推断 / OpenAPI 3.0.3 构建 / 场景文档 / 确定性渲染 + 端点表（64 行）/ 场景表（24 个）
+│   ├── api/               # 路由、中间件、统一响应/错误码别名、73 端点 handler、api.Deps
+│   ├── apidoc/            # Apifox 文档渲染：Schema 推断 / OpenAPI 3.0.3 构建 / 场景文档 / 确定性渲染 + 端点表（73 行）/ 场景表（24 个）
 │   ├── audit/             # 审计服务（query / export CSV）
 │   ├── chainadapter/      # 链适配接口（ChainAdapter / ChainStatusProvider）+ ChainTransport 迁移缝
 │   │   ├── chainmaker/    # ChainMaker 真实链适配器（合约/方法白名单）
@@ -440,8 +453,8 @@ services/skytrust-backend/
 │   ├── demo/              # 演示数据 seeding（demo/init、demo/reset）
 │   ├── errcode/           # 全局业务错误码常量（单一事实源）
 │   ├── experiment/        # 实验引擎：11 类执行器注册表（registry）+ 统计器（成功率/p50/p95/max）+ Run 编排 + 结果查询/CSV 导出
-│   ├── model/             # 20 张 GORM 模型 + AutoMigrate + ID 生成器
-│   ├── offchain/          # 系统二：链下可信网络（拓扑/Dijkstra 路由、时延仿真、会话、消息引擎、虫洞攻防、autopilot）
+│   ├── model/             # 23 张 GORM 模型 + AutoMigrate + ID 生成器
+│   ├── offchain/          # 系统二：链下可信网络（拓扑/Dijkstra 路由、时延仿真、会话、消息引擎、虫洞攻防、autopilot、遥测上报与 SIM 推进）
 │   ├── regulatory/        # 系统三：安全告警（6 类+状态机）、7 级身份追踪、监管授权（ChainMaker 上链）、SM9 密文核验、监管审计、驾驶舱
 │   ├── statemachine/      # 状态机（UAV / 任务 / 许可 / 跨链 9 态 / 会话 / 告警）
 │   ├── timex/             # 统一时间格式（Asia/Shanghai，双格式解析）
@@ -462,7 +475,7 @@ services/skytrust-backend/
 
 ## Apifox 文档
 
-- `docs/apifox/skytrust-backend.openapi.json`（仓库根）：OpenAPI 3.0.3，64 个全 POST 端点，含录制请求样例与 success/business_error 双响应样例（`x-sample-source: recorded|static` 标注来源）——Apifox「导入数据 → OpenAPI/Swagger」直接导入。
+- `docs/apifox/skytrust-backend.openapi.json`（仓库根）：OpenAPI 3.0.3，73 个全 POST 端点，含录制请求样例与 success/business_error 双响应样例（`x-sample-source: recorded|static` 标注来源）——Apifox「导入数据 → OpenAPI/Swagger」直接导入。
 - `docs/apifox/skytrust-test-scenarios.json`：24 个验收/演示场景（TC1-01..TC3-08），每步含 body 与预期 code；`${ref}` 为运行时捕获引用（前序步骤 capture），`${now-1h}`/`${now+1h}` 为动态时间占位符（timex 格式）。
 - 重新生成（在 `services/skytrust-backend` 下执行；产物含时间戳/trace_id，重生成字节变化属正常快照语义）：
 
@@ -470,4 +483,14 @@ services/skytrust-backend/
   APIFOX_GEN=1 go test ./tests/ -run 'TestApifox' -count=1
   ```
 
-- 回放即文档测试：`TestApifoxReplayScenarios`（24 场景单服务器顺序回放）与 `TestApifoxEndpointSamples`（64 端点故事序样例 + `[]` 探针）断言每步信封 code——文档样例与真实行为永久同步。
+- 回放即文档测试：`TestApifoxReplayScenarios`（24 场景单服务器顺序回放）与 `TestApifoxEndpointSamples`（73 端点故事序样例 + `[]` 探针）断言每步信封 code——文档样例与真实行为永久同步。
+
+## UOM 登记与运行识别域
+
+对齐「民用无人驾驶航空器综合管理平台」（UOM）操作模型的后端纯加法扩展（设计权威：`docs/superpowers/specs/2026-10-06-uom-three-portals-design.md` §3；实施：`docs/superpowers/plans/2026-10-06-uom-backend-domains.md`）：
+
+- **地理**：航段携带结构化经纬度（`start_lat/start_lon/end_lat/end_lon`，创建时自动解析起终点内嵌 `"NAME(lat,lon)"`，解析失败留 0 不报错）；节点携带可选 `lat/lon`。抽象 Position/拓扑/Dijkstra 不变。
+- **实名登记**（`realname/*`）：个人/企业两类主体，模拟证件号（不存真实证件）；登记即 `REGISTERED`。UAV 注册自动签发国籍登记标志 `registration_mark=UAS-<8位数字>`（uniqueIndex），可选 `realname_id` 关联实名主体（不存在→7001）。
+- **操控员执照**（`pilot/*`）：模拟即审即发——`LicenseNo=UAV-PILOT-<年份>-<4位随机数字>`、默认有效期+2年、canonical 内容由管理方（FISCO-ADMIN）SM9 签名，前端可经 `crypto/sm9/verify` 复核防篡改。任务可选 `pilot_license_id` 关联（不存在/过期→7002）；该字段不进任务 canonical 签名材料（inspection 逐字段重算，兼容既有密文）。
+- **遥测**（`telemetry/*`）：人工上报要求会话 ACTIVE（否则→7003），seq 服务端自增、SM3/SM9 不落遥测（高频小记录）；SIM 自动驾驶（`TELEMETRY_AUTOPILOT_MS`）每 tick 沿任务航段经纬度链插值推进（12m/s 仿真速度），缺坐标任务跳过不造假，飞完全程回起点循环。
+- **追踪映射根治**：`uav/register` 跨链证明成功（VERIFIED）即自动创建 IdentityMapping（`pseudo=PSEUDO-UAV-<5hex>` / `device_address=0xADDR<5hex>`）；跨链失败不建——链上无凭据追踪就该断。`pass/issue` 成功后 best-effort 回填该 UAV 最新映射的 `pass_id`（否则 7 级追踪 L3 判据恒断链），已有 pass_id 不覆盖（保护 seed `IDM-DEMO-0001` 冻结字面量）。trace/identity 断链演示语义（5001+断点留痕，禁止拼造）不变。

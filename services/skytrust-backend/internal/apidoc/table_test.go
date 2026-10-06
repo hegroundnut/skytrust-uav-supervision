@@ -26,8 +26,8 @@ func bodyRefs(t *testing.T, body any) []string {
 
 // TestEndpointTableComplete 端点表完整性 + 占位符先行定义校验。
 func TestEndpointTableComplete(t *testing.T) {
-	if len(Endpoints) != 64 {
-		t.Fatalf("endpoints = %d, want 64", len(Endpoints))
+	if len(Endpoints) != 73 {
+		t.Fatalf("endpoints = %d, want 73", len(Endpoints))
 	}
 	seen := map[string]bool{}
 	defined := map[string]bool{"now-1h": true, "now+1h": true}

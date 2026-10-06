@@ -130,8 +130,8 @@ func TestApifoxEndpointSamples(t *testing.T) {
 	}
 	doc := apidoc.BuildOpenAPI(apidoc.Endpoints, ok, probe)
 	paths := doc["paths"].(map[string]any)
-	if len(paths) != 64 {
-		t.Fatalf("openapi paths = %d, want 64", len(paths))
+	if len(paths) != 73 {
+		t.Fatalf("openapi paths = %d, want 73", len(paths))
 	}
 	for p, item := range paths {
 		m := item.(map[string]any)
@@ -188,8 +188,8 @@ func TestApifoxArtifacts(t *testing.T) {
 		t.Fatalf("openapi = %v", doc["openapi"])
 	}
 	paths := doc["paths"].(map[string]any)
-	if len(paths) != 64 {
-		t.Fatalf("paths = %d, want 64", len(paths))
+	if len(paths) != 73 {
+		t.Fatalf("paths = %d, want 73", len(paths))
 	}
 	for p, item := range paths {
 		m := item.(map[string]any)

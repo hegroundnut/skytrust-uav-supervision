@@ -12,6 +12,9 @@ var Storylines = []Scenario{
 		{Path: "/api/chain/status", Body: map[string]any{}, ExpectCode: 0},
 	}},
 	{ID: "TC1-02", Name: "正常任务申请跨链中继", System: "system1", Steps: []ScenarioStep{
+		{Path: "/api/realname/register", Body: map[string]any{"subject_type": "ENTERPRISE", "name": "紧急医疗运输企业", "id_number": "91420100MED0001X", "contact": "027-88880002"}, ExpectCode: 0, Capture: map[string]string{"tc1_subject": "data.subject.subject_id"}},
+		{Path: "/api/pilot/apply", Body: map[string]any{"name": "医疗运输操控员", "id_number": "420100199203054321", "category": "垂直起降"}, ExpectCode: 0, Capture: map[string]string{"tc1_lic": "data.license.license_id"}},
+		{Path: "/api/uav/register", Body: map[string]any{"uav_id": "UAV-MED-01", "manufacturer_id": "Manufacturer-B", "operator_id": "Operator-A", "model": "DJI-M350-RTK", "serial_no": "SN-MED-001", "realname_id": "${tc1_subject}"}, ExpectCode: 0},
 		{Path: "/api/mission/create", Body: missionMainline(), ExpectCode: 0},
 		{Path: "/api/mission/submit", Body: map[string]any{"mission_id": "MISSION-2026-001", "operator": "Operator-A"}, ExpectCode: 0, Capture: map[string]string{"tc1_app": "data.application.application_id"}},
 	}},
@@ -68,6 +71,8 @@ var Storylines = []Scenario{
 		{Path: "/api/message/send", Body: map[string]any{"session_id": "${s1}", "msg_type": "HEARTBEAT", "source_node": "UAV-A-001-NODE", "target_node": "MGR"}, ExpectCode: 0},
 		{Path: "/api/message/send", Body: map[string]any{"session_id": "${s1}", "msg_type": "HEARTBEAT", "source_node": "UAV-A-001-NODE", "target_node": "MGR"}, ExpectCode: 0},
 		{Path: "/api/message/list", Body: map[string]any{"session_id": "${s1}"}, ExpectCode: 0},
+		{Path: "/api/telemetry/report", Body: map[string]any{"session_id": "${s1}", "lat": 30.52, "lon": 114.32, "alt": 85, "speed": 12, "heading": 45}, ExpectCode: 0},
+		{Path: "/api/telemetry/latest", Body: map[string]any{"session_id": "${s1}"}, ExpectCode: 0},
 	}},
 	{ID: "TC2-04", Name: "虫洞隧道部署", System: "system2", Steps: []ScenarioStep{
 		{Path: "/api/topology/get", Body: map[string]any{}, ExpectCode: 0},

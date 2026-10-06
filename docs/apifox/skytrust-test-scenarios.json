@@ -21,6 +21,43 @@
       "system": "system1",
       "steps": [
         {
+          "path": "/api/realname/register",
+          "body": {
+            "contact": "027-88880002",
+            "id_number": "91420100MED0001X",
+            "name": "紧急医疗运输企业",
+            "subject_type": "ENTERPRISE"
+          },
+          "expect_code": 0,
+          "capture": {
+            "tc1_subject": "data.subject.subject_id"
+          }
+        },
+        {
+          "path": "/api/pilot/apply",
+          "body": {
+            "category": "垂直起降",
+            "id_number": "420100199203054321",
+            "name": "医疗运输操控员"
+          },
+          "expect_code": 0,
+          "capture": {
+            "tc1_lic": "data.license.license_id"
+          }
+        },
+        {
+          "path": "/api/uav/register",
+          "body": {
+            "manufacturer_id": "Manufacturer-B",
+            "model": "DJI-M350-RTK",
+            "operator_id": "Operator-A",
+            "realname_id": "${tc1_subject}",
+            "serial_no": "SN-MED-001",
+            "uav_id": "UAV-MED-01"
+          },
+          "expect_code": 0
+        },
+        {
           "path": "/api/mission/create",
           "body": {
             "altitude_max": 120,
@@ -400,6 +437,25 @@
         },
         {
           "path": "/api/message/list",
+          "body": {
+            "session_id": "${s1}"
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/telemetry/report",
+          "body": {
+            "alt": 85,
+            "heading": 45,
+            "lat": 30.52,
+            "lon": 114.32,
+            "session_id": "${s1}",
+            "speed": 12
+          },
+          "expect_code": 0
+        },
+        {
+          "path": "/api/telemetry/latest",
           "body": {
             "session_id": "${s1}"
           },

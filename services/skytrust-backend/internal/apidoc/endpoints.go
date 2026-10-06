@@ -31,7 +31,7 @@ func reviewApproved(appRef, comment string) map[string]any {
 	}
 }
 
-// Endpoints 全部 64 个 POST 端点，按单服务器回放故事序排列（P5-R7 手写唯一源）。
+// Endpoints 全部 73 个 POST 端点，按单服务器回放故事序排列（P5-R7 手写唯一源）。
 // 每行 Sample 在该行位置执行必得 ExpectCode；${ref} 由本表 Capture 先行定义（P5-R13）。
 // 确定性错误样例三处（一路径一行约束下的取舍）：sm9/verify(1002)、conflict/resolve(6002)、path/switch(6002)。
 var Endpoints = []Endpoint{
@@ -49,7 +49,13 @@ var Endpoints = []Endpoint{
 	{Path: "/api/operator/list", Group: "主数据", Summary: "运营商列表（分页）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/route/create", Group: "主数据", Summary: "航线段创建", Sample: map[string]any{"route_id": "R901", "zone": "Zone-D", "start_point": "S9", "end_point": "E9", "altitude_min": 50, "altitude_max": 150}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/route/list", Group: "主数据", Summary: "航线段列表（分页）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 6002},
-	{Path: "/api/uav/register", Group: "无人机", Summary: "无人机注册 + UAV_REGISTER_PROOF 跨链三链留痕", Sample: map[string]any{"uav_id": "UAV-DOC-001", "manufacturer_id": "Manufacturer-B", "operator_id": "Operator-A", "model": "DJI-M350", "serial_no": "SN-DOC-001"}, ExpectCode: 0, ProbeExpect: 6002},
+	{Path: "/api/realname/register", Group: "UOM登记", Summary: "实名登记（个人/企业，模拟证件号；→REGISTERED）", Sample: map[string]any{"subject_type": "ENTERPRISE", "name": "文档样例物流企业", "id_number": "91420100DOCAIR01X", "contact": "027-88880001"}, ExpectCode: 0, ProbeExpect: 6002, Capture: map[string]string{"subject_id": "data.subject.subject_id"}},
+	{Path: "/api/realname/list", Group: "UOM登记", Summary: "实名主体分页列表（subject_type 可选过滤）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 6002},
+	{Path: "/api/realname/query", Group: "UOM登记", Summary: "实名主体查询（不存在→7001）", Sample: map[string]any{"subject_id": "${subject_id}"}, ExpectCode: 0, ProbeExpect: 6002},
+	{Path: "/api/pilot/apply", Group: "UOM登记", Summary: "操控员执照申请（即申即发；SM9 管理方签名；默认有效期+2年）", Sample: map[string]any{"name": "文档样例操控员", "id_number": "420100199001010011", "category": "多旋翼"}, ExpectCode: 0, ProbeExpect: 6002, Capture: map[string]string{"license_id": "data.license.license_id"}},
+	{Path: "/api/pilot/list", Group: "UOM登记", Summary: "执照分页列表（category 可选过滤）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 6002},
+	{Path: "/api/pilot/query", Group: "UOM登记", Summary: "执照查询（不存在→7002）", Sample: map[string]any{"license_id": "${license_id}"}, ExpectCode: 0, ProbeExpect: 6002},
+	{Path: "/api/uav/register", Group: "无人机", Summary: "无人机注册 + UAV_REGISTER_PROOF 跨链三链留痕（registration_mark 自动签发；可选关联实名主体；成功后自动建追踪映射）", Sample: map[string]any{"uav_id": "UAV-DOC-001", "manufacturer_id": "Manufacturer-B", "operator_id": "Operator-A", "model": "DJI-M350", "serial_no": "SN-DOC-001", "realname_id": "${subject_id}"}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/uav/query", Group: "无人机", Summary: "无人机查询", Sample: map[string]any{"uav_id": "UAV-DOC-001"}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/uav/list", Group: "无人机", Summary: "无人机列表（分页）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/uav/status", Group: "无人机", Summary: "无人机状态机操作（VERIFY/ACTIVATE/SUSPEND/RESUME）", Sample: map[string]any{"uav_id": "UAV-DOC-001", "action": "ACTIVATE"}, ExpectCode: 0, ProbeExpect: 6002},
@@ -74,6 +80,9 @@ var Endpoints = []Endpoint{
 	{Path: "/api/session/list", Group: "会话", Summary: "会话列表（可选过滤 status）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/message/send", Group: "消息", Summary: "链下消息发送（亚秒时延，SUCCESS/FAILED）", Sample: map[string]any{"session_id": "${sid}", "msg_type": "HEARTBEAT", "source_node": "UAV-A-001-NODE", "target_node": "MGR"}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/message/list", Group: "消息", Summary: "消息列表（可选过滤 session_id/status）", Sample: map[string]any{"session_id": "${sid}"}, ExpectCode: 0, ProbeExpect: 6002},
+	{Path: "/api/telemetry/report", Group: "遥测", Summary: "遥测上报（会话须 ACTIVE，否则→7003；seq 服务端自增）", Sample: map[string]any{"session_id": "${sid}", "lat": 30.52, "lon": 114.32, "alt": 85, "speed": 12, "heading": 45}, ExpectCode: 0, ProbeExpect: 6002},
+	{Path: "/api/telemetry/list", Group: "遥测", Summary: "遥测分页列表（session_id/uav_id 过滤）", Sample: map[string]any{"session_id": "${sid}"}, ExpectCode: 0, ProbeExpect: 6002},
+	{Path: "/api/telemetry/latest", Group: "遥测", Summary: "最新遥测（session_id/uav_id 至少一个，否则→6002；无记录→code 0 + telemetry=null）", Sample: map[string]any{"session_id": "${sid}"}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/wormhole/toggle", Group: "攻防", Summary: "虫洞攻击开关（X/Y 隧道；ISOLATED 后重开→4001）", Sample: map[string]any{"enabled": true, "operator": "ATTACKER-SIM"}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/risk/evaluate", Group: "攻防", Summary: "会话风险评估（DETECT/PASS；样例会话建于开洞前→干净路径）", Sample: map[string]any{"session_id": "${sid}"}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/path/switch", Group: "攻防", Summary: "受攻击会话路径自动规避切换。样例为确定性错误（未知 session→6002）；成功路径见场景 TC2-06", Sample: map[string]any{"session_id": "SESS-NOPE-001", "operator": "OP-1"}, ExpectCode: 6002, ProbeExpect: 6002},
