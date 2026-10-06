@@ -3,10 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>云巡信链 SkyTrust · 无人机跨域协同与可信监管平台</title>
+<title>云巡信链 SkyTrust · 内部总控导航（三端产品入口）</title>
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/product.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🛰️</text></svg>">
+<style>
+/* 三端入口卡片（index 专用 pc- 前缀：不写入任何冻结样式表；Global Constraints #4——index.html 仅动导航结构与文案） */
+.pc-note { padding: 14px 20px 0; font-size: 12.5px; color: var(--ink-3); }
+.pc-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; padding: 14px 20px 0; }
+.pc-card { display: flex; flex-direction: column; gap: 5px; padding: 15px 18px; text-decoration: none; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--pc-accent); border-radius: 10px;
+  box-shadow: var(--shadow); transition: transform .15s ease; }
+.pc-card:hover { transform: translateY(-2px); }
+.pc-ico { font-size: 24px; line-height: 1; }
+.pc-title { font-size: 15px; font-weight: 700; }
+.pc-title small { font-weight: 400; font-size: 11px; color: var(--ink-3); margin-left: 6px; }
+.pc-sub { font-size: 12px; color: var(--ink-2); line-height: 1.55; }
+</style>
 </head>
 <body><!-- 主题：app.js 启动即显式解析并设置 data-theme（localStorage 显式选择 > OS matchMedia 偏好）；启动前帧由 app.css 的 prefers-color-scheme 媒体查询兜底 -->
 
@@ -14,7 +27,7 @@
   <div class="brand">
     <span class="brand-mark">⬡</span>
     <span class="brand-name">云巡信链 <b>SkyTrust</b></span>
-    <span class="brand-sub">无人机跨域协同与可信监管 · 真实三链演示台</span>
+    <span class="brand-sub">无人机跨域协同与可信监管 · 内部总控导航（三端产品入口见下方卡片）</span>
   </div>
   <div class="topbar-right">
     <div id="chain-lamps" class="chain-lamps" title="三链健康状态（chain/status 实时探针）">
@@ -27,10 +40,30 @@
   </div>
 </header>
 
+<!-- 三端产品入口（产品 = 三个独立门户；本页 SPA 为演示维护与参考流程，index.html 已降为内部总控导航页） -->
+<div class="pc-note">产品入口：三个独立门户（严扣无人机主题，固定主题不切换）。本页为内部总控导航——平台总览、冻结的旧工作台、三幕参考流程与 API 浏览器仅供演示维护。</div>
+<section class="pc-strip">
+  <a class="pc-card" style="--pc-accent:#0b4ea2" href="operator.html">
+    <span class="pc-ico">🛸</span>
+    <span class="pc-title">运营商端<small>operator.html</small></span>
+    <span class="pc-sub">民用无人驾驶航空器综合服务门户（UOM 风格）：实名登记 · 航空器登记 · 飞行活动申请 · 电子许可 · 运行识别与飞行动态 · 空域查询</span>
+  </a>
+  <a class="pc-card" style="--pc-accent:#143d75" href="authority.html">
+    <span class="pc-ico">🏛️</span>
+    <span class="pc-title">管理当局端<small>authority.html</small></span>
+    <span class="pc-sub">审核签发 + 链网安全运营：审核队列 · 许可管理 · 审核留痕 · 登记与资质 · 主数据维护 · 链网安全运营</span>
+  </a>
+  <a class="pc-card" style="--pc-accent:#3d7fd6" href="regulator.html">
+    <span class="pc-ico">📡</span>
+    <span class="pc-title">监管当局端<small>regulator.html</small></span>
+    <span class="pc-sub">跨域可信监管大屏：监管驾驶舱 · 告警管理 · 身份追踪 · 授权中心 · 密文核验 · 监管审计 · 密码工具箱</span>
+  </a>
+</section>
+
 <div class="layout">
   <nav class="sidebar" id="sidebar">
     <a class="nav-item" href="#/overview" data-page="overview"><span class="nav-ico">▦</span>平台总览</a>
-    <div class="nav-group">四方角色工作台</div>
+    <div class="nav-group">旧工作台 · 参考（已冻结）</div>
     <a class="nav-item" href="#/wb-operator" data-page="wb-operator"><span class="nav-ico">✈</span>运营商工作台</a>
     <a class="nav-item" href="#/wb-manager" data-page="wb-manager"><span class="nav-ico">✓</span>管理方审核台</a>
     <a class="nav-item" href="#/wb-security" data-page="wb-security"><span class="nav-ico">⬢</span>链网安全运营中心</a>
@@ -44,10 +77,10 @@
     </details>
     <details class="nav-fold" data-fold="tools">
       <summary>工具</summary>
-      <a class="nav-item" href="#/explorer" data-page="explorer"><span class="nav-ico">⇄</span>API 浏览器（64 端点）</a>
+      <a class="nav-item" href="#/explorer" data-page="explorer"><span class="nav-ico">⇄</span>API 浏览器（73 端点）</a>
     </details>
     <div class="nav-foot">
-      <div>契约：docs/apifox</div>
+      <div>契约：docs/apifox（73 端点）</div>
       <div>验收脚本：docs/demo-script.md</div>
     </div>
   </nav>
