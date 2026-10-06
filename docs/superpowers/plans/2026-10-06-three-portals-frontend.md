@@ -33,7 +33,7 @@
 14. **STORE 契约**：三端共写同一 `STORE`（localStorage `skytrust-ctx-v1`），沿用既有 13 类 kind（OPERATOR/MANUFACTURER/ROUTE/UAV/MISSION/APPLICATION/PASS/CONFLICT/SESSION/NODE/ALERT/AUTHORIZATION/CROSS_TX），**不新增 kind**；跨端预填靠 chip 条点击。
 15. **提交纪律**：中文 conventional commits + `Co-Authored-By: Claude Code <noreply@anthropic.com>` trailer；本地仓库直接提交 main；预存脏文件（CLAUDE.md untracked、platforms 子模块噪声、regulatory_handler_test.go 未格式化）**永不 stage 永不 gofmt**。
 16. **Go 环境**（仅 Task 15 用）：`export PATH=/usr/local/go/bin:$PATH` + `export GOPROXY=https://goproxy.cn,direct`；go.mod/go.sum 不动；后端源码零改动（计划 B 是纯前端+文档+脚本计划）。
-17. **trajectory 参数全程留空**（NORMAL 会撞硬编码基线必报偏航——旧脚本实测定性）；许可有效窗用相对时间「valid_from=当前时间−1 小时、valid_to=当前时间+4 小时」，不写死钟点。
+17. **trajectory 参数全程留空**（NORMAL 会撞硬编码基线必报偏航——旧脚本实测定性）；许可有效窗一律相对时间，不写死钟点——验收故事（Task 15 ch3）用「valid_from=当前时间−1 小时、valid_to=当前时间+4 小时」；三端 UI 签发许可表单默认沿用旧工作台惯例 `UI.datetimeLocal(0)/(480)`（now/now+8h，契约档案 §13 wb-manager 同款）——两者皆为相对偏移，互不矛盾。
 
 ## 文件结构（spec §4.1 落地 + 本计划新增产物）
 
