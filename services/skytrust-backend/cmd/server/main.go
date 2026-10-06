@@ -63,6 +63,14 @@ func Run(addr string) error {
 		ap.Start()
 		defer ap.Stop()
 	}
+	telemetryMs := cfg.TelemetryAutopilotMs
+	if telemetryMs == 0 {
+		telemetryMs = 2000 // 语义同 OFFCHAIN：0=未设→生产默认 2000ms；TELEMETRY_AUTOPILOT_MS 设负值 = 显式关闭
+	}
+	if tap := offchain.NewTelemetryAutopilot(off, telemetryMs); tap != nil {
+		tap.Start()
+		defer tap.Stop()
+	}
 	log.Printf("skytrust-backend listening on %s (chain_mode=%s)", cfg.ServerAddr, cfg.ChainMode)
 	return r.Run(cfg.ServerAddr)
 }

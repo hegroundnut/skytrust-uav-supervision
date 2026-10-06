@@ -60,3 +60,18 @@ func TestChainModeForUnknownChainFollowsGlobal(t *testing.T) {
 		t.Errorf("unknown chain must follow global: %s", got)
 	}
 }
+
+func TestTelemetryAutopilotMs(t *testing.T) {
+	os.Unsetenv("TELEMETRY_AUTOPILOT_MS")
+	if got := Load().TelemetryAutopilotMs; got != 0 {
+		t.Errorf("默认 TelemetryAutopilotMs = %d, want 0（测试恒关闭）", got)
+	}
+	t.Setenv("TELEMETRY_AUTOPILOT_MS", "1500")
+	if got := Load().TelemetryAutopilotMs; got != 1500 {
+		t.Errorf("TelemetryAutopilotMs = %d, want 1500", got)
+	}
+	t.Setenv("TELEMETRY_AUTOPILOT_MS", "not-a-number")
+	if got := Load().TelemetryAutopilotMs; got != 0 {
+		t.Errorf("非法值 TelemetryAutopilotMs = %d, want 0", got)
+	}
+}

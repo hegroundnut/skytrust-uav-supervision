@@ -14,7 +14,7 @@ func AllModels() []any {
 		&RouteSegment{}, &Mission{}, &MissionApplication{}, &ReviewRecord{},
 		&ConflictRecord{}, &FlightPass{},
 		&CrosschainTx{},
-		&NetworkNode{}, &OffchainSession{}, &OffchainMessage{}, &WormholeEvent{},
+		&NetworkNode{}, &OffchainSession{}, &OffchainMessage{}, &TelemetryReport{}, &WormholeEvent{},
 		&SecurityEvent{}, &IdentityMapping{}, &RegulatoryAuth{}, &RegulatoryAudit{},
 		&ExperimentRun{}, &AuditLog{},
 	}

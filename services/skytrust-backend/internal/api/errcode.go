@@ -34,5 +34,9 @@ const (
 	ErrExperiment = errcode.Experiment
 	ErrParam      = errcode.Param
 
+	ErrRealnameNotFound = errcode.RealnameNotFound
+	ErrLicenseInvalid   = errcode.LicenseInvalid
+	ErrTelemetrySession = errcode.TelemetrySession
+
 	ErrInternal = errcode.Internal
 )

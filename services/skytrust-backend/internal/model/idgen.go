@@ -30,6 +30,8 @@ func GenRegRecordID() string   { return "REGREC-" + randHex(12) }
 func GenAlertID() string       { return "ALERT-" + time.Now().Format("20060102") + "-" + randHex(6) }
 func GenAuthID() string        { return "AUTH-" + time.Now().Format("20060102") + "-" + randHex(6) }
 
+func GenTelemetryID() string { return "TLM-" + randHex(12) }
+
 func IdempotencyKey(msgType, businessID, sourceTxID string) string {
 	h := sha256.Sum256([]byte(msgType + "|" + businessID + "|" + sourceTxID))
 	return hex.EncodeToString(h[:])

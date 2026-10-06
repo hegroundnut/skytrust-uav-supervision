@@ -18,12 +18,18 @@ type Config struct {
 	FiscoMode      string // FISCO_MODE：覆盖 ChainMode（空=跟随全局）
 
 	OffchainAutopilotMs int // OFFCHAIN_AUTOPILOT_MS：后台 HEARTBEAT 间隔(ms)，默认 0=关闭，非法值→0
+
+	TelemetryAutopilotMs int // TELEMETRY_AUTOPILOT_MS：遥测 SIM 推进间隔(ms)，默认 0=关闭，非法值→0（语义同 OFFCHAIN_AUTOPILOT_MS）
 }
 
 func Load() *Config {
 	autopilotMs := 0
 	if v, err := strconv.Atoi(getEnv("OFFCHAIN_AUTOPILOT_MS", "0")); err == nil {
 		autopilotMs = v
+	}
+	telemetryMs := 0
+	if v, err := strconv.Atoi(getEnv("TELEMETRY_AUTOPILOT_MS", "0")); err == nil {
+		telemetryMs = v
 	}
 	return &Config{
 		ServerAddr: getEnv("SERVER_ADDR", ":8080"),
@@ -38,6 +44,8 @@ func Load() *Config {
 		FiscoMode:      getEnv("FISCO_MODE", ""),
 
 		OffchainAutopilotMs: autopilotMs,
+
+		TelemetryAutopilotMs: telemetryMs,
 	}
 }
 

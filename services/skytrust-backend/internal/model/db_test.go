@@ -19,7 +19,7 @@ func TestOpenMemoryAndMigrate(t *testing.T) {
 	}
 	m := db.Migrator()
 	for _, want := range []string{"manufacturers", "uavs", "missions", "crosschain_txes",
-		"flight_passes", "network_nodes", "offchain_messages", "security_events",
+		"flight_passes", "network_nodes", "offchain_messages", "telemetry_reports", "security_events",
 		"identity_mappings", "regulatory_auths", "regulatory_audits", "experiment_runs", "audit_logs"} {
 		if !m.HasTable(want) {
 			t.Errorf("missing table %s", want)

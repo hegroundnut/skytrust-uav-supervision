@@ -1,5 +1,6 @@
 // Package errcode 业务错误码唯一真源（分段：1xxx 身份/商密，2xxx 跨链，
-// 3xxx 任务/许可/审核，4xxx 链下/虫洞，5xxx 监管/授权，6xxx 实验/参数，9001 内部）。
+// 3xxx 任务/许可/审核，4xxx 链下/虫洞，5xxx 监管/授权，6xxx 实验/参数，
+// 7xxx UOM 登记/遥测，9001 内部）。
 package errcode
 
 import "fmt"
@@ -34,6 +35,10 @@ const (
 
 	Experiment = 6001
 	Param      = 6002
+
+	RealnameNotFound = 7001 // 实名主体不存在
+	LicenseInvalid   = 7002 // 执照不存在或已过期
+	TelemetrySession = 7003 // 遥测上报会话状态错误（需 ACTIVE）
 
 	Internal = 9001
 )
