@@ -18,6 +18,9 @@ func TestParsePointCoords(t *testing.T) {
 		{"A(30.5)", 0, 0, false},                           // 缺第二值
 		{"A(xx,yy)", 0, 0, false},                          // 非数字
 		{"A()", 0, 0, false},                               // 空括号
+		{"A-ENTRY(NaN,114.310)", 0, 0, false},              // NaN 拼写判为解析失败（非有限值）
+		{"A-ENTRY(Inf,114.310)", 0, 0, false},              // +Inf 拼写判为解析失败
+		{"A-ENTRY(30.510,-Inf)", 0, 0, false},              // -Inf 拼写判为解析失败
 	}
 	for _, c := range cases {
 		lat, lon, ok := parsePointCoords(c.in)

@@ -2,6 +2,7 @@ package uavbusiness
 
 import (
 	"context"
+	"math"
 	"strconv"
 	"strings"
 
@@ -202,6 +203,11 @@ func parsePointCoords(s string) (lat, lon float64, ok bool) {
 	latV, err1 := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
 	lonV, err2 := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
 	if err1 != nil || err2 != nil {
+		return 0, 0, false
+	}
+	// ParseFloat 放行 NaN/±Inf/Infinity 拼写——非有限值一律判为解析失败（spec §3.1），
+	// 杜绝 NaN 行入库导致信封 JSON 渲染 panic（恒 200 铁律）。
+	if math.IsNaN(latV) || math.IsNaN(lonV) || math.IsInf(latV, 0) || math.IsInf(lonV, 0) {
 		return 0, 0, false
 	}
 	return latV, lonV, true
