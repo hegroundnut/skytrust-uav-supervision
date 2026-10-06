@@ -180,7 +180,7 @@ type RouteInput struct {
 	AltitudeMin    float64
 	AltitudeMax    float64
 	CorridorStatus string
-	StartLat       float64 // 可选：结构化起点坐标（显式值优先，不被内嵌解析覆盖）
+	StartLat       float64 // 可选：结构化起点坐标（lat/lon 同设时优先于内嵌解析；半套视为缺失）
 	StartLon       float64
 	EndLat         float64
 	EndLon         float64
@@ -236,7 +236,16 @@ func (s *Service) CreateRoute(ctx context.Context, traceID string, in RouteInput
 		return nil, crosschain.NewError(errcode.Param, "route_id %q 已存在", in.RouteID)
 	}
 	// 结构化坐标回填（spec §3.1）：显式入参优先；未设时解析内嵌 "NAME(lat,lon)"，解析失败保持 0 不报错。
+	// 配对规则：lat/lon 必须同设或同缺——半套显式坐标（恰一非零）视为缺失，先归一为双零再进回填：
+	// 解析成功则回填解析值，否则端点保持 (0,0)。与「端点缺失=双零」全仓约定及走廊守卫原子性对齐，
+	// 杜绝 (30.5,0) 之类不造假坐标红线漏洞；同设/同缺的合法调用行为不变。
 	startLat, startLon, endLat, endLon := in.StartLat, in.StartLon, in.EndLat, in.EndLon
+	if (startLat == 0) != (startLon == 0) { // 起点半套 → 视为缺失
+		startLat, startLon = 0, 0
+	}
+	if (endLat == 0) != (endLon == 0) { // 终点半套 → 视为缺失
+		endLat, endLon = 0, 0
+	}
 	if startLat == 0 && startLon == 0 {
 		if la, lo, ok := parsePointCoords(in.StartPoint); ok {
 			startLat, startLon = la, lo
