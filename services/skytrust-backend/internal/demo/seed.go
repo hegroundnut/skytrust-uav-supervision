@@ -75,13 +75,13 @@ func (s *Seeder) Init() (*SeedReport, error) {
 
 	// 3. 无人机（7 架，status=VERIFIED，sm9_identity=SM9-ID-<uav_id>）
 	uavs := []model.UAV{
-		{UAVID: "UAV-A-001", ManufacturerID: "Manufacturer-B", OperatorID: "Operator-A", Model: "XAG-P40", SerialNo: "SN-A001", SM9Identity: crypto.SM9IdentityOf("UAV-A-001"), Status: "VERIFIED"},
-		{UAVID: "UAV-A-002", ManufacturerID: "Manufacturer-A", OperatorID: "Operator-A", Model: "DJI-M300", SerialNo: "SN-A002", SM9Identity: crypto.SM9IdentityOf("UAV-A-002"), Status: "VERIFIED"},
-		{UAVID: "UAV-B-001", ManufacturerID: "Manufacturer-A", OperatorID: "Operator-B", Model: "DJI-M30T", SerialNo: "SN-B001", SM9Identity: crypto.SM9IdentityOf("UAV-B-001"), Status: "VERIFIED"},
-		{UAVID: "UAV-B-002", ManufacturerID: "Manufacturer-B", OperatorID: "Operator-B", Model: "XAG-V40", SerialNo: "SN-B002", SM9Identity: crypto.SM9IdentityOf("UAV-B-002"), Status: "VERIFIED"},
-		{UAVID: "UAV-C-001", ManufacturerID: "Manufacturer-C", OperatorID: "Operator-C", Model: "FIMI-F8", SerialNo: "SN-C001", SM9Identity: crypto.SM9IdentityOf("UAV-C-001"), Status: "VERIFIED"},
-		{UAVID: "UAV-C-002", ManufacturerID: "Manufacturer-C", OperatorID: "Operator-C", Model: "FIMI-F8X", SerialNo: "SN-C002", SM9Identity: crypto.SM9IdentityOf("UAV-C-002"), Status: "VERIFIED"},
-		{UAVID: "UAV-C-003", ManufacturerID: "Manufacturer-C", OperatorID: "Operator-C", Model: "FIMI-F8Pro", SerialNo: "SN-C003", SM9Identity: crypto.SM9IdentityOf("UAV-C-003"), Status: "VERIFIED"},
+		{UAVID: "UAV-A-001", ManufacturerID: "Manufacturer-B", OperatorID: "Operator-A", Model: "XAG-P40", SerialNo: "SN-A001", RegistrationMark: "UAS-20260001", SM9Identity: crypto.SM9IdentityOf("UAV-A-001"), Status: "VERIFIED"},
+		{UAVID: "UAV-A-002", ManufacturerID: "Manufacturer-A", OperatorID: "Operator-A", Model: "DJI-M300", SerialNo: "SN-A002", RegistrationMark: "UAS-20260002", SM9Identity: crypto.SM9IdentityOf("UAV-A-002"), Status: "VERIFIED"},
+		{UAVID: "UAV-B-001", ManufacturerID: "Manufacturer-A", OperatorID: "Operator-B", Model: "DJI-M30T", SerialNo: "SN-B001", RegistrationMark: "UAS-20260003", SM9Identity: crypto.SM9IdentityOf("UAV-B-001"), Status: "VERIFIED"},
+		{UAVID: "UAV-B-002", ManufacturerID: "Manufacturer-B", OperatorID: "Operator-B", Model: "XAG-V40", SerialNo: "SN-B002", RegistrationMark: "UAS-20260004", SM9Identity: crypto.SM9IdentityOf("UAV-B-002"), Status: "VERIFIED"},
+		{UAVID: "UAV-C-001", ManufacturerID: "Manufacturer-C", OperatorID: "Operator-C", Model: "FIMI-F8", SerialNo: "SN-C001", RegistrationMark: "UAS-20260005", SM9Identity: crypto.SM9IdentityOf("UAV-C-001"), Status: "VERIFIED"},
+		{UAVID: "UAV-C-002", ManufacturerID: "Manufacturer-C", OperatorID: "Operator-C", Model: "FIMI-F8X", SerialNo: "SN-C002", RegistrationMark: "UAS-20260006", SM9Identity: crypto.SM9IdentityOf("UAV-C-002"), Status: "VERIFIED"},
+		{UAVID: "UAV-C-003", ManufacturerID: "Manufacturer-C", OperatorID: "Operator-C", Model: "FIMI-F8Pro", SerialNo: "SN-C003", RegistrationMark: "UAS-20260007", SM9Identity: crypto.SM9IdentityOf("UAV-C-003"), Status: "VERIFIED"},
 	}
 	for i := range uavs {
 		rec := uavs[i]

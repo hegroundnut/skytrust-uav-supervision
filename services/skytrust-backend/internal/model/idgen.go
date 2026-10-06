@@ -3,7 +3,9 @@ package model
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -31,6 +33,15 @@ func GenAlertID() string       { return "ALERT-" + time.Now().Format("20060102")
 func GenAuthID() string        { return "AUTH-" + time.Now().Format("20060102") + "-" + randHex(6) }
 
 func GenTelemetryID() string { return "TLM-" + randHex(12) }
+
+func GenSubjectID() string { return "RNS-" + randHex(12) }
+
+// GenRegistrationMark 国籍登记标志 "UAS-"+8 位随机数字（crypto/rand 大端取模，spec §3.3）。
+func GenRegistrationMark() string {
+	b := make([]byte, 4)
+	rand.Read(b)
+	return "UAS-" + fmt.Sprintf("%08d", binary.BigEndian.Uint32(b)%100000000)
+}
 
 func IdempotencyKey(msgType, businessID, sourceTxID string) string {
 	h := sha256.Sum256([]byte(msgType + "|" + businessID + "|" + sourceTxID))

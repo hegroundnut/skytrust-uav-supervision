@@ -22,3 +22,15 @@ type TelemetryReport struct {
 	Source      string     `gorm:"size:16" json:"source"` // SIM | MANUAL
 	CreatedAt   timex.Time `json:"created_at"`
 }
+
+// RealnameSubject UOM 实名登记主体（spec §3.3）：个人/企业，模拟证件号（不存真实证件）。
+type RealnameSubject struct {
+	SubjectID   string     `gorm:"primaryKey;size:64" json:"subject_id"` // RNS- 前缀
+	SubjectType string     `gorm:"size:32" json:"subject_type"`          // INDIVIDUAL | ENTERPRISE
+	Name        string     `gorm:"size:128" json:"name"`
+	IdNumber    string     `gorm:"size:64;index" json:"id_number"` // 模拟身份证号/统一社会信用代码
+	Contact     string     `gorm:"size:128" json:"contact"`
+	Status      string     `gorm:"size:32;default:REGISTERED" json:"status"`
+	CreatedAt   timex.Time `json:"created_at"`
+	UpdatedAt   timex.Time `json:"updated_at"`
+}

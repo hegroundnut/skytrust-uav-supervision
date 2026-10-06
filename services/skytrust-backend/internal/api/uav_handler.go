@@ -12,6 +12,7 @@ type uavRegisterReq struct {
 	OperatorID     string `json:"operator_id" binding:"required"`
 	Model          string `json:"model"`
 	SerialNo       string `json:"serial_no" binding:"required"`
+	RealnameID     string `json:"realname_id"` // 可选：关联实名主体（不存在→7001）
 }
 
 // uavRegisterHandler POST /api/uav/register —— data={uav,crosschain}；
@@ -25,7 +26,7 @@ func uavRegisterHandler(deps *Deps) gin.HandlerFunc {
 		}
 		uav, tx, err := deps.Business.RegisterUAV(c.Request.Context(), TraceIDFrom(c), uavbusiness.UAVInput{
 			UAVID: req.UAVID, ManufacturerID: req.ManufacturerID, OperatorID: req.OperatorID,
-			Model: req.Model, SerialNo: req.SerialNo,
+			Model: req.Model, SerialNo: req.SerialNo, RealnameID: req.RealnameID,
 		})
 		if err != nil {
 			FailData(c, crosschainErrCode(err), err.Error(), gin.H{"uav": uav, "crosschain": tx})

@@ -23,13 +23,15 @@ type Operator struct {
 }
 
 type UAV struct {
-	UAVID          string     `gorm:"primaryKey;size:64" json:"uav_id"`
-	ManufacturerID string     `gorm:"size:64;index" json:"manufacturer_id"`
-	OperatorID     string     `gorm:"size:64;index" json:"operator_id"`
-	Model          string     `gorm:"size:64" json:"model"`
-	SerialNo       string     `gorm:"size:64;uniqueIndex" json:"serial_no"`
-	SM9Identity    string     `gorm:"size:128" json:"sm9_identity"`
-	Status         string     `gorm:"size:32;default:UNREGISTERED" json:"status"`
-	CreatedAt      timex.Time `json:"created_at"`
-	UpdatedAt      timex.Time `json:"updated_at"`
+	UAVID            string     `gorm:"primaryKey;size:64" json:"uav_id"`
+	ManufacturerID   string     `gorm:"size:64;index" json:"manufacturer_id"`
+	OperatorID       string     `gorm:"size:64;index" json:"operator_id"`
+	Model            string     `gorm:"size:64" json:"model"`
+	SerialNo         string     `gorm:"size:64;uniqueIndex" json:"serial_no"`
+	RegistrationMark string     `gorm:"size:32;uniqueIndex" json:"registration_mark"` // 国籍登记标志 UAS-8位数字（spec §3.3：注册即发）
+	RealnameID       string     `gorm:"size:64" json:"realname_id"`                   // 关联实名主体（可选，注册时校验存在性）
+	SM9Identity      string     `gorm:"size:128" json:"sm9_identity"`
+	Status           string     `gorm:"size:32;default:UNREGISTERED" json:"status"`
+	CreatedAt        timex.Time `json:"created_at"`
+	UpdatedAt        timex.Time `json:"updated_at"`
 }

@@ -20,6 +20,7 @@ type UAVInput struct {
 	OperatorID     string
 	Model          string
 	SerialNo       string
+	RealnameID     string // 可选：关联实名主体（提供则校验存在，不存在→7001）
 }
 
 // genUAVID 自动生成 UAV-<operator 末段大写>-%03d，序号从该 operator 名下数量+1 起
@@ -45,6 +46,21 @@ func (s *Service) genUAVID(db *gorm.DB, operatorID string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("uav_id space exhausted for operator %s", operatorID)
+}
+
+// genRegistrationMark 生成国籍登记标志 "UAS-8位数字"（spec §3.3：注册即发）：随机探测 20 次查重。
+func (s *Service) genRegistrationMark(db *gorm.DB) (string, error) {
+	for i := 0; i < 20; i++ {
+		cand := model.GenRegistrationMark()
+		var dup int64
+		if err := db.Model(&model.UAV{}).Where("registration_mark = ?", cand).Count(&dup).Error; err != nil {
+			return "", err
+		}
+		if dup == 0 {
+			return cand, nil
+		}
+	}
+	return "", fmt.Errorf("registration_mark space exhausted (20 collisions)")
 }
 
 // transitionUAV UAV 状态迁移统一出口（Global Constraint 7）：Assert → 落库 → 审计。
@@ -116,6 +132,12 @@ func (s *Service) RegisterUAV(ctx context.Context, traceID string, in UAVInput) 
 	if op.Status != "ACTIVE" {
 		return nil, nil, crosschain.NewError(errcode.InvalidUAV, "operator %s 状态 %q 不可注册无人机（需 ACTIVE）", op.OperatorID, op.Status)
 	}
+	// 可选实名主体关联（spec §3.3）：提供则校验存在（不存在→7001）
+	if in.RealnameID != "" {
+		if _, err := s.QueryRealname(ctx, traceID, in.RealnameID); err != nil {
+			return nil, nil, err
+		}
+	}
 	var cnt int64
 	// 查重+插入同事务（C12）：并发同 serial_no/uav_id 注册恰一成功。
 	var uav *model.UAV
@@ -138,9 +160,14 @@ func (s *Service) RegisterUAV(ctx context.Context, traceID string, in UAVInput) 
 		} else if cnt > 0 {
 			return crosschain.NewError(errcode.Param, "uav_id %q 已存在", uavID)
 		}
+		mark, err := s.genRegistrationMark(tx)
+		if err != nil {
+			return crosschain.NewError(errcode.Internal, "gen registration_mark: %v", err)
+		}
 		uav = &model.UAV{
 			UAVID: uavID, ManufacturerID: in.ManufacturerID, OperatorID: in.OperatorID,
 			Model: in.Model, SerialNo: in.SerialNo,
+			RegistrationMark: mark, RealnameID: in.RealnameID,
 			SM9Identity: crypto.SM9IdentityOf(uavID), Status: "UNREGISTERED",
 		}
 		if err := tx.Create(uav).Error; err != nil {
@@ -148,6 +175,9 @@ func (s *Service) RegisterUAV(ctx context.Context, traceID string, in UAVInput) 
 			if msg := err.Error(); strings.Contains(msg, "UNIQUE constraint failed") {
 				if strings.Contains(msg, "serial_no") {
 					return crosschain.NewError(errcode.Param, "serial_no %q 已存在", in.SerialNo)
+				}
+				if strings.Contains(msg, "registration_mark") {
+					return crosschain.NewError(errcode.Internal, "registration_mark 冲突（请重试）: %v", err)
 				}
 				return crosschain.NewError(errcode.Param, "uav_id %q 已存在", uavID)
 			}
