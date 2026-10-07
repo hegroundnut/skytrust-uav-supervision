@@ -159,7 +159,7 @@
       cxPanel(u));
   }
 
-  /* 状态迁移 + 注销（2004 幂等拒绝 / 1004 非法迁移均为设计内，errCard 中性展示） */
+  /* 状态迁移 + 注销（1004 非法迁移——VERIFY 仅允许 REGISTERED 起点，重复核验已核验机同为 1004——为设计内，errCard 中性展示） */
   function statePanel(u, tbl) {
     var rp = P.resultPanel();
     var f = P.form([
@@ -169,7 +169,7 @@
     ]);
     return h('div', {},
       h('div', { class: 'd-section' }, '状态迁移与注销'),
-      h('p', { class: 'd-small d-muted' }, '提示：重复 VERIFY 已核验机 → 2004 幂等拒绝；非法迁移/不可注销状态 → 1004 —— 均为状态机设计内行为。'),
+      h('p', { class: 'd-small d-muted' }, '提示：重复 VERIFY 已核验机 → 1004 非法迁移（VERIFY 仅允许 REGISTERED 起点——注册即核验已替你走完那一步）；非法迁移/不可注销状态 → 1004 —— 均为状态机设计内行为。'),
       f.root,
       P.actionBar([
         { label: '执行状态动作', kind: 'primary', run: P.runOp({

@@ -49,7 +49,21 @@
       { key: 'list', label: '登记台账', render: tabList }
     ]));
     var sid = ctx.query.get('subject_id');       /* 深链 #/realname?subject_id=RNS-xxx */
-    if (sid) openSubject(sid, null);
+    if (sid) {
+      openSubject(sid, null);
+      /* 一次性消费：开抽屉后即从 hash 查询串剥除 subject_id（replaceState 不触发
+         hashchange → 无重渲染环）。否则 pui 页签切换写回 hash → route() → render()
+         每次重复 openSubject、抽屉反复弹出。其余查询参数（如 tab）保留；
+         剥除后再次直接导航深链仍照常生效。 */
+      var raw = (location.hash || '').replace(/^#\/?/, '');
+      var qi = raw.indexOf('?');
+      if (qi >= 0) {
+        var qs = new URLSearchParams(raw.slice(qi + 1));
+        qs.delete('subject_id');
+        var rest = qs.toString();
+        history.replaceState(null, '', '#/' + raw.slice(0, qi) + (rest ? '?' + rest : ''));
+      }
+    }
   }
 
   function tabRegister(box) {

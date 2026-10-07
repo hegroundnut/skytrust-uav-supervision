@@ -118,6 +118,7 @@
     async function loadNodes() {
       if (!nodesOn) { if (mx) mx.clear('nodes'); return; }   /* 图层开关关闭：只清节点层，走廊/航线不动 */
       var r = await API.call('/api/topology/get', {});
+      if (!nodesOn) return;   /* 竞态守卫：在途请求期间开关被关闭 → 丢弃结果，不把节点画回 */
       if (!r.ok || !mx) return;
       mx.clear('nodes');
       mx.drawNodes((r.data.nodes || []).filter(function (n) { return n.node_type !== 'ATTACKER'; }));

@@ -60,14 +60,15 @@
     var fRs = P.form([
       { name: 'conflict_id', label: '冲突 ID', type: 'text', required: true, placeholder: 'CFL-…（检测结果点「消解此冲突」预填）' },
       { name: 'resolution', label: '消解措施', type: 'text', required: true, placeholder: '如：时间窗后移 30 分钟' },
-      { name: 'operator', label: '操作方', type: 'text', required: true, value: 'Operator Portal' },
+      { name: 'operator', label: '操作方', type: 'text', required: true, value: '', placeholder: '如：Operator-B' },
       { name: 'mission_id', label: '继续执行方任务号', type: 'text',
         placeholder: '留空 = 双方任务均回 REVIEWING（可选）' }
     ]);
     var fSb = P.form([
       { name: 'mission_id', label: '任务号', type: 'text', required: true, value: slot ? slot.id : '',
         placeholder: 'MISSION-2026-xxx（创建成功后自动预填）' },
-      { name: 'operator', label: '提交人/运营方', type: 'text', required: true, value: 'Operator Portal' }
+      { name: 'operator', label: '提交人/运营方', type: 'text', required: true, value: '',
+        placeholder: 'Operator-MED（须为航空器归属运营方——mission/submit 归属校验违者 1001；创建任务成功后自动回填）' }
     ]);
 
     box.append(h('div', { class: 'd-grid-side' },
@@ -98,7 +99,10 @@
             },
             note: { kind: 'MISSION', id: function (d) { return d.mission_id; },
               extra: function (d) { return { operator_id: d.operator_id, uav_id: d.uav_id }; } },
-            onOk: function (d) { fSb.set('mission_id', d.mission_id); fCf.set('mission_id', d.mission_id); }
+            onOk: function (d) {
+              fSb.set('mission_id', d.mission_id); fCf.set('mission_id', d.mission_id);
+              fSb.set('operator', d.operator_id);   /* 回填归属运营方：submit 归属校验违者 1001 */
+            }
           }) }]),
           rpCr.root),
         card('② 冲突检测与协调 conflict/detect · resolve',

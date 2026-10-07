@@ -1,8 +1,8 @@
 /* audit.js — 监管当局端·监管审计（计划 B Task 12，spec §5.3）
    双台账 + 双 CSV 导出（P.tabs；本页非 mapPage，tabs 无 Leaflet 零尺寸问题）：
-   reg 页 regulatory/audit/list·export —— 监管动作留痕（INSPECT / AUTH_APPROVE /
-   AUTH_DENY / TRACE_IDENTITY_BROKEN 等；RegAudit 目标键名是 target 单键，
-   不是 target_type/target_id 一对——§3）；
+   reg 页 regulatory/audit/list·export —— 监管动作留痕（仅 INSPECT / AUTH_APPROVE /
+   AUTH_DENY 三写入点；TRACE_IDENTITY_BROKEN 走全局 AuditLog、见 all 页页签；
+   RegAudit 目标键名是 target 单键，不是 target_type/target_id 一对——§3）；
    all 页 audit/query·export —— 全局 AuditLog（三维 business_id/action/actor；
    响应只有 {records,total} 无 page/page_size 回显——dataTable 只消费
    records/total（pui.js:338），天然兼容）。
@@ -75,7 +75,7 @@
         P.csvExport({ endpoint: '/api/regulatory/audit/export',
           filters: function () { return fEx.read(); },
           filename: 'regulatory-audit.csv', label: '⤓ 导出 CSV' }))));
-    box.append(card('监管动作台账 regulatory/audit/list（INSPECT / AUTH_APPROVE / AUTH_DENY / TRACE_IDENTITY_BROKEN …）', tbl));
+    box.append(card('监管动作台账 regulatory/audit/list（INSPECT / AUTH_APPROVE / AUTH_DENY；TRACE_IDENTITY_BROKEN 见全局台账页签）', tbl));
   }
 
   /* --- 页签二：全局审计台账（audit/query·export） --- */
