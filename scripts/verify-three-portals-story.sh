@@ -327,7 +327,7 @@ assert_not_contains "$LAST_RESP" "特殊血样（RH 阴性）" "明文绝不进�
 api inspect/ciphertext "{\"mission_id\":\"$MED\",\"authorization_id\":\"$AUTHZ\",\"regulator_id\":\"REG-01\",\"payload_type\":\"MEDICAL_KIT\"}"
 expect_code 0 "inspect/ciphertext 带授权开箱（申报轨迹留空）"
 assert_eq "$(jqr '.data.authorized')" "true" "authorized=true"
-assert_contains "$(jqr '.data.decrypted_view')" "特殊血样" "明文重现（仅此角色仅此授权）"
+assert_contains "$(jqr '.data.decrypted_view')" "（RH 阴性）" "明文重现（仅此角色仅此授权）"
 assert_eq "$(jqr '.data.verification.digest_match')" "true" "完整性·摘要匹配"
 assert_eq "$(jqr '.data.verification.signature_valid')" "true" "完整性·签名有效"
 assert_eq "$(jqr '.data.conclusion.payload_verdict')" "PAYLOAD_OK" "载荷一致裁定"
