@@ -7752,16 +7752,20 @@ MED=$(jqr '.data.mission_id // empty')
 assert_ne "$MED" "" "医疗任务号生成"
 api mission/query "{\"mission_id\":\"$MED\"}"
 expect_code 0 "mission/query"
-assert_not_contains "$LAST_RESP" "特殊血样" "查询响应无明文（明文永不出域，只见脱敏值）"
-api mission/submit "{\"mission_id\":\"$MED\",\"operator\":\"Operator Portal\"}"
-expect_code 0 "mission/submit 医疗任务跨域"
+assert_not_contains "$LAST_RESP" "特殊血样（RH 阴性）" "查询响应无明文（金丝雀取 >4 字明文子串——C19 脱敏合法保留前 4 字「特殊血样****」，mission.go:60-65）"
+api mission/submit "{\"mission_id\":\"$MED\",\"operator\":\"Operator-MED\"}"
+expect_code 0 "mission/submit 医疗任务跨域（operator=归属运营方——mission.go:307 归属校验，角色常量必 1001）"
 assert_eq "$(jqr '.data.crosschain.status')" "SUCCESS" "MISSION_APPLICATION 跨链"
+APP_MED=$(jqr '.data.application.application_id // empty')
+assert_ne "$APP_MED" "" "医疗申请号生成（APP-——review/submit 的键是申请号非任务号，review.go:43）"
 api mission/create "{\"operator_id\":\"Operator-B\",\"uav_id\":\"UAV-B-001\",\"mission_type\":\"CARGO\",\"payload_type\":\"CAMERA\",\"route_segments\":[\"R-MED-01\"],\"altitude_min\":80,\"altitude_max\":120,\"start_time\":\"$T1\",\"end_time\":\"$T4\",\"description\":\"常规走廊物流运输\"}"
 expect_code 0 "mission/create B 任务（同走廊/高度交叉/时窗重叠）"
 BMIS=$(jqr '.data.mission_id // empty')
 assert_ne "$BMIS" "" "B 任务号生成"
 api mission/submit "{\"mission_id\":\"$BMIS\",\"operator\":\"Operator-B\"}"
 expect_code 0 "mission/submit B 任务跨域"
+APP_B=$(jqr '.data.application.application_id // empty')
+assert_ne "$APP_B" "" "B 申请号生成（APP-）"
 api conflict/detect "{\"mission_id\":\"$MED\"}"
 expect_code 0 "conflict/detect"
 assert_ge "$(jqr '.data.count')" "1" "冲突命中数"
@@ -7774,11 +7778,11 @@ api conflict/resolve "{\"conflict_id\":\"$CFL\",\"resolution\":\"时间窗后移
 expect_code 3004 "重复消解（设计内拒绝·附录 B）"
 
 chapter "第 3 章 · 审核与许可（双 APPROVED + 显式 PASS-2026-001 签发 + 验证绿灯）"
-api review/submit "{\"application_id\":\"$MED\",\"result\":\"APPROVED\",\"reviewer\":\"Manager-A\",\"comment\":\"剧情相符，走廊可用，同意跨域执行\",\"rules_hit\":[]}"
+api review/submit "{\"application_id\":\"$APP_MED\",\"result\":\"APPROVED\",\"reviewer\":\"Manager-A\",\"comment\":\"剧情相符，走廊可用，同意跨域执行\",\"rules_hit\":[]}"
 expect_code 0 "review/submit 医疗任务裁决"
 assert_eq "$(jqr '.data.mission.status')" "APPROVED" "医疗任务状态"
 assert_eq "$(jqr '.data.crosschain.status')" "SUCCESS" "MISSION_REVIEW_RESULT 跨链回传"
-api review/submit "{\"application_id\":\"$BMIS\",\"result\":\"APPROVED\",\"reviewer\":\"Manager-A\",\"comment\":\"时间窗已后移，同意\",\"rules_hit\":[]}"
+api review/submit "{\"application_id\":\"$APP_B\",\"result\":\"APPROVED\",\"reviewer\":\"Manager-A\",\"comment\":\"时间窗已后移，同意\",\"rules_hit\":[]}"
 expect_code 0 "review/submit B 任务裁决"
 assert_eq "$(jqr '.data.mission.status')" "APPROVED" "B 任务状态"
 TM1=$(stime '-1 hour')
@@ -7805,22 +7809,22 @@ assert_contains "$(jqr '.data.path | join(",")')" "$UAV_MED-NODE" "路径含接�
 TL=0
 for _ in $(seq 1 12); do
   api telemetry/latest "{\"uav_id\":\"$UAV_MED\"}"
-  [ -n "$(jqr '.data.seq // empty')" ] && { TL=1; break; }
+  [ -n "$(jqr '.data.telemetry.seq // empty')" ] && { TL=1; break; }
   sleep 2
 done
 assert_eq "$TL" "1" "SIM 遥测 24s 内出现（自动驾驶沿 R-MED-01 走廊）"
-assert_eq "$(jqr '.data.source')" "SIM" "遥测来源"
-assert_ge "$(jqr '.data.seq')" "1" "遥测 seq"
+assert_eq "$(jqr '.data.telemetry.source')" "SIM" "遥测来源"
+assert_ge "$(jqr '.data.telemetry.seq')" "1" "遥测 seq"
 
 chapter "第 5 章 · 攻防（开洞诱入 → DETECT/DEGRADED → 遥测停摆 → 恢复 → 4001 残留）"
 api topology/get '{}'
-assert_eq "$(jqr '.data.edges | length')" "5" "开洞前网络边"
+assert_eq "$(jqr '.data.edges | length')" "6" "开洞前网络边（种子 5 + 第 4 章注册 UAV-MED-01-NODE 增 1——netsec 统计卡为原始 edges.length）"
 api wormhole/toggle '{"enabled":true,"operator":"SecOps"}'
 expect_code 0 "wormhole/toggle 开启"
 assert_eq "$(jqr '.data.wormhole_enabled')" "true" "虫洞开启中"
 assert_eq "$(jqr '.data.nodes_affected | length')" "4" "受影响节点数"
 api topology/get '{}'
-assert_eq "$(jqr '.data.edges | length')" "8" "开洞后网络边 5→8"
+assert_eq "$(jqr '.data.edges | length')" "9" "开洞后网络边 6→9（+N1↔X、X↔Y、Y↔N4 三条虫洞边，wormhole.go:102-111）"
 api message/send "{\"session_id\":\"$SESS\",\"msg_type\":\"POSITION_UPDATE\",\"source_node\":\"$UAV_MED-NODE\",\"target_node\":\"MGR\"}"
 expect_code 0 "message/send 诱入消息"
 assert_contains "$(jqr '.data.message.path | tostring')" "NODE-X" "消息被诱入隧道（path 含 NODE-X）"
@@ -7831,9 +7835,10 @@ assert_eq "$(jqr '.data.verdict')" "DETECT" "裁定 DETECT"
 assert_ge "$(jqr '.data.risk_score')" "0.7" "风险分 ≥ 阈值"
 assert_eq "$(jqr '.data.session_status')" "DEGRADED" "会话降级"
 assert_ge "$(jqr '.data.events | length')" "2" "联动事件（DETECT+ISOLATE）"
-api telemetry/latest "{\"uav_id\":\"$UAV_MED\"}"; SEQ1=$(jqr '.data.seq // 0')   # 降级后取样，杜绝 2s tick 竞态
+api telemetry/latest "{\"uav_id\":\"$UAV_MED\"}"; SEQ1=$(jqr '.data.telemetry.seq // 0')   # 降级后取样，杜绝 2s tick 竞态
 sleep 6
-api telemetry/latest "{\"uav_id\":\"$UAV_MED\"}"; SEQ2=$(jqr '.data.seq // 0')
+api telemetry/latest "{\"uav_id\":\"$UAV_MED\"}"; SEQ2=$(jqr '.data.telemetry.seq // 0')
+assert_ge "$SEQ1" "1" "停摆断言非空洞前提（降级前已有真实遥测——杜绝 0==0 假绿）"
 assert_eq "$SEQ2" "$SEQ1" "DEGRADED 期间遥测停摆（seq 冻结——跨端停摆机制）"
 api path/switch "{\"session_id\":\"$SESS\",\"operator\":\"SecOps\"}"
 expect_code 0 "path/switch 自动重算"
@@ -7847,7 +7852,7 @@ assert_eq "$(jqr ".data.records[] | select(.session_id==\"$SESS\") | .status")" 
 TL2=0
 for _ in $(seq 1 8); do
   api telemetry/latest "{\"uav_id\":\"$UAV_MED\"}"
-  awk -v a="$(jqr '.data.seq // 0')" -v b="$SEQ2" 'BEGIN{exit !(a+0>b+0)}' && { TL2=1; break; }
+  awk -v a="$(jqr '.data.telemetry.seq // 0')" -v b="$SEQ2" 'BEGIN{exit !(a+0>b+0)}' && { TL2=1; break; }
   sleep 2
 done
 assert_eq "$TL2" "1" "ACTIVE 回归后遥测恢复增长（无人机复飞）"
@@ -7887,7 +7892,7 @@ api inspect/ciphertext "{\"mission_id\":\"$MED\",\"regulator_id\":\"REG-01\"}"
 expect_code 5002 "无授权核验（封缄·附录 B）"
 assert_eq "$(jqr '.data.authorized')" "false" "authorized=false"
 assert_eq "$(jqr '.data.sealed.has_ciphertext')" "true" "封缄元数据可见"
-assert_not_contains "$LAST_RESP" "特殊血样" "明文绝不进错误信封"
+assert_not_contains "$LAST_RESP" "特殊血样（RH 阴性）" "明文绝不进错误信封（金丝雀 >4 字——封缄合法含脱敏前缀「特殊血样****」，C19）"
 api inspect/ciphertext "{\"mission_id\":\"$MED\",\"authorization_id\":\"$AUTHZ\",\"regulator_id\":\"REG-01\",\"payload_type\":\"MEDICAL_KIT\"}"
 expect_code 0 "inspect/ciphertext 带授权开箱（申报轨迹留空）"
 assert_eq "$(jqr '.data.authorized')" "true" "authorized=true"
