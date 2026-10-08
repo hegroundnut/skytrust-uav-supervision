@@ -1,6 +1,8 @@
 /* map.js — Leaflet 封装（计划 B Task 4，spec §4.1）
    依赖：vendor/leaflet/leaflet.js（全局 L）与 js/data/geo.js（window.GEO），加载顺序须在两者之后。
-   天地图 key：localStorage['skytrust-tianditu-key']（Global Constraints #8：绝不入 git、绝不写死源码）。
+   天地图 key：localStorage['skytrust-tianditu-key'] 优先，空则回退 js/key.local.js 站点级默认
+   （window.SKYTRUST_TIANDITU_KEY_DEFAULT；该文件被 .gitignore 忽略绝不入 git——Global
+   Constraints #8：key 不入仓库、不写死于任何跟踪源码；本文件不含 key 字面量）。
    退化契约：无 key → 不加瓦片层立即退化；tileerror 累计 ≥3 → 移除瓦片层退化。
    两类退化均：容器加 is-fallback（CSS 中性网格）+ .d-map-badge 徽章说明原因，矢量层照常自绘。
    坐标红线（Global Constraints #9）：lat/lon 双零=未设 → 不画点不连线（GEO.* 为唯一裁决）。 */
@@ -18,8 +20,14 @@
     '<line x1="7.8" y1="7.8" x2="9.8" y2="9.8"/><line x1="16.2" y1="7.8" x2="14.2" y2="9.8"/>' +
     '<line x1="7.8" y1="16.2" x2="9.8" y2="14.2"/><line x1="16.2" y1="16.2" x2="14.2" y2="14.2"/></svg>';
 
+  /* key 来源优先级：localStorage（引导对话框/手动覆盖）> key.local.js 站点级默认（文件缺失=''） */
   function getKey() {
-    try { return (localStorage.getItem(KEY_LS) || '').trim(); } catch (e) { return ''; }
+    try {
+      var k = (localStorage.getItem(KEY_LS) || '').trim();
+      if (k) return k;
+    } catch (e) { /* 隐私模式 localStorage 不可用 → 落到站点级默认 */ }
+    var d = window.SKYTRUST_TIANDITU_KEY_DEFAULT;
+    return (typeof d === 'string') ? d.trim() : '';
   }
   function setKey(k) {
     try { localStorage.setItem(KEY_LS, String(k || '').trim()); } catch (e) { /* 隐私模式静默 */ }

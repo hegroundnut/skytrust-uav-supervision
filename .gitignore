@@ -61,3 +61,6 @@ __pycache__/
 
 # brainstorming visual companion drafts - not for VCS
 .superpowers/
+
+# local Tianditu key default - deployment config, never commit
+frontend/js/key.local.js
