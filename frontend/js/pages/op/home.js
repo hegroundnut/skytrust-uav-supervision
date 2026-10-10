@@ -38,6 +38,9 @@
     var strip = h('div', { class: 'd-mt' }, h('div', { class: 'p-empty' }, '⏳ 空域态势加载中…'));
     root.append(strip);
 
+    /* --- 三大核心能力（绩效目标自然嵌入：实时证据 + 实验自证 + 官方原文小字）--- */
+    root.append(CAPX.section('cards'));
+
     /* --- 服务入口卡片（UOM 首页对位）--- */
     root.append(h('div', { class: 'd-entry-grid d-mt2' }, ENTRIES.map(function (e) {
       return h('div', { class: 'd-entry-card', title: '进入 ' + e.title,

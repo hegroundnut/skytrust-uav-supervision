@@ -18,6 +18,8 @@
     root.append(P.pageHead({
       title: '审核队列',
       sub: '队列以跨链台账为准（MISSION_APPLICATION·SUCCESS 的 business_id 即申请号）· 裁决跨链回传源链' }));
+    /* --- 三大核心能力条（绩效目标自然嵌入：点击迷你卡抽屉展开证据与实验自证）--- */
+    root.append(CAPX.section('strip'));
 
     var panel = h('div', { class: 'd-col' },
       P.empty('点击左侧台账行进入审核工作台'));

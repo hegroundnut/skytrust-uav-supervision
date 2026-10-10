@@ -413,3 +413,92 @@ button { font-family: inherit; }
 .json-block .js { color: var(--d-good); }
 .json-block .jn { color: var(--d-warning); }
 .json-block .jb { color: var(--d-serious); }
+
+/* ===== 三大核心能力卡（CAPX · 项目绩效目标自然嵌入）=====
+   令牌全部走 --d-*（三端主题自动适配）；.ok 判定用描边胶囊（--d-good-soft 无此令牌，不臆造）。 */
+.d-cap-section { margin-top: 18px; }
+.d-cap-sec-head { margin: 0 0 10px; }
+.d-cap-sec-head h2 { margin: 0; font-size: 17px; color: var(--d-ink); }
+.d-cap-sec-head p { margin: 4px 0 0; font-size: 12px; color: var(--d-ink-3); }
+.d-cap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; align-items: start; }
+.d-cap-card {
+  padding: 16px; background: var(--d-panel);
+  border: 1px solid var(--d-line); border-radius: var(--d-radius);
+  box-shadow: var(--d-shadow);
+}
+.d-cap-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+.d-cap-ico {
+  flex: 0 0 40px; width: 40px; height: 40px;
+  border-radius: var(--d-radius-sm);
+  background: var(--d-brand-soft); color: var(--d-brand);
+  display: flex; align-items: center; justify-content: center;
+}
+.d-cap-ico .d-ico { width: 22px; height: 22px; }
+.d-cap-head h3 { margin: 0; font-size: 15px; color: var(--d-ink); }
+.d-cap-goalno {
+  display: inline-block; margin-top: 3px; font-size: 11px;
+  color: var(--d-brand); background: var(--d-brand-soft);
+  border-radius: 999px; padding: 1px 8px;
+}
+.d-cap-pitch { margin: 6px 0 8px; font-size: 12.5px; line-height: 1.65; color: var(--d-ink-2); }
+.d-cap-points { margin: 0 0 10px; padding-left: 18px; font-size: 12px; color: var(--d-ink-2); }
+.d-cap-points li { margin: 2px 0; }
+.d-cap-ev { margin-bottom: 4px; }
+.d-cap-ev .p-empty { padding: 8px; font-size: 12px; }
+.d-cap-goal { margin-top: 10px; border-top: 1px dashed var(--d-line); padding-top: 8px; }
+.d-cap-goal summary { cursor: pointer; font-size: 12px; color: var(--d-ink-3); }
+.d-cap-goal p {
+  margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--d-ink-2);
+  background: var(--d-panel-2); border-left: 3px solid var(--d-brand);
+  padding: 8px 10px; border-radius: 0 var(--d-radius-sm) var(--d-radius-sm) 0;
+}
+.d-cap-exp { margin-top: 10px; border-top: 1px dashed var(--d-line); padding-top: 8px; }
+.d-cap-exp > summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--d-brand); }
+.d-cap-exp-row {
+  margin-top: 10px; padding: 8px 10px;
+  background: var(--d-panel-2); border: 1px solid var(--d-line); border-radius: var(--d-radius-sm);
+}
+.d-cap-exp-main { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.d-cap-exp-label { font-size: 12.5px; font-weight: 600; color: var(--d-ink); }
+.d-cap-exp-type { font-size: 10.5px; color: var(--d-ink-3); background: transparent; padding: 0; }
+.d-cap-exp-note { margin-top: 4px; font-size: 11px; color: var(--d-warning); }
+.d-cap-sel, .d-cap-cnt {
+  font-size: 12px; padding: 3px 6px; color: var(--d-ink);
+  border: 1px solid var(--d-line-strong); border-radius: var(--d-radius-sm);
+  background: var(--d-panel);
+}
+.d-cap-cnt { width: 64px; }
+.d-cap-cnt-wrap { font-size: 12px; color: var(--d-ink-3); display: inline-flex; gap: 4px; align-items: center; }
+.d-cap-slot:empty { display: none; }
+.d-cap-slot { margin-top: 6px; }
+.d-cap-verdict-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--d-ink-2); }
+.d-cap-verdict { font-weight: 700; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; white-space: nowrap; }
+.d-cap-verdict.ok { color: var(--d-good); border: 1px solid var(--d-good); }
+.d-cap-verdict.bad { color: var(--d-critical); background: var(--d-critical-soft); border: 1px solid var(--d-critical); }
+.d-cap-hist-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 12px 0 4px; font-size: 12px; color: var(--d-ink-3);
+}
+.d-cap-hist-tbl { font-size: 11.5px; }
+.d-cap-hist-tbl th, .d-cap-hist-tbl td { padding: 4px 6px; }
+.d-cap-scen { margin-left: 4px; font-size: 10px; color: var(--d-info); }
+/* strip 密度（管理当局审核队列顶栏） */
+.d-cap-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.d-cap-mini {
+  display: flex; gap: 10px; align-items: center; text-align: left;
+  padding: 10px 12px; color: inherit; font: inherit; cursor: pointer;
+  background: var(--d-panel); border: 1px solid var(--d-line);
+  border-radius: var(--d-radius); box-shadow: var(--d-shadow);
+  transition: border-color .15s;
+}
+.d-cap-mini:hover { border-color: var(--d-brand); }
+.d-cap-mini-ico {
+  flex: 0 0 32px; width: 32px; height: 32px;
+  border-radius: var(--d-radius-sm);
+  background: var(--d-brand-soft); color: var(--d-brand);
+  display: flex; align-items: center; justify-content: center;
+}
+.d-cap-mini-ico .d-ico { width: 18px; height: 18px; }
+.d-cap-mini-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.d-cap-mini-txt b { font-size: 13px; color: var(--d-ink); }
+.d-cap-mini-txt i { font-style: normal; font-size: 11px; color: var(--d-ink-3); }

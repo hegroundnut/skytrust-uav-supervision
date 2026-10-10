@@ -57,6 +57,8 @@
         card('告警类型分布 by_type', hbarsBox),
         card('最近告警 recent_alerts（前 5）', recentBox),
         card('告警落点详情', pinBox))));
+    /* --- 能力态势：三大绩效目标能力卡（实时证据 + 一键实验自证，高危实验有门禁）--- */
+    root.append(CAPX.section('cockpit'));
 
     mx = MAPX.create(mapEl, { view: GEO.DEFAULT_VIEW });
     loadAll();
