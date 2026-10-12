@@ -19,18 +19,21 @@ api() { curl -s --max-time "$API_TIMEOUT" -X POST "$BACKEND_URL$1" -H 'Content-T
 jqr() { echo "$1" | jq -r "$2" 2>/dev/null; }
 mark() { ITEM[$1]="$2"; [ "$2" = PASS ] || FAIL=1; }
 
-CM_TXIDS=(
+# TxID 常量可被环境变量覆盖（CM_TXIDS_OVERRIDE/FAB_TXIDS_OVERRIDE/FISCO_TXID）：
+# 默认值 = 老机 2026-09-17 登记值（version-matrix §5）；新机 2026-10-12 登记值见 §11，
+# 复跑时以 override 传入，不改动脚本默认（两台机器的证据都可复现）。
+if [ -n "${CM_TXIDS_OVERRIDE:-}" ]; then read -ra CM_TXIDS <<< "$CM_TXIDS_OVERRIDE"; else CM_TXIDS=(
   18d60243cccc93c6ca621b7b246fd1846cadca2994a645d786491c1f80b013a6
   18d602446c190c5cca8bc5f2cd5036a3f09cc0402c6d4486878b679bddf4e71b
   18d6024523b4c949ca277fdbfc95d22fc0d31b7c908247918e5a717081cf41e9
   18d60245fd86414aca165a1fd2f1a408c6a40f1dfca243f09254271cf6b195b1
   18d602470e0412eaca47143af577d42b1428925c83054e8ba105e51dc06d64c9
-)
-FAB_TXIDS=(
+); fi
+if [ -n "${FAB_TXIDS_OVERRIDE:-}" ]; then read -ra FAB_TXIDS <<< "$FAB_TXIDS_OVERRIDE"; else FAB_TXIDS=(
   9f59ca68bb8f51fddcd6aa098f90251d6541a2a6b2184fa1cf8ae73e27dc760a
   704ae9119be532d7888d2daae27061714152be33403e1c4fd903be715ba35b5e
-)
-FISCO_TXID=0x7ab040267bb7b8fba57b503981f2add36fd684716a06bd1ec36ed7dff4c31fd2
+); fi
+FISCO_TXID=${FISCO_TXID:-0x7ab040267bb7b8fba57b503981f2add36fd684716a06bd1ec36ed7dff4c31fd2}
 
 echo "======== ① /api/chain/status 三链 ONLINE ========"
 R=$(api /api/chain/status '{}')
@@ -59,7 +62,21 @@ for tx in "${FAB_TXIDS[@]}"; do
     echo "  ✓ fabric     ${tx:0:16}…（qscc GetBlockByTxID；GetBlockNumberByTxID 被通道策略拒——D15）"
   else echo "  ✗ fabric     ${tx:0:16}… 未命中"; T_OK=0; fi
 done
-if fisco_console_cmd "getTransactionReceipt $FISCO_TXID" | grep -q 'statusOK.*true'; then
+# FISCO 部署交易上链证明。新机（2026-10-12）console 因 libproviders.so 缺失不可用，且
+# v3.16 JSON-RPC 两处怪癖：getBlockByNumber 在 (onlyHeader=true, onlyTxHash=false) 下忽略
+# blockNumber 恒返回块 1 的**完整交易体**；getTransactionReceipt 对链上有效交易恒报 3008
+# （偏差记录 version-matrix §8）。部署交易恰在块 1 → 以“块 1 完整交易体含该 hash”为上链
+# 证明（交易体+hash 自证）；老机路径（console statusOK）保留为回退。
+fisco_tx_in_block1() {
+  curl -sk -m 10 "${FISCO_RPC_HTTPS:-https://127.0.0.1:20200}" \
+    --cacert "$FISCO_CONSOLE/conf/ca.crt" --cert "$FISCO_CONSOLE/conf/sdk.crt" --key "$FISCO_CONSOLE/conf/sdk.key" \
+    -X POST -H 'Content-Type: application/json' \
+    -d '{"jsonrpc":"2.0","method":"getBlockByNumber","params":["group0",1,true,false,false],"id":1}' \
+    | grep -q "\"hash\":\"$1\""
+}
+if fisco_tx_in_block1 "$FISCO_TXID"; then
+  echo "  ✓ fisco-bcos ${FISCO_TXID:0:18}…（RPC 块 1 完整交易体包含证明）"
+elif fisco_console_cmd "getTransactionReceipt $FISCO_TXID" | grep -q 'statusOK.*true'; then
   echo "  ✓ fisco-bcos ${FISCO_TXID:0:18}…（statusOK=true）"
 else echo "  ✗ fisco-bcos 回执异常"; T_OK=0; fi
 [ "$T_OK" = 1 ] && mark ② PASS || mark ② FAIL

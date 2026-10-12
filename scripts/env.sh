@@ -10,17 +10,18 @@ export PATH=/usr/local/go/bin:$PATH
 export GOPROXY=${GOPROXY:-https://goproxy.cn,direct}
 export GOTOOLCHAIN=${GOTOOLCHAIN:-auto}
 
-# ---- ChainMaker 监管链（solo，wx-org.chainmaker.org / chain1）----
+# ---- ChainMaker 监管链（新机 2026-10-12：4 组织 TBFT，wx-org1..4.chainmaker.org / chain1；
+#      旧 solo 配置备份于 /opt/chains/chainmaker/sdk.yml.solo-bak + trust-roots-solo/）----
 CM_ROOT=/opt/chains/chainmaker
 CMC=$CM_ROOT/bin/cmc                      # cmc v2.3.10
-CM_SDK_CONF=$CM_ROOT/sdk.yml              # node_addr 127.0.0.1:12301, tls_host_name chainmaker.org
-CM_NODE_BIN=$CM_ROOT/chainmaker-go/bin    # ./chainmaker start -c ../config/wx-org-solo/chainmaker.yml
-CM_NODE_LOG=$CM_ROOT/node-solo.out
+CM_SDK_CONF=$CM_ROOT/sdk.yml              # node_addr 127.0.0.1:12301, tls_host_name chainmaker.org（org1 client1）
+CM_NODE_BIN=$CM_ROOT/chainmaker-go/bin    # ./chainmaker start -c ../config/wx-orgN.chainmaker.org/chainmaker.yml（N=1..4）
+CM_NODE_LOG=$CM_ROOT/chainmaker-go/log/org1/system.log
 CM_BUILD=$CM_ROOT/build                   # docker-go 合约构建目录（每合约一子目录）
-CM_CERTS=$CM_ROOT/chainmaker-go/config/wx-org-solo/certs/wx-org.chainmaker.org
-CM_ORG=wx-org.chainmaker.org
+CM_CERTS=$CM_ROOT/chainmaker-go/config/wx-org1.chainmaker.org/certs
+CM_ORG=wx-org1.chainmaker.org
 CM_CHAIN=chain1
-CM_VM_CONTAINER=VM-GO-wx-org-chain1       # docker-go 合约 VM 引擎容器
+CM_VM_CONTAINER=VM-GO-wx-org1.chainmaker.org-chain1   # docker-go 合约 VM 引擎容器（每 org 一个，engine 端口 2235N）
 
 # ---- Fabric 运营链（test-network，mychannel，etcdraft，Org1+Org2）----
 TN=$REPO/platforms/fabric-samples/test-network
