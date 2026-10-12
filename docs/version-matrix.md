@@ -232,6 +232,66 @@ v1.0.2（与 §5 登记一致），`GetTxList`/`GetBlockList` 可用（`PageNum`
 叠加栈验收：`COUNT=5 ./scripts/run-acceptance.sh` → **ACCEPTANCE_ALL_PASS**
 （RUN-36238a7936fb，success 5/5，p95=623ms < 1000ms）。
 
+## 11. 新机部署登记 —— 2026-10-12（47.97.154.110，阿里云 ECS 2C/7.2G，Ubuntu 24.04）
+
+> 本节为**新机全量登记**（Phase 0-B 完整交付）；§1-§10 为老机 2026-09-17 证据，一字未动。
+> 过程实录与设计修订：`docs/superpowers/specs/2026-10-12-skytrust-local-fullstack-deployment-design.md` 修订 1-7。
+
+### 11.1 三链拓扑（用户要求：每链足够节点确保不可篡改——全部 4 节点 BFT，f=1 已实证）
+
+| 链 | 共识 | 节点 | f=1 容错实证 |
+|---|---|---|---|
+| FISCO BCOS 管理链（group0，v3.16.4，非国密） | PBFT 4-sealer | /opt/fisco/nodes/127.0.0.1/node0 + nodes_expand/node{1,2,3} | ✅（修订 3：kill 1 节点仍出块） |
+| ChainMaker 监管链（chain1，v2.3.10，tjfoc ecc_p256） | TBFT 4 组织（wx-org1..4，3/4 quorum） | /opt/chains/chainmaker，RPC :12301，VM 引擎容器 ×4 | ✅（合约 4-admin 联签部署） |
+| Fabric 运营链（mychannel，3.1.5 线 dev 构建二进制） | **SMARTBFT 4-orderer**（orderer..orderer4，:7050/7052/7056/7058）+ 2 peer | test-network compose-bft | ✅（修订 6：停 orderer3 → 块 8 签名 [2 4 1] 仍提交；恢复 → 块 10 签名 [2 3 1]） |
+
+后端 :8080（pid 1316977 起）三链 `MODE=real`，前端统一入口 :15001。**Fabric 特别说明**：首拉为
+etcdraft 单 orderer（real 已通），后经用户批准 A 方案（一次性豁免 "never network.sh down" 红线，
+该链 TxID 当时未登记）重建为 BFT——etcdraft 期账本（块 0-12）及其中间 TxID（commit `bc6585f2…`/
+冒烟 `cca5a04d…`）**作废不登记**，以下为 BFT 链正式值。
+
+### 11.2 §4.4 部署 TxID 登记表（新机值——全部链上可查询，验收 §6.5-② 复跑 PASS 2026-10-12）
+
+| 链 | 合约 | 部署工具 | deploy TxID | 区块 | 时间 |
+|---|---|---|---|---|---|
+| chainmaker | regulatory_record v1.0.2（DOCKER_GO，4-admin 联签，4 endorser） | cmc | `18ddbdb2e2d74146ca85e66d84982bdec19cae39bb3d4c049fe891e2f865f6f7` | 2 | 2026-10-12 |
+| chainmaker | crosschain_trace v1.0.2 | cmc | `18ddbdbac8807d54ca981081b661d357a0d62fa1d06c4512ac43694eb8fd3c01` | 3 | 同上 |
+| chainmaker | identity_mapping v1.0.2 | cmc | `18ddbe2aed734463cad462e16028baefd8c26bd1b5b94eb3b8b4e56c945d575b` | 4 | 同上 |
+| chainmaker | regulatory_authorization v1.0.2 | cmc | `18ddbea6c52c057aca0efba4696ed886227bd67259194a34b9b2d0e1e6bdb051` | 5 | 同上 |
+| chainmaker | audit_record v1.0.2 | cmc | `18ddbf15a5758e9ccafdb095f3f7a3efa59d367fba1744afb12bf6204063340e` | 6 | 同上 |
+| fabric（BFT 链） | operator_business v1.0 seq1（Org1+Org2 approve） | peer lifecycle | commit `d165208cd7414aa6df463ec1fa6b8d5ef6f5b86ebefe472736080fd394678479`；冒烟 `2208bb13c9b43e62df184cb89fc3f4cb0723d5d413fa2843448069a5da96fbc1` + `aab373ca109faad8a9a3be5624dd2eee8f7fdce12a2b042b2b29cba78f88745b`（QueryState 读回=VALID 证明） | 5（冒烟 6/7） | 2026-10-12 |
+| fisco-bcos | UavManagement（BFS `/apps/uav_management`） | console deploy（solc 0.8.11） | `0x172514d300b6e148a3b1630bb5c1dd7a85f038ff3ac10d720bc957ba9e2e76af` → 合约地址 `0x6849f21d1e455e9f0712b1e99fa4fcd23758e8f1`（deploylog.txt；地址由字节码确定，与老机中间态一致=源码同一性旁证） | 1 | 2026-10-12 |
+
+CM 部署核验以**链上区块 rwset 为准**（4/5 cmc 回执 0 字节 = `--sync-result` 挂起缺陷，修订 4）。
+Fabric BFT 每块含 3/4 consenter 签名（orderer 日志 `signatures from [2 3 1]`）= quorum 链上实证。
+
+### 11.3 验收复跑（run-acceptance.sh，隔离 :18180 全新弃用 DB，2026-10-12 22:26-23:08）
+
+- **① PASS**：三链 ONLINE（真实 Health 探针）。
+- **② PASS**：上表 8 笔 TxID 全部链上可查询（CM×5 cmc query tx；Fabric×2 qscc GetBlockByTxID——BFT 链上命中；FISCO×1 RPC 块 1 完整交易体包含证明）。
+- **③ PASS**：13 步闭环三笔全 SUCCESS——CX-f48cf7b7be53（1410ms）/CX-86e21686d6ae（1301ms）/CX-8767547c53a6。
+- **④ PASS**：两跳四段 TxID 持久化齐全（src=真实 fabric 64-hex / fisco 0x…，reg/relay=CM 18dd…，tgt 各异）。
+- **⑤ 未达标（如实记录，链侧调优已穷尽，协议/业务代码零放宽）**：
+  - COUNT=100 于 load 46.77 触发 2 核机负载红线**主动中止**（机器保护优先；中止后三链健康核查全绿：FISCO height 81/sealer 4/零 viewchange，CM height 290 探针 OK，:8080 三链 ONLINE）；
+  - COUNT=10 两次：RUN-a9ccd7a45955 success **10/10** rate=1 avg 1294ms p95 **1524ms**；RUN-fd7ee6965720 success **10/10** avg 1487ms p95 **1658ms**——均 > 1000ms 门槛；
+  - 逐跳探针（latency_probe_test.go，7 跳 ×5 迭代全实链）：fabric 80-128ms ×2、**chainmaker ~218-253ms ×4（合计 ~960ms，主导项）**、fisco 182-195ms；合计 1309-1473ms；
+  - 根因：2 核 CPU 上 12 个 BFT 共识进程（4 TBFT+4 SMARTBFT+4 PBFT，用户要求的不可篡改拓扑）持续互争；老机 §6.2 官方记录（p95=527ms @COUNT=100）系较轻拓扑（CM solo + 单 orderer，6 进程）下取得，**继续作为正式性能证据**；
+  - 已执行的链侧调优（§6.5-⑤ 授权类）：FISCO `min_seal_time` 500→100（备份 config.ini.bak-sealtime ×4）；CM `batch_create_timeout` 50→10（备份 chainmaker.yml.bak-batchtime ×4，滚动重启，探针合计 1473→1309ms）；Fabric SMARTBFT 原生 RequestBatchMaxInterval=50ms（无需调优，修订 5 遗留的 BatchTimeout 2s 调优项作废）。
+
+### 11.4 新机偏差记录（补充 §8）
+
+1. **FISCO v3.16 JSON-RPC 怪癖**：`getBlockByNumber` 在 (onlyHeader=true, onlyTxHash=false) 下**忽略 blockNumber 恒返块 1** 但含完整交易体（部署 Tx 恰在块 1 → 可作包含证明）；(false,…) 组合交易列表恒空；`getTransactionReceipt` 对链上有效交易恒报 3008。console 因 libproviders.so 缺失彻底不可用 → **curl JSON-RPC + 节点日志为一等诊断工具**（heartBeat connected count / getSealerList / getSyncStatus 正常可用）。
+2. **Fabric dev 构建 CLI**（老机同源二进制，修订 5 详录）：invoke 不打印 `Transaction ID:`（deploy-contracts.sh 冒烟假阴性——**链上实际成功**，块 6 解码证实）；`peer channel fetch latest` 非法（只收数字）；qscc GetChainInfo 返 protobuf。权威旁证 = orderer `writing block`（SMARTBFT 含签名者集合）+ peer `Committed block` + configtxlator 解码 + QueryState 读回。
+3. **ChainMaker SDK gRPC 4MB 默认上限**：5 合约部署后 GetCurrentBlockHeight 响应 7.9MB → ResourceExhausted 假 OFFLINE；transport.go 已加 WithRPCClientConfig(100MB)（唯一后端代码改动，对齐 cmc sdk.yml）。
+4. **cmc**：`--enable-cert-hash=false` 必须显式；block-by-height 高度为位置参数；`--sdk-conf-path`（非 --sdk-conf）。
+5. **负载红线实证两次**（修订 4 并行构建 load 85 事故；本次 COUNT=100 load 46.77 主动中止）：2 核机重活必须串行，load>4 停手。
+
+### 11.5 全实链重放证据（13 步跨域网关，三链全 real）
+
+- BFT 切换前（etcdraft，修订 5）：CX-54edb4488520 / CX-0847fefe2b6c；
+- **BFT 链正式重放（修订 6，登记用）**：UAV_REGISTER_PROOF `CX-5862df45d53b`（fabric 源 `a419036a…`，CM 两跳 `18ddcd32…`×3，verify PASS，1468ms）；MISSION_APPLICATION `CX-31c266ebb9b2`（fabric 源 `4c5b3ba5…`，CM 中继 `18ddcd33…`，FISCO 目标 `0x261cc523…`，verify PASS，1231ms）；链高齐涨 CM+9/FISCO+1/Fabric+4。
+
+
 ---
 
 *本文件与 `docs/real-chain-migration.md`（迁移指南）、`contracts/README.md`（合约权威索引）配套；
