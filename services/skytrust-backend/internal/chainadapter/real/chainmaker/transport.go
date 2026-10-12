@@ -93,6 +93,14 @@ func NewFactory() (chainadapter.ChainTransport, error) {
 		sdk.AddChainClientNodeConfig(nodeCfg),
 		sdk.WithRetryLimit(5),
 		sdk.WithRetryInterval(500),
+		// gRPC 消息上限对齐 cmc sdk.yml（100MB）：部署 Docker-Go 合约后区块变大，
+		// 默认 4MB 会令 GetCurrentBlockHeight 报 ResourceExhausted（新机部署实况 2026-10-12）。
+		sdk.WithRPCClientConfig(sdk.NewRPCClientConfig(
+			sdk.WithRPCClientMaxReceiveMessageSize(100),
+			sdk.WithRPCClientMaxSendMessageSize(100),
+			sdk.WithRPCClientSendTxTimeout(60),
+			sdk.WithRPCClientGetTxTimeout(60),
+		)),
 	}
 	if signKeyFile := os.Getenv("CHAINMAKER_USER_SIGN_KEY_FILE"); signKeyFile != "" {
 		opts = append(opts, sdk.WithUserSignKeyFilePath(signKeyFile))
