@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"skytrust-backend/internal/chainadapter/sim"
+	"skytrust-backend/internal/crypto"
 	"skytrust-backend/internal/errcode"
 	"skytrust-backend/internal/model"
 	"skytrust-backend/internal/timex"
@@ -62,7 +63,7 @@ func TestIssuePassSuccess(t *testing.T) {
 			t.Errorf("%s tx id empty", name)
 		}
 	}
-	if !strings.HasPrefix(tx.SourceChainTxID, "FISCO-BCOS-") || !strings.HasPrefix(tx.TargetChainTxID, "FABRIC-") {
+	if !strings.HasPrefix(tx.SourceChainTxID, "IRITA-") || !strings.HasPrefix(tx.TargetChainTxID, "FABRIC-") {
 		t.Errorf("route prefixes: %q -> %q", tx.SourceChainTxID, tx.TargetChainTxID)
 	}
 	var got model.FlightPass
@@ -265,7 +266,8 @@ func TestRevokePassLocalFirst(t *testing.T) {
 	if got.Status != "REVOKED" || csStatus != "SUCCESS" {
 		t.Fatalf("revoke = %+v %q", got, csStatus)
 	}
-	if tx.Status != "SUCCESS" || tx.MessageType != "PASS_REVOKE" || !strings.HasPrefix(tx.TargetChainTxID, "FABRIC-") {
+	if tx.Status != "SUCCESS" || tx.MessageType != "PASS_REVOKE" ||
+		!strings.HasPrefix(tx.SourceChainTxID, "IRITA-") || !strings.HasPrefix(tx.TargetChainTxID, "FABRIC-") {
 		t.Fatalf("tx = %+v", tx)
 	}
 	// 重复吊销 / 不存在 / 缺参
@@ -408,8 +410,8 @@ func TestRevokePassCrosschainResend(t *testing.T) {
 	if err != nil {
 		t.Fatalf("issue: %v", err)
 	}
-	// 签发成功后再注入：fisco-bcos 首次 CrosschainSubmit（源链代提交）失败
-	sim.WithFailNext("CrosschainSubmit", 1)(sims["fisco-bcos"])
+	// 签发成功后再注入：irita 首次 CrosschainSubmit（源链代提交）失败
+	sim.WithFailNext("CrosschainSubmit", 1)(sims["irita"])
 	got, csStatus, tx, err := svc.RevokePass(ctx, "TRACE-T", p.PassID, "任务提前终止", "FISCO-ADMIN")
 	if err != nil {
 		t.Fatalf("first revoke must not fail locally: %v", err)
@@ -537,5 +539,77 @@ func TestIssuePassUAVStatusGuard(t *testing.T) {
 	db.Model(&model.FlightPass{}).Where("pass_id LIKE ?", "PASS-GUARD-%").Count(&cnt)
 	if cnt != 0 {
 		t.Errorf("rejected issues must not create pass rows, got %d", cnt)
+	}
+}
+
+// TestPassVerifyLegacySignerCompat 2026-10-13 pass 迁移（fisco-bcos→irita）双身份过渡关卡：
+// ① 迁移前身份 FISCO-ADMIN（legacyPassSignerUID）签名入库的存量 VALID 许可，VerifyPass
+// 必须仍然通过——存量证照不断代（过渡语义须如实登记 version-matrix §12 偏差）；
+// ② 迁移后新签发许可由 passSignerUID（REGISTRY-ADMIN）签名，跨链信封身份同步换代，验证通过；
+// ③ 篡改存量许可字段 → SM3 失配 + 双身份 SM9 回退全部失败 → 拒绝（valid=false，reasons
+// 同时含 SM3/SM9；无效是数据不是错误，envelope 仍 code 0——pass/verify 冻结契约）。
+func TestPassVerifyLegacySignerCompat(t *testing.T) {
+	svc, db := testSvcFull(t)
+	m := approvedMission(t, svc)
+	ctx := context.Background()
+	vf, vt := nowWindow()
+
+	// ① 存量语义：手工构造迁移前身份签名的 VALID 许可直接入库（模拟 2026-10-13 前存量）
+	vfT, err := timex.ParseTime(vf)
+	if err != nil {
+		t.Fatalf("parse valid_from: %v", err)
+	}
+	vtT, err := timex.ParseTime(vt)
+	if err != nil {
+		t.Fatalf("parse valid_to: %v", err)
+	}
+	legacy := model.FlightPass{
+		PassID: "PASS-TEST-LEGACY-1", MissionID: m.MissionID, UAVID: m.UAVID,
+		Route: m.RouteSegments, ValidFrom: timex.New(vfT), ValidTo: timex.New(vtT), Status: "VALID",
+	}
+	cb, err := crypto.CanonicalJSON(passCanonical(&legacy))
+	if err != nil {
+		t.Fatalf("canonical legacy pass: %v", err)
+	}
+	sig, err := svc.cs.SM9SignUserID(legacyPassSignerUID(), cb)
+	if err != nil {
+		t.Fatalf("legacy sign: %v", err)
+	}
+	legacy.SM3Hash = crypto.SM3Hex(cb)
+	legacy.Signature = sig
+	if err := db.Create(&legacy).Error; err != nil {
+		t.Fatalf("create legacy pass: %v", err)
+	}
+	valid, reasons, got, err := svc.VerifyPass(ctx, "TRACE-T", legacy.PassID)
+	if err != nil || !valid || len(reasons) != 0 || got.Status != "VALID" {
+		t.Fatalf("legacy-signed (FISCO-ADMIN) pass must still verify: valid=%v reasons=%v err=%v", valid, reasons, err)
+	}
+
+	// ② 新签发：IssuePass → passSignerUID（REGISTRY-ADMIN）签名 + 跨链信封身份换代 → 验证通过
+	p, tx, err := svc.IssuePass(ctx, "TRACE-T", PassIssueInput{
+		PassID: "PASS-TEST-NEW-1", MissionID: m.MissionID, Issuer: "REGISTRY-ADMIN", ValidFrom: vf, ValidTo: vt,
+	})
+	if err != nil {
+		t.Fatalf("issue: %v", err)
+	}
+	if tx.SM9Identity != crypto.SM9IdentityOf("REGISTRY-ADMIN") {
+		t.Errorf("new pass envelope identity = %q, want SM9-ID-REGISTRY-ADMIN", tx.SM9Identity)
+	}
+	valid, reasons, _, err = svc.VerifyPass(ctx, "TRACE-T", p.PassID)
+	if err != nil || !valid || len(reasons) != 0 {
+		t.Fatalf("new-signed (REGISTRY-ADMIN) pass must verify: valid=%v reasons=%v err=%v", valid, reasons, err)
+	}
+
+	// ③ 篡改存量许可字段 → SM3 失配且双身份 SM9 均验不过 → valid=false + 两类 reason，err 仍为 nil
+	if err := db.Model(&model.FlightPass{}).Where("pass_id = ?", legacy.PassID).
+		Update("route", `["R999"]`).Error; err != nil {
+		t.Fatalf("tamper legacy pass: %v", err)
+	}
+	valid, reasons, _, err = svc.VerifyPass(ctx, "TRACE-T", legacy.PassID)
+	if err != nil || valid {
+		t.Fatalf("tampered legacy pass must be rejected: valid=%v reasons=%v err=%v", valid, reasons, err)
+	}
+	if joined := strings.Join(reasons, ";"); !strings.Contains(joined, "SM3") || !strings.Contains(joined, "SM9") {
+		t.Errorf("reasons must carry SM3 integrity + SM9 dual-identity rejection: %v", reasons)
 	}
 }

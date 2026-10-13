@@ -13,8 +13,8 @@ var routingTable = map[string]routeSpec{
 	MsgUAVRegisterProof:    {Source: "fabric", Target: RegChainName}, // 运营→监管
 	MsgMissionApplication:  {Source: "fabric", Target: "fisco-bcos"}, // 运营→监管→管理
 	MsgMissionReviewResult: {Source: "fisco-bcos", Target: "fabric"}, // 管理→监管→运营
-	MsgFlightPass:          {Source: "fisco-bcos", Target: "fabric"}, // 管理→监管→运营
-	MsgPassRevoke:          {Source: "fisco-bcos", Target: "fabric"}, // 管理→监管→运营
+	MsgFlightPass:          {Source: "irita", Target: "fabric"},      // 证照→监管→运营（2026-10-13 pass 迁移）
+	MsgPassRevoke:          {Source: "irita", Target: "fabric"},      // 证照→监管→运营（2026-10-13 pass 迁移）
 }
 
 // ExpectedRoute 返回消息类型的固定路由；ok=false 表示未知类型。
@@ -66,12 +66,13 @@ func CheckPayload(msgType string, payload map[string]any) *Error {
 // 链上合约/方法命名（与实施文档 §6 合约设计对齐；sim 适配器仅将其作为 TxID 派生素材，
 // Plan 6 真实 SDK 按同名合约调用）。
 const (
-	ContractFabricOperator = "operator_business" // Fabric 运营方链码聚合名
-	ContractFiscoManage    = "uav_management"    // FISCO 管理方合约聚合名
-	ContractRegRecord      = "regulatory_record" // ChainMaker 监管登记合约
-	ContractRegTrace       = "crosschain_trace"  // ChainMaker 跨链存证合约
-	ContractRegIdentity    = "identity_mapping"  // ChainMaker 身份索引合约
-	SourceSubmitMethod     = "CrosschainSubmit"  // 网关代提交源链交易的方法名
+	ContractFabricOperator  = "operator_business" // Fabric 运营方链码聚合名
+	ContractFiscoManage     = "uav_management"    // FISCO 管理方合约聚合名
+	ContractLicenseRegistry = "license_registry"  // IRITA 证照链许可登记合约（无合约部署概念——由内置 record 模块承载）
+	ContractRegRecord       = "regulatory_record" // ChainMaker 监管登记合约
+	ContractRegTrace        = "crosschain_trace"  // ChainMaker 跨链存证合约
+	ContractRegIdentity     = "identity_mapping"  // ChainMaker 身份索引合约
+	SourceSubmitMethod      = "CrosschainSubmit"  // 网关代提交源链交易的方法名
 )
 
 // targetContractMethod 消息类型 → 目标链合约与方法（13 步第 10 步）。
@@ -92,13 +93,18 @@ func targetContractMethod(msgType string) (contract, method string) {
 }
 
 // sourceContract 源链 → 合约名（13 步第 3/12 步：代提交与 ACK）。
-func sourceContract(chainName string) string {
+// 未知链名显式报错（地雷②，与 cmd/server/chains.go wrapAdapter 对称）——绝不静默
+// 兜底任一合约名；chainmaker 只作中继链（其合约由网关直呼 ContractRegTrace/
+// ContractRegRecord），不是合法源链，同样落入报错分支。
+func sourceContract(chainName string) (string, *Error) {
 	switch chainName {
 	case "fabric":
-		return ContractFabricOperator
+		return ContractFabricOperator, nil
 	case "fisco-bcos":
-		return ContractFiscoManage
+		return ContractFiscoManage, nil
+	case "irita":
+		return ContractLicenseRegistry, nil
 	default:
-		return ContractRegRecord
+		return "", NewError(errcode.CrosschainSend, "no source contract mapping for chain %q", chainName)
 	}
 }

@@ -19,8 +19,8 @@ window.ENDPOINTS = [
     "count": 4
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.191",
-   "trace_id": "TRACE-20261013-d549f1"
+   "timestamp": "2026-10-13 16:27:00.970",
+   "trace_id": "TRACE-20261013-e75ee8"
   },
   "err": {
    "code": 0,
@@ -34,8 +34,8 @@ window.ENDPOINTS = [
     "count": 4
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.281",
-   "trace_id": "TRACE-20261013-1f3bff"
+   "timestamp": "2026-10-13 16:27:01.073",
+   "trace_id": "TRACE-20261013-5adadf"
   }
  },
  {
@@ -56,8 +56,8 @@ window.ENDPOINTS = [
     "database": "ONLINE"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.191",
-   "trace_id": "TRACE-20261013-4f4442"
+   "timestamp": "2026-10-13 16:27:00.970",
+   "trace_id": "TRACE-20261013-6dd0c7"
   },
   "err": {
    "code": 0,
@@ -71,8 +71,8 @@ window.ENDPOINTS = [
     "database": "ONLINE"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.281",
-   "trace_id": "TRACE-20261013-6cf5c2"
+   "timestamp": "2026-10-13 16:27:01.073",
+   "trace_id": "TRACE-20261013-7eda54"
   }
  },
  {
@@ -87,8 +87,8 @@ window.ENDPOINTS = [
     "ping": "pong"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.191",
-   "trace_id": "TRACE-20261013-17bc0d"
+   "timestamp": "2026-10-13 16:27:00.970",
+   "trace_id": "TRACE-20261013-6ed727"
   },
   "err": {
    "code": 0,
@@ -96,8 +96,8 @@ window.ENDPOINTS = [
     "ping": "pong"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.281",
-   "trace_id": "TRACE-20261013-6082c3"
+   "timestamp": "2026-10-13 16:27:01.073",
+   "trace_id": "TRACE-20261013-8e03ad"
   }
  },
  {
@@ -119,15 +119,15 @@ window.ENDPOINTS = [
     "sm3_hash": "26713d6330d0178a63a85d4d7cc6b493ffafc8370893f6fb50cb6f3f51edd298"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.192",
-   "trace_id": "TRACE-20261013-f5f537"
+   "timestamp": "2026-10-13 16:27:00.971",
+   "trace_id": "TRACE-20261013-fe18b2"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "payload 必填",
-   "timestamp": "2026-10-13 15:17:44.281",
-   "trace_id": "TRACE-20261013-55fb25"
+   "timestamp": "2026-10-13 16:27:01.073",
+   "trace_id": "TRACE-20261013-02b18f"
   }
  },
  {
@@ -144,15 +144,15 @@ window.ENDPOINTS = [
     "sm9_identity": "SM9-ID-UAV-A-001"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.192",
-   "trace_id": "TRACE-20261013-8cc607"
+   "timestamp": "2026-10-13 16:27:00.971",
+   "trace_id": "TRACE-20261013-1eb7a3"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "entity_id 必填",
-   "timestamp": "2026-10-13 15:17:44.281",
-   "trace_id": "TRACE-20261013-1e481e"
+   "timestamp": "2026-10-13 16:27:01.074",
+   "trace_id": "TRACE-20261013-28dd85"
   }
  },
  {
@@ -171,19 +171,19 @@ window.ENDPOINTS = [
   "resp": {
    "code": 0,
    "data": {
-    "signature": "MGYEIEQSTkhh0lh12kgdIVNScXCCIi8Jgj/JXOzgbSiTjbfTA0IABKZfudYMO5XNKwQz0nHMA/Nlchw9Zvl8DCrU2Mri9kkenWE4bYWKiuAQbGpq54y2u+rATiEaViOoEWx2RaoOaok=",
+    "signature": "MGYEIBMnhY4/QPRZs/3fEdKqtxPZ9frGdVzXp2fhfp09LiosA0IABAS+QYdIQyXVLnmjSm8SEa8FJkFN19S4tUckX4C6cfeLUzjyA32w9aWCRYH64F5Lz0E8ACDswX49XNRTPxMKloU=",
     "sm3_hash": "26713d6330d0178a63a85d4d7cc6b493ffafc8370893f6fb50cb6f3f51edd298"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.193",
-   "trace_id": "TRACE-20261013-03c756"
+   "timestamp": "2026-10-13 16:27:00.971",
+   "trace_id": "TRACE-20261013-c84a81"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "sm9_identity 与 payload 必填",
-   "timestamp": "2026-10-13 15:17:44.282",
-   "trace_id": "TRACE-20261013-76a4a7"
+   "timestamp": "2026-10-13 16:27:01.074",
+   "trace_id": "TRACE-20261013-448752"
   }
  },
  {
@@ -204,15 +204,15 @@ window.ENDPOINTS = [
    "code": 1002,
    "data": null,
    "message": "签名格式非法: illegal base64 data at input byte 0",
-   "timestamp": "2026-10-13 15:17:44.193",
-   "trace_id": "TRACE-20261013-dc1452"
+   "timestamp": "2026-10-13 16:27:00.971",
+   "trace_id": "TRACE-20261013-5a0aff"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "sm9_identity/payload/signature 必填",
-   "timestamp": "2026-10-13 15:17:44.282",
-   "trace_id": "TRACE-20261013-5a8d53"
+   "timestamp": "2026-10-13 16:27:01.074",
+   "trace_id": "TRACE-20261013-373a55"
   }
  },
  {
@@ -236,8 +236,8 @@ window.ENDPOINTS = [
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.196",
-   "trace_id": "TRACE-20261013-39af27"
+   "timestamp": "2026-10-13 16:27:00.973",
+   "trace_id": "TRACE-20261013-b9f5f1"
   },
   "err": {
    "code": 0,
@@ -254,8 +254,8 @@ window.ENDPOINTS = [
     "skipped": {}
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.287",
-   "trace_id": "TRACE-20261013-2bb60a"
+   "timestamp": "2026-10-13 16:27:01.079",
+   "trace_id": "TRACE-20261013-1fd41d"
   }
  },
  {
@@ -267,24 +267,24 @@ window.ENDPOINTS = [
   "resp": {
    "code": 0,
    "data": {
-    "reset_at": "2026-10-13 15:17:44.281",
-    "started_at": "2026-10-13 15:17:44.280",
+    "reset_at": "2026-10-13 16:27:01.072",
+    "started_at": "2026-10-13 16:27:01.072",
     "tables_cleared": 23
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.281",
-   "trace_id": "TRACE-20261013-9f2f82"
+   "timestamp": "2026-10-13 16:27:01.072",
+   "trace_id": "TRACE-20261013-35c5f7"
   },
   "err": {
    "code": 0,
    "data": {
-    "reset_at": "2026-10-13 15:17:44.301",
-    "started_at": "2026-10-13 15:17:44.301",
+    "reset_at": "2026-10-13 16:27:01.094",
+    "started_at": "2026-10-13 16:27:01.094",
     "tables_cleared": 23
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.301",
-   "trace_id": "TRACE-20261013-0bde0f"
+   "timestamp": "2026-10-13 16:27:01.094",
+   "trace_id": "TRACE-20261013-199661"
   }
  },
  {
@@ -301,49 +301,49 @@ window.ENDPOINTS = [
     "records": [
      {
       "adapter_type": "DJI-ADAPTER",
-      "created_at": "2026-10-13 15:17:44.181",
+      "created_at": "2026-10-13 16:27:00.960",
       "manufacturer_id": "Manufacturer-A",
       "name": "演示厂商A",
       "status": "ACTIVE",
-      "updated_at": "2026-10-13 15:17:44.181"
+      "updated_at": "2026-10-13 16:27:00.960"
      },
      {
       "adapter_type": "XAG-ADAPTER",
-      "created_at": "2026-10-13 15:17:44.181",
+      "created_at": "2026-10-13 16:27:00.960",
       "manufacturer_id": "Manufacturer-B",
       "name": "演示厂商B",
       "status": "ACTIVE",
-      "updated_at": "2026-10-13 15:17:44.181"
+      "updated_at": "2026-10-13 16:27:00.960"
      },
      {
       "adapter_type": "FIMI-ADAPTER",
-      "created_at": "2026-10-13 15:17:44.181",
+      "created_at": "2026-10-13 16:27:00.961",
       "manufacturer_id": "Manufacturer-C",
       "name": "演示厂商C",
       "status": "ACTIVE",
-      "updated_at": "2026-10-13 15:17:44.181"
+      "updated_at": "2026-10-13 16:27:00.961"
      },
      {
       "adapter_type": "",
-      "created_at": "2026-10-13 15:17:44.197",
+      "created_at": "2026-10-13 16:27:00.973",
       "manufacturer_id": "Manufacturer-DOC",
       "name": "文档样例制造商",
       "status": "ACTIVE",
-      "updated_at": "2026-10-13 15:17:44.197"
+      "updated_at": "2026-10-13 16:27:00.973"
      }
     ],
     "total": 4
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.197",
-   "trace_id": "TRACE-20261013-8156c6"
+   "timestamp": "2026-10-13 16:27:00.974",
+   "trace_id": "TRACE-20261013-dbb34f"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.288",
-   "trace_id": "TRACE-20261013-60db70"
+   "timestamp": "2026-10-13 16:27:01.079",
+   "trace_id": "TRACE-20261013-fc1986"
   }
  },
  {
@@ -359,22 +359,22 @@ window.ENDPOINTS = [
    "code": 0,
    "data": {
     "adapter_type": "",
-    "created_at": "2026-10-13 15:17:44.197",
+    "created_at": "2026-10-13 16:27:00.973",
     "manufacturer_id": "Manufacturer-DOC",
     "name": "文档样例制造商",
     "status": "ACTIVE",
-    "updated_at": "2026-10-13 15:17:44.197"
+    "updated_at": "2026-10-13 16:27:00.973"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.197",
-   "trace_id": "TRACE-20261013-382cb5"
+   "timestamp": "2026-10-13 16:27:00.973",
+   "trace_id": "TRACE-20261013-5c753b"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.manufacturerRegisterReq",
-   "timestamp": "2026-10-13 15:17:44.288",
-   "trace_id": "TRACE-20261013-d48c7c"
+   "timestamp": "2026-10-13 16:27:01.079",
+   "trace_id": "TRACE-20261013-f2a5b5"
   }
  },
  {
@@ -392,56 +392,56 @@ window.ENDPOINTS = [
      {
       "chain_org_id": "org-operator-a",
       "contact": "ops-a@skytrust.demo",
-      "created_at": "2026-10-13 15:17:44.181",
+      "created_at": "2026-10-13 16:27:00.961",
       "name": "演示运营商A",
       "operator_id": "Operator-A",
       "qualification_status": "QUALIFIED",
       "status": "ACTIVE",
-      "updated_at": "2026-10-13 15:17:44.181"
+      "updated_at": "2026-10-13 16:27:00.961"
      },
      {
       "chain_org_id": "org-operator-b",
       "contact": "ops-b@skytrust.demo",
-      "created_at": "2026-10-13 15:17:44.181",
+      "created_at": "2026-10-13 16:27:00.961",
       "name": "演示运营商B",
       "operator_id": "Operator-B",
       "qualification_status": "QUALIFIED",
       "status": "ACTIVE",
-      "updated_at": "2026-10-13 15:17:44.181"
+      "updated_at": "2026-10-13 16:27:00.961"
      },
      {
       "chain_org_id": "org-operator-c",
       "contact": "ops-c@skytrust.demo",
-      "created_at": "2026-10-13 15:17:44.182",
+      "created_at": "2026-10-13 16:27:00.961",
       "name": "演示运营商C",
       "operator_id": "Operator-C",
       "qualification_status": "QUALIFIED",
       "status": "ACTIVE",
-      "updated_at": "2026-10-13 15:17:44.182"
+      "updated_at": "2026-10-13 16:27:00.961"
      },
      {
       "chain_org_id": "",
       "contact": "",
-      "created_at": "2026-10-13 15:17:44.197",
+      "created_at": "2026-10-13 16:27:00.974",
       "name": "文档样例运营商",
       "operator_id": "Operator-DOC",
       "qualification_status": "QUALIFIED",
       "status": "ACTIVE",
-      "updated_at": "2026-10-13 15:17:44.197"
+      "updated_at": "2026-10-13 16:27:00.974"
      }
     ],
     "total": 4
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.198",
-   "trace_id": "TRACE-20261013-7c8600"
+   "timestamp": "2026-10-13 16:27:00.975",
+   "trace_id": "TRACE-20261013-974dcc"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.289",
-   "trace_id": "TRACE-20261013-a86283"
+   "timestamp": "2026-10-13 16:27:01.080",
+   "trace_id": "TRACE-20261013-7394f0"
   }
  },
  {
@@ -458,23 +458,23 @@ window.ENDPOINTS = [
    "data": {
     "chain_org_id": "",
     "contact": "",
-    "created_at": "2026-10-13 15:17:44.197",
+    "created_at": "2026-10-13 16:27:00.974",
     "name": "文档样例运营商",
     "operator_id": "Operator-DOC",
     "qualification_status": "QUALIFIED",
     "status": "ACTIVE",
-    "updated_at": "2026-10-13 15:17:44.197"
+    "updated_at": "2026-10-13 16:27:00.974"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.198",
-   "trace_id": "TRACE-20261013-caa17e"
+   "timestamp": "2026-10-13 16:27:00.974",
+   "trace_id": "TRACE-20261013-530f93"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.operatorRegisterReq",
-   "timestamp": "2026-10-13 15:17:44.288",
-   "trace_id": "TRACE-20261013-a5c391"
+   "timestamp": "2026-10-13 16:27:01.080",
+   "trace_id": "TRACE-20261013-a7d6a8"
   }
  },
  {
@@ -496,7 +496,7 @@ window.ENDPOINTS = [
     "altitude_max": 150,
     "altitude_min": 50,
     "corridor_status": "OPEN",
-    "created_at": "2026-10-13 15:17:44.198",
+    "created_at": "2026-10-13 16:27:00.975",
     "end_lat": 0,
     "end_lon": 0,
     "end_point": "E9",
@@ -507,15 +507,15 @@ window.ENDPOINTS = [
     "zone": "Zone-D"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.199",
-   "trace_id": "TRACE-20261013-9e62ca"
+   "timestamp": "2026-10-13 16:27:00.976",
+   "trace_id": "TRACE-20261013-36efbb"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.routeCreateReq",
-   "timestamp": "2026-10-13 15:17:44.290",
-   "trace_id": "TRACE-20261013-3a91f2"
+   "timestamp": "2026-10-13 16:27:01.080",
+   "trace_id": "TRACE-20261013-c98751"
   }
  },
  {
@@ -534,7 +534,7 @@ window.ENDPOINTS = [
       "altitude_max": 120,
       "altitude_min": 60,
       "corridor_status": "OPEN",
-      "created_at": "2026-10-13 15:17:44.187",
+      "created_at": "2026-10-13 16:27:00.968",
       "end_lat": 30.54,
       "end_lon": 114.34,
       "end_point": "A-EXIT(30.540,114.340)",
@@ -548,7 +548,7 @@ window.ENDPOINTS = [
       "altitude_max": 120,
       "altitude_min": 80,
       "corridor_status": "OPEN",
-      "created_at": "2026-10-13 15:17:44.187",
+      "created_at": "2026-10-13 16:27:00.968",
       "end_lat": 30.572,
       "end_lon": 114.372,
       "end_point": "B-GATE(30.572,114.372)",
@@ -562,7 +562,7 @@ window.ENDPOINTS = [
       "altitude_max": 100,
       "altitude_min": 60,
       "corridor_status": "OPEN",
-      "created_at": "2026-10-13 15:17:44.187",
+      "created_at": "2026-10-13 16:27:00.968",
       "end_lat": 30.59,
       "end_lon": 114.39,
       "end_point": "B-EAST(30.590,114.390)",
@@ -576,7 +576,7 @@ window.ENDPOINTS = [
       "altitude_max": 150,
       "altitude_min": 90,
       "corridor_status": "OPEN",
-      "created_at": "2026-10-13 15:17:44.187",
+      "created_at": "2026-10-13 16:27:00.968",
       "end_lat": 30.6,
       "end_lon": 114.41,
       "end_point": "B-NORTH(30.600,114.410)",
@@ -590,7 +590,7 @@ window.ENDPOINTS = [
       "altitude_max": 120,
       "altitude_min": 60,
       "corridor_status": "OPEN",
-      "created_at": "2026-10-13 15:17:44.188",
+      "created_at": "2026-10-13 16:27:00.969",
       "end_lat": 30.62,
       "end_lon": 114.42,
       "end_point": "B-LAND(30.620,114.420)",
@@ -604,7 +604,7 @@ window.ENDPOINTS = [
       "altitude_max": 150,
       "altitude_min": 50,
       "corridor_status": "OPEN",
-      "created_at": "2026-10-13 15:17:44.198",
+      "created_at": "2026-10-13 16:27:00.975",
       "end_lat": 0,
       "end_lon": 0,
       "end_point": "E9",
@@ -618,15 +618,15 @@ window.ENDPOINTS = [
     "total": 6
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.199",
-   "trace_id": "TRACE-20261013-5537d1"
+   "timestamp": "2026-10-13 16:27:00.976",
+   "trace_id": "TRACE-20261013-025317"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.290",
-   "trace_id": "TRACE-20261013-8c22e4"
+   "timestamp": "2026-10-13 16:27:01.080",
+   "trace_id": "TRACE-20261013-ee9f2f"
   }
  },
  {
@@ -644,28 +644,28 @@ window.ENDPOINTS = [
    "data": {
     "license": {
      "category": "多旋翼",
-     "created_at": "2026-10-13 15:17:44.201",
-     "expires_at": "2028-10-13 15:17:44.200",
+     "created_at": "2026-10-13 16:27:00.978",
+     "expires_at": "2028-10-13 16:27:00.978",
      "id_number": "420100199001010011",
-     "issued_at": "2026-10-13 15:17:44.200",
-     "license_id": "PIL-af325f3fc5d7",
-     "license_no": "UAV-PILOT-2026-4794",
+     "issued_at": "2026-10-13 16:27:00.978",
+     "license_id": "PIL-de68906396d7",
+     "license_no": "UAV-PILOT-2026-9420",
      "name": "文档样例操控员",
-     "signature": "MGYEIB2YbOcM4Whj4QPMv1TwWt8YiTbwfRcfpZWQTRJ12PotA0IABDZs7cC/Bu+l7nsemyTJNfn0sqkf5mK69byQA7UIINDaZcq1JQGR5N2M0NQ/3qm3UZwDPR2240QYmtlZJliYakQ=",
+     "signature": "MGYEIFdBr7po7n7hBD8Bm3rWz0LD0aY7sZRROnYG3ogZ24VwA0IABGcVV4T2LVjD5eoQKUCZJyxc2c857huS6Db+lcOUCENiItzYdtwKO/L9E+6mg6Bheu+7KDQEWHrYf9XiIQuulK8=",
      "status": "ISSUED",
-     "updated_at": "2026-10-13 15:17:44.201"
+     "updated_at": "2026-10-13 16:27:00.978"
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.201",
-   "trace_id": "TRACE-20261013-7907b3"
+   "timestamp": "2026-10-13 16:27:00.978",
+   "trace_id": "TRACE-20261013-2e6424"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.pilotApplyReq",
-   "timestamp": "2026-10-13 15:17:44.291",
-   "trace_id": "TRACE-20261013-535576"
+   "timestamp": "2026-10-13 16:27:01.081",
+   "trace_id": "TRACE-20261013-da8d13"
   }
  },
  {
@@ -682,30 +682,30 @@ window.ENDPOINTS = [
     "records": [
      {
       "category": "多旋翼",
-      "created_at": "2026-10-13 15:17:44.201",
-      "expires_at": "2028-10-13 15:17:44.200",
+      "created_at": "2026-10-13 16:27:00.978",
+      "expires_at": "2028-10-13 16:27:00.978",
       "id_number": "420100199001010011",
-      "issued_at": "2026-10-13 15:17:44.200",
-      "license_id": "PIL-af325f3fc5d7",
-      "license_no": "UAV-PILOT-2026-4794",
+      "issued_at": "2026-10-13 16:27:00.978",
+      "license_id": "PIL-de68906396d7",
+      "license_no": "UAV-PILOT-2026-9420",
       "name": "文档样例操控员",
-      "signature": "MGYEIB2YbOcM4Whj4QPMv1TwWt8YiTbwfRcfpZWQTRJ12PotA0IABDZs7cC/Bu+l7nsemyTJNfn0sqkf5mK69byQA7UIINDaZcq1JQGR5N2M0NQ/3qm3UZwDPR2240QYmtlZJliYakQ=",
+      "signature": "MGYEIFdBr7po7n7hBD8Bm3rWz0LD0aY7sZRROnYG3ogZ24VwA0IABGcVV4T2LVjD5eoQKUCZJyxc2c857huS6Db+lcOUCENiItzYdtwKO/L9E+6mg6Bheu+7KDQEWHrYf9XiIQuulK8=",
       "status": "ISSUED",
-      "updated_at": "2026-10-13 15:17:44.201"
+      "updated_at": "2026-10-13 16:27:00.978"
      }
     ],
     "total": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.201",
-   "trace_id": "TRACE-20261013-830e80"
+   "timestamp": "2026-10-13 16:27:00.979",
+   "trace_id": "TRACE-20261013-c5ac21"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.291",
-   "trace_id": "TRACE-20261013-f8415f"
+   "timestamp": "2026-10-13 16:27:01.081",
+   "trace_id": "TRACE-20261013-eb416b"
   }
  },
  {
@@ -714,33 +714,33 @@ window.ENDPOINTS = [
   "summary": "执照查询（不存在→7002）",
   "operationId": "pilotQuery",
   "req": {
-   "license_id": "PIL-af325f3fc5d7"
+   "license_id": "PIL-de68906396d7"
   },
   "resp": {
    "code": 0,
    "data": {
     "category": "多旋翼",
-    "created_at": "2026-10-13 15:17:44.201",
-    "expires_at": "2028-10-13 15:17:44.200",
+    "created_at": "2026-10-13 16:27:00.978",
+    "expires_at": "2028-10-13 16:27:00.978",
     "id_number": "420100199001010011",
-    "issued_at": "2026-10-13 15:17:44.200",
-    "license_id": "PIL-af325f3fc5d7",
-    "license_no": "UAV-PILOT-2026-4794",
+    "issued_at": "2026-10-13 16:27:00.978",
+    "license_id": "PIL-de68906396d7",
+    "license_no": "UAV-PILOT-2026-9420",
     "name": "文档样例操控员",
-    "signature": "MGYEIB2YbOcM4Whj4QPMv1TwWt8YiTbwfRcfpZWQTRJ12PotA0IABDZs7cC/Bu+l7nsemyTJNfn0sqkf5mK69byQA7UIINDaZcq1JQGR5N2M0NQ/3qm3UZwDPR2240QYmtlZJliYakQ=",
+    "signature": "MGYEIFdBr7po7n7hBD8Bm3rWz0LD0aY7sZRROnYG3ogZ24VwA0IABGcVV4T2LVjD5eoQKUCZJyxc2c857huS6Db+lcOUCENiItzYdtwKO/L9E+6mg6Bheu+7KDQEWHrYf9XiIQuulK8=",
     "status": "ISSUED",
-    "updated_at": "2026-10-13 15:17:44.201"
+    "updated_at": "2026-10-13 16:27:00.978"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.202",
-   "trace_id": "TRACE-20261013-369266"
+   "timestamp": "2026-10-13 16:27:00.979",
+   "trace_id": "TRACE-20261013-219b5b"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.pilotQueryReq",
-   "timestamp": "2026-10-13 15:17:44.291",
-   "trace_id": "TRACE-20261013-bcc2be"
+   "timestamp": "2026-10-13 16:27:01.081",
+   "trace_id": "TRACE-20261013-0126e7"
   }
  },
  {
@@ -757,27 +757,27 @@ window.ENDPOINTS = [
     "records": [
      {
       "contact": "027-88880001",
-      "created_at": "2026-10-13 15:17:44.199",
+      "created_at": "2026-10-13 16:27:00.977",
       "id_number": "91420100DOCAIR01X",
       "name": "文档样例物流企业",
       "status": "REGISTERED",
-      "subject_id": "RNS-6c909b6bca40",
+      "subject_id": "RNS-d5eb2d0a73a3",
       "subject_type": "ENTERPRISE",
-      "updated_at": "2026-10-13 15:17:44.199"
+      "updated_at": "2026-10-13 16:27:00.977"
      }
     ],
     "total": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.200",
-   "trace_id": "TRACE-20261013-9eee57"
+   "timestamp": "2026-10-13 16:27:00.977",
+   "trace_id": "TRACE-20261013-821917"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.291",
-   "trace_id": "TRACE-20261013-d81a2b"
+   "timestamp": "2026-10-13 16:27:01.080",
+   "trace_id": "TRACE-20261013-0323a8"
   }
  },
  {
@@ -786,30 +786,30 @@ window.ENDPOINTS = [
   "summary": "实名主体查询（不存在→7001）",
   "operationId": "realnameQuery",
   "req": {
-   "subject_id": "RNS-6c909b6bca40"
+   "subject_id": "RNS-d5eb2d0a73a3"
   },
   "resp": {
    "code": 0,
    "data": {
     "contact": "027-88880001",
-    "created_at": "2026-10-13 15:17:44.199",
+    "created_at": "2026-10-13 16:27:00.977",
     "id_number": "91420100DOCAIR01X",
     "name": "文档样例物流企业",
     "status": "REGISTERED",
-    "subject_id": "RNS-6c909b6bca40",
+    "subject_id": "RNS-d5eb2d0a73a3",
     "subject_type": "ENTERPRISE",
-    "updated_at": "2026-10-13 15:17:44.199"
+    "updated_at": "2026-10-13 16:27:00.977"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.200",
-   "trace_id": "TRACE-20261013-048c8e"
+   "timestamp": "2026-10-13 16:27:00.978",
+   "trace_id": "TRACE-20261013-74ed4a"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.realnameQueryReq",
-   "timestamp": "2026-10-13 15:17:44.291",
-   "trace_id": "TRACE-20261013-f7e3d5"
+   "timestamp": "2026-10-13 16:27:01.080",
+   "trace_id": "TRACE-20261013-68ca23"
   }
  },
  {
@@ -828,25 +828,25 @@ window.ENDPOINTS = [
    "data": {
     "subject": {
      "contact": "027-88880001",
-     "created_at": "2026-10-13 15:17:44.199",
+     "created_at": "2026-10-13 16:27:00.977",
      "id_number": "91420100DOCAIR01X",
      "name": "文档样例物流企业",
      "status": "REGISTERED",
-     "subject_id": "RNS-6c909b6bca40",
+     "subject_id": "RNS-d5eb2d0a73a3",
      "subject_type": "ENTERPRISE",
-     "updated_at": "2026-10-13 15:17:44.199"
+     "updated_at": "2026-10-13 16:27:00.977"
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.199",
-   "trace_id": "TRACE-20261013-2e724d"
+   "timestamp": "2026-10-13 16:27:00.977",
+   "trace_id": "TRACE-20261013-de4974"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.realnameRegisterReq",
-   "timestamp": "2026-10-13 15:17:44.291",
-   "trace_id": "TRACE-20261013-c14863"
+   "timestamp": "2026-10-13 16:27:01.080",
+   "trace_id": "TRACE-20261013-a9c039"
   }
  },
  {
@@ -862,7 +862,7 @@ window.ENDPOINTS = [
     "page_size": 20,
     "records": [
      {
-      "created_at": "2026-10-13 15:17:44.182",
+      "created_at": "2026-10-13 16:27:00.961",
       "manufacturer_id": "Manufacturer-B",
       "model": "XAG-P40",
       "operator_id": "Operator-A",
@@ -872,10 +872,10 @@ window.ENDPOINTS = [
       "sm9_identity": "SM9-ID-UAV-A-001",
       "status": "VERIFIED",
       "uav_id": "UAV-A-001",
-      "updated_at": "2026-10-13 15:17:44.182"
+      "updated_at": "2026-10-13 16:27:00.961"
      },
      {
-      "created_at": "2026-10-13 15:17:44.182",
+      "created_at": "2026-10-13 16:27:00.961",
       "manufacturer_id": "Manufacturer-A",
       "model": "DJI-M300",
       "operator_id": "Operator-A",
@@ -885,10 +885,10 @@ window.ENDPOINTS = [
       "sm9_identity": "SM9-ID-UAV-A-002",
       "status": "VERIFIED",
       "uav_id": "UAV-A-002",
-      "updated_at": "2026-10-13 15:17:44.182"
+      "updated_at": "2026-10-13 16:27:00.961"
      },
      {
-      "created_at": "2026-10-13 15:17:44.182",
+      "created_at": "2026-10-13 16:27:00.961",
       "manufacturer_id": "Manufacturer-A",
       "model": "DJI-M30T",
       "operator_id": "Operator-B",
@@ -898,10 +898,10 @@ window.ENDPOINTS = [
       "sm9_identity": "SM9-ID-UAV-B-001",
       "status": "VERIFIED",
       "uav_id": "UAV-B-001",
-      "updated_at": "2026-10-13 15:17:44.182"
+      "updated_at": "2026-10-13 16:27:00.961"
      },
      {
-      "created_at": "2026-10-13 15:17:44.182",
+      "created_at": "2026-10-13 16:27:00.961",
       "manufacturer_id": "Manufacturer-B",
       "model": "XAG-V40",
       "operator_id": "Operator-B",
@@ -911,10 +911,10 @@ window.ENDPOINTS = [
       "sm9_identity": "SM9-ID-UAV-B-002",
       "status": "VERIFIED",
       "uav_id": "UAV-B-002",
-      "updated_at": "2026-10-13 15:17:44.182"
+      "updated_at": "2026-10-13 16:27:00.961"
      },
      {
-      "created_at": "2026-10-13 15:17:44.182",
+      "created_at": "2026-10-13 16:27:00.962",
       "manufacturer_id": "Manufacturer-C",
       "model": "FIMI-F8",
       "operator_id": "Operator-C",
@@ -924,10 +924,10 @@ window.ENDPOINTS = [
       "sm9_identity": "SM9-ID-UAV-C-001",
       "status": "VERIFIED",
       "uav_id": "UAV-C-001",
-      "updated_at": "2026-10-13 15:17:44.182"
+      "updated_at": "2026-10-13 16:27:00.962"
      },
      {
-      "created_at": "2026-10-13 15:17:44.182",
+      "created_at": "2026-10-13 16:27:00.962",
       "manufacturer_id": "Manufacturer-C",
       "model": "FIMI-F8X",
       "operator_id": "Operator-C",
@@ -937,10 +937,10 @@ window.ENDPOINTS = [
       "sm9_identity": "SM9-ID-UAV-C-002",
       "status": "VERIFIED",
       "uav_id": "UAV-C-002",
-      "updated_at": "2026-10-13 15:17:44.182"
+      "updated_at": "2026-10-13 16:27:00.962"
      },
      {
-      "created_at": "2026-10-13 15:17:44.182",
+      "created_at": "2026-10-13 16:27:00.962",
       "manufacturer_id": "Manufacturer-C",
       "model": "FIMI-F8Pro",
       "operator_id": "Operator-C",
@@ -950,34 +950,34 @@ window.ENDPOINTS = [
       "sm9_identity": "SM9-ID-UAV-C-003",
       "status": "VERIFIED",
       "uav_id": "UAV-C-003",
-      "updated_at": "2026-10-13 15:17:44.182"
+      "updated_at": "2026-10-13 16:27:00.962"
      },
      {
-      "created_at": "2026-10-13 15:17:44.202",
+      "created_at": "2026-10-13 16:27:00.980",
       "manufacturer_id": "Manufacturer-B",
       "model": "DJI-M350",
       "operator_id": "Operator-A",
-      "realname_id": "RNS-6c909b6bca40",
-      "registration_mark": "UAS-00084267",
+      "realname_id": "RNS-d5eb2d0a73a3",
+      "registration_mark": "UAS-59320286",
       "serial_no": "SN-DOC-001",
       "sm9_identity": "SM9-ID-UAV-DOC-001",
       "status": "VERIFIED",
       "uav_id": "UAV-DOC-001",
-      "updated_at": "2026-10-13 15:17:44.207"
+      "updated_at": "2026-10-13 16:27:00.984"
      }
     ],
     "total": 8
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.209",
-   "trace_id": "TRACE-20261013-c417e6"
+   "timestamp": "2026-10-13 16:27:00.986",
+   "trace_id": "TRACE-20261013-f78ac2"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.292",
-   "trace_id": "TRACE-20261013-4eac22"
+   "timestamp": "2026-10-13 16:27:01.081",
+   "trace_id": "TRACE-20261013-7f46a9"
   }
  },
  {
@@ -991,28 +991,28 @@ window.ENDPOINTS = [
   "resp": {
    "code": 0,
    "data": {
-    "created_at": "2026-10-13 15:17:44.202",
+    "created_at": "2026-10-13 16:27:00.980",
     "manufacturer_id": "Manufacturer-B",
     "model": "DJI-M350",
     "operator_id": "Operator-A",
-    "realname_id": "RNS-6c909b6bca40",
-    "registration_mark": "UAS-00084267",
+    "realname_id": "RNS-d5eb2d0a73a3",
+    "registration_mark": "UAS-59320286",
     "serial_no": "SN-DOC-001",
     "sm9_identity": "SM9-ID-UAV-DOC-001",
     "status": "VERIFIED",
     "uav_id": "UAV-DOC-001",
-    "updated_at": "2026-10-13 15:17:44.207"
+    "updated_at": "2026-10-13 16:27:00.984"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.208",
-   "trace_id": "TRACE-20261013-352fea"
+   "timestamp": "2026-10-13 16:27:00.985",
+   "trace_id": "TRACE-20261013-ba5ce1"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.uavQueryReq",
-   "timestamp": "2026-10-13 15:17:44.292",
-   "trace_id": "TRACE-20261013-6e980e"
+   "timestamp": "2026-10-13 16:27:01.081",
+   "trace_id": "TRACE-20261013-bae944"
   }
  },
  {
@@ -1024,7 +1024,7 @@ window.ENDPOINTS = [
    "manufacturer_id": "Manufacturer-B",
    "model": "DJI-M350",
    "operator_id": "Operator-A",
-   "realname_id": "RNS-6c909b6bca40",
+   "realname_id": "RNS-d5eb2d0a73a3",
    "serial_no": "SN-DOC-001",
    "uav_id": "UAV-DOC-001"
   },
@@ -1033,52 +1033,52 @@ window.ENDPOINTS = [
    "data": {
     "crosschain": {
      "business_id": "UAV-DOC-001",
-     "created_at": "2026-10-13 15:17:44.204",
-     "cross_tx_id": "CX-ead1cb1594dd",
+     "created_at": "2026-10-13 16:27:00.981",
+     "cross_tx_id": "CX-c84decb13aae",
      "error_code": 0,
      "final_target_chain": "chainmaker",
      "idempotency_key": "e96d6a7b347e180add22c6f67dcd1e8f5a1b5d21b05fe9073bbac0fa58c764c9",
      "latency_ms": 3,
      "message_type": "UAV_REGISTER_PROOF",
      "policy_result": "PASS",
-     "reg_receive_tx_id": "CHAINMAKER-afb306b0f993121ca7c4044d5567e688",
-     "reg_record_id": "REGREC-f05248e0a158",
-     "reg_relay_tx_id": "CHAINMAKER-c62eb0675575046769d96bb2fc8c8ba8",
+     "reg_receive_tx_id": "CHAINMAKER-8b669ead8dc7fa20933a942438bc8ba2",
+     "reg_record_id": "REGREC-dcf1444d2864",
+     "reg_relay_tx_id": "CHAINMAKER-12098ed82e821c1552e40492da16c642",
      "retry_of": "",
-     "signature": "MGYEIC/OSGB0swrFjSjQEVBAlSc6mqUp3VWfqamq3ZMxf1D1A0IABHAJ/rwvOAe0UVvHusNNtta9bnnB3Y0tagUYH/+nA5YxPrLJ/IFpwLvbL8UO0jiqEK4bd15MxE9AnSpVw4wjy2w=",
+     "signature": "MGYEIEkE6CKq8rS44faqMDN3T/oKsl0DHodWDlmYOspShcRWA0IABLJq8jqgFu5T8N6krpyTJM7tPmj6zC9Pugx7oR/Vgyy+kBiJ7P+AvXZU1yvyXWKhyUmAZ0Sl2/zpBFMoLNcR+8I=",
      "sm3_hash": "751407a1789478f6d055d713b4b0d78f5d946b7ce4eaec9a75dddcc1b210482c",
      "sm9_identity": "SM9-ID-UAV-DOC-001",
      "source_chain": "fabric",
-     "source_chain_tx_id": "FABRIC-776de8b441c9f4f91dc2ec33263e9828",
+     "source_chain_tx_id": "FABRIC-d8a0fe29b4904ecdc953319a676401ce",
      "status": "SUCCESS",
      "target_chain_tx_id": "CHAINMAKER-87e4bb4581dfe616507211e01ebf5d83",
-     "updated_at": "2026-10-13 15:17:44.207",
+     "updated_at": "2026-10-13 16:27:00.984",
      "verify_result": "PASS"
     },
     "uav": {
-     "created_at": "2026-10-13 15:17:44.202",
+     "created_at": "2026-10-13 16:27:00.980",
      "manufacturer_id": "Manufacturer-B",
      "model": "DJI-M350",
      "operator_id": "Operator-A",
-     "realname_id": "RNS-6c909b6bca40",
-     "registration_mark": "UAS-00084267",
+     "realname_id": "RNS-d5eb2d0a73a3",
+     "registration_mark": "UAS-59320286",
      "serial_no": "SN-DOC-001",
      "sm9_identity": "SM9-ID-UAV-DOC-001",
      "status": "VERIFIED",
      "uav_id": "UAV-DOC-001",
-     "updated_at": "2026-10-13 15:17:44.207"
+     "updated_at": "2026-10-13 16:27:00.984"
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.208",
-   "trace_id": "TRACE-20261013-788a26"
+   "timestamp": "2026-10-13 16:27:00.985",
+   "trace_id": "TRACE-20261013-2a0c6b"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.uavRegisterReq",
-   "timestamp": "2026-10-13 15:17:44.291",
-   "trace_id": "TRACE-20261013-b70ec7"
+   "timestamp": "2026-10-13 16:27:01.081",
+   "trace_id": "TRACE-20261013-8992b9"
   }
  },
  {
@@ -1094,28 +1094,28 @@ window.ENDPOINTS = [
   "resp": {
    "code": 0,
    "data": {
-    "created_at": "2026-10-13 15:17:44.202",
+    "created_at": "2026-10-13 16:27:00.980",
     "manufacturer_id": "Manufacturer-B",
     "model": "DJI-M350",
     "operator_id": "Operator-A",
-    "realname_id": "RNS-6c909b6bca40",
-    "registration_mark": "UAS-00084267",
+    "realname_id": "RNS-d5eb2d0a73a3",
+    "registration_mark": "UAS-59320286",
     "serial_no": "SN-DOC-001",
     "sm9_identity": "SM9-ID-UAV-DOC-001",
     "status": "REVOKED",
     "uav_id": "UAV-DOC-001",
-    "updated_at": "2026-10-13 15:17:44.210"
+    "updated_at": "2026-10-13 16:27:00.987"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.210",
-   "trace_id": "TRACE-20261013-d897c8"
+   "timestamp": "2026-10-13 16:27:00.988",
+   "trace_id": "TRACE-20261013-812f43"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.uavRevokeReq",
-   "timestamp": "2026-10-13 15:17:44.292",
-   "trace_id": "TRACE-20261013-fe41fc"
+   "timestamp": "2026-10-13 16:27:01.082",
+   "trace_id": "TRACE-20261013-cd304f"
   }
  },
  {
@@ -1132,29 +1132,29 @@ window.ENDPOINTS = [
    "data": {
     "crosschain": null,
     "uav": {
-     "created_at": "2026-10-13 15:17:44.202",
+     "created_at": "2026-10-13 16:27:00.980",
      "manufacturer_id": "Manufacturer-B",
      "model": "DJI-M350",
      "operator_id": "Operator-A",
-     "realname_id": "RNS-6c909b6bca40",
-     "registration_mark": "UAS-00084267",
+     "realname_id": "RNS-d5eb2d0a73a3",
+     "registration_mark": "UAS-59320286",
      "serial_no": "SN-DOC-001",
      "sm9_identity": "SM9-ID-UAV-DOC-001",
      "status": "ACTIVE",
      "uav_id": "UAV-DOC-001",
-     "updated_at": "2026-10-13 15:17:44.209"
+     "updated_at": "2026-10-13 16:27:00.986"
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.209",
-   "trace_id": "TRACE-20261013-ee320b"
+   "timestamp": "2026-10-13 16:27:00.986",
+   "trace_id": "TRACE-20261013-914777"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.uavStatusReq",
-   "timestamp": "2026-10-13 15:17:44.292",
-   "trace_id": "TRACE-20261013-5b4176"
+   "timestamp": "2026-10-13 16:27:01.082",
+   "trace_id": "TRACE-20261013-b3fdef"
   }
  },
  {
@@ -1183,7 +1183,7 @@ window.ENDPOINTS = [
    "data": {
     "altitude_max": 120,
     "altitude_min": 60,
-    "created_at": "2026-10-13 15:17:44.216",
+    "created_at": "2026-10-13 16:27:00.992",
     "end_time": "2026-09-12 11:00:00.000",
     "masked_value": "巡线走廊****",
     "mission_id": "MISSION-2026-001",
@@ -1192,25 +1192,25 @@ window.ENDPOINTS = [
     "payload_type": "CAMERA",
     "pilot_license_id": "",
     "route_segments": "[\"R101\",\"R205\",\"R306\"]",
-    "signature": "MGYEIGIl3x+k9DN3ioVTzyfayLrWzsUX6HLCU5wumLkJmRrYA0IABIYz/Tr3H462sQOjLMKULUOljuq424pGXJPec1+T9f8Wsy313HA4BUdKlkb0kbrBh5NrZsmvI70ctj4h+oe3qYY=",
+    "signature": "MGYEIGx3mmyxi9LoSGvj4NTmOLpGejcpnqTP4Pmh6LQv+/pjA0IABHUpAV1QIzRH/YzIKKxeEW/btxs1wCQUuZhkgtOOdTvTYHxRMZkpP+FzwIAMShrh2jU+kepOEHa/Qm/9JA/eBzs=",
     "sm3_hash": "7472ef680f2e572c2c5de6e6496fc01cb9f3f3e0e209ef662508e28c9f675e79",
     "sm9_identity": "SM9-ID-UAV-A-001",
     "start_time": "2026-09-12 09:00:00.000",
     "status": "DRAFT",
     "uav_id": "UAV-A-001",
-    "updated_at": "2026-10-13 15:17:44.216",
+    "updated_at": "2026-10-13 16:27:00.992",
     "zones": "[\"Zone-A\",\"Zone-B\"]"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.216",
-   "trace_id": "TRACE-20261013-5a2eb8"
+   "timestamp": "2026-10-13 16:27:00.993",
+   "trace_id": "TRACE-20261013-c26ea9"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.missionCreateReq",
-   "timestamp": "2026-10-13 15:17:44.292",
-   "trace_id": "TRACE-20261013-894ee5"
+   "timestamp": "2026-10-13 16:27:01.082",
+   "trace_id": "TRACE-20261013-fb0240"
   }
  },
  {
@@ -1228,7 +1228,7 @@ window.ENDPOINTS = [
      {
       "altitude_max": 120,
       "altitude_min": 60,
-      "created_at": "2026-10-13 15:17:44.216",
+      "created_at": "2026-10-13 16:27:00.992",
       "end_time": "2026-09-12 11:00:00.000",
       "masked_value": "巡线走廊****",
       "mission_id": "MISSION-2026-001",
@@ -1237,28 +1237,28 @@ window.ENDPOINTS = [
       "payload_type": "CAMERA",
       "pilot_license_id": "",
       "route_segments": "[\"R101\",\"R205\",\"R306\"]",
-      "signature": "MGYEIGIl3x+k9DN3ioVTzyfayLrWzsUX6HLCU5wumLkJmRrYA0IABIYz/Tr3H462sQOjLMKULUOljuq424pGXJPec1+T9f8Wsy313HA4BUdKlkb0kbrBh5NrZsmvI70ctj4h+oe3qYY=",
+      "signature": "MGYEIGx3mmyxi9LoSGvj4NTmOLpGejcpnqTP4Pmh6LQv+/pjA0IABHUpAV1QIzRH/YzIKKxeEW/btxs1wCQUuZhkgtOOdTvTYHxRMZkpP+FzwIAMShrh2jU+kepOEHa/Qm/9JA/eBzs=",
       "sm3_hash": "7472ef680f2e572c2c5de6e6496fc01cb9f3f3e0e209ef662508e28c9f675e79",
       "sm9_identity": "SM9-ID-UAV-A-001",
       "start_time": "2026-09-12 09:00:00.000",
       "status": "DRAFT",
       "uav_id": "UAV-A-001",
-      "updated_at": "2026-10-13 15:17:44.216",
+      "updated_at": "2026-10-13 16:27:00.992",
       "zones": "[\"Zone-A\",\"Zone-B\"]"
      }
     ],
     "total": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.217",
-   "trace_id": "TRACE-20261013-7d9a53"
+   "timestamp": "2026-10-13 16:27:00.994",
+   "trace_id": "TRACE-20261013-b28f80"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.293",
-   "trace_id": "TRACE-20261013-652fae"
+   "timestamp": "2026-10-13 16:27:01.082",
+   "trace_id": "TRACE-20261013-ae4d44"
   }
  },
  {
@@ -1274,7 +1274,7 @@ window.ENDPOINTS = [
    "data": {
     "altitude_max": 120,
     "altitude_min": 60,
-    "created_at": "2026-10-13 15:17:44.216",
+    "created_at": "2026-10-13 16:27:00.992",
     "end_time": "2026-09-12 11:00:00.000",
     "masked_value": "巡线走廊****",
     "mission_id": "MISSION-2026-001",
@@ -1283,25 +1283,25 @@ window.ENDPOINTS = [
     "payload_type": "CAMERA",
     "pilot_license_id": "",
     "route_segments": "[\"R101\",\"R205\",\"R306\"]",
-    "signature": "MGYEIGIl3x+k9DN3ioVTzyfayLrWzsUX6HLCU5wumLkJmRrYA0IABIYz/Tr3H462sQOjLMKULUOljuq424pGXJPec1+T9f8Wsy313HA4BUdKlkb0kbrBh5NrZsmvI70ctj4h+oe3qYY=",
+    "signature": "MGYEIGx3mmyxi9LoSGvj4NTmOLpGejcpnqTP4Pmh6LQv+/pjA0IABHUpAV1QIzRH/YzIKKxeEW/btxs1wCQUuZhkgtOOdTvTYHxRMZkpP+FzwIAMShrh2jU+kepOEHa/Qm/9JA/eBzs=",
     "sm3_hash": "7472ef680f2e572c2c5de6e6496fc01cb9f3f3e0e209ef662508e28c9f675e79",
     "sm9_identity": "SM9-ID-UAV-A-001",
     "start_time": "2026-09-12 09:00:00.000",
     "status": "DRAFT",
     "uav_id": "UAV-A-001",
-    "updated_at": "2026-10-13 15:17:44.216",
+    "updated_at": "2026-10-13 16:27:00.992",
     "zones": "[\"Zone-A\",\"Zone-B\"]"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.216",
-   "trace_id": "TRACE-20261013-77798b"
+   "timestamp": "2026-10-13 16:27:00.993",
+   "trace_id": "TRACE-20261013-9827de"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.missionQueryReq",
-   "timestamp": "2026-10-13 15:17:44.293",
-   "trace_id": "TRACE-20261013-db7829"
+   "timestamp": "2026-10-13 16:27:01.082",
+   "trace_id": "TRACE-20261013-f228b2"
   }
  },
  {
@@ -1317,51 +1317,51 @@ window.ENDPOINTS = [
    "code": 0,
    "data": {
     "application": {
-     "application_id": "APP-20261013-c2d3ee",
-     "created_at": "2026-10-13 15:17:44.218",
+     "application_id": "APP-20261013-b21531",
+     "created_at": "2026-10-13 16:27:00.995",
      "mission_id": "MISSION-2026-001",
-     "signature": "MGYEIIqXBKGzbxefJB7k44kbp5xGoCtyC/1uGPE8IQyLrw3yA0IABGSYHwlFQPD/8kUadKMhmFiZYg9d12ar11WjHUa0VP+CI5DTcSyoZFVVDMOljw8l9fnjaqBlqcUCot9S//ztJD0=",
+     "signature": "MGYEIHHP3eLrlfAlXck2AivO5cDW8OXABOJxXeUOCRrAv8HKA0IABFUohH++lxv89A6jtebAVMyvY5MUkA2c3yEuDqkbVaKvPfgK1MNFEzucZAiwAvazhpAdVOatZ9EnRTzuw0SiIkk=",
      "sm3_hash": "7472ef680f2e572c2c5de6e6496fc01cb9f3f3e0e209ef662508e28c9f675e79",
      "source_chain": "fabric",
-     "source_tx_id": "FABRIC-93f78b2f745a7b2d7b22f2c6fb8122a1",
+     "source_tx_id": "FABRIC-0023d194ee1811a8fa9803b07cdd69dd",
      "status": "RELAYED",
-     "updated_at": "2026-10-13 15:17:44.222"
+     "updated_at": "2026-10-13 16:27:00.999"
     },
     "crosschain": {
-     "business_id": "APP-20261013-c2d3ee",
-     "created_at": "2026-10-13 15:17:44.219",
-     "cross_tx_id": "CX-a79e8e0e09b1",
+     "business_id": "APP-20261013-b21531",
+     "created_at": "2026-10-13 16:27:00.996",
+     "cross_tx_id": "CX-efd2c0599850",
      "error_code": 0,
      "final_target_chain": "fisco-bcos",
-     "idempotency_key": "093d071ea9e128df0479c75b487a71dc5a18422c74ab011c79f81637cf1f52b4",
-     "latency_ms": 2,
+     "idempotency_key": "2f41f0d1e58acee79ce068f008896b12bb236e1cf4bfda8ef930b0624da16c42",
+     "latency_ms": 3,
      "message_type": "MISSION_APPLICATION",
      "policy_result": "PASS",
-     "reg_receive_tx_id": "CHAINMAKER-aef0a2398cde5aa8d50cb1114bc13033",
-     "reg_record_id": "REGREC-d37f61b605ad",
-     "reg_relay_tx_id": "CHAINMAKER-9156d8bc6a5704bf07d81c55dcdb433b",
+     "reg_receive_tx_id": "CHAINMAKER-ed2fa92be828160e08befae7ceb42ae7",
+     "reg_record_id": "REGREC-e623b89e3410",
+     "reg_relay_tx_id": "CHAINMAKER-f06d548ccc2ebfbe12ec54d653003084",
      "retry_of": "",
-     "signature": "MGYEIBt4FrQLqCXdx0UCbgyfh+TLGtnD49BRORNxm1cXXlLrA0IABGxs631V5RP1ExIEHGvaletN7G+co+1zgSX1UQP1EM4wQEqSM9ir9wq7WT8PyQGI4PCfRhBInsw1IYUeU3oUvyw=",
-     "sm3_hash": "d29a303817150114ef42cc9540d17d8aeb1b13d083214d3218a39080214b6018",
+     "signature": "MGYEIFTAModvBn9w+RG/Wkms+qWsiEJaoy/JAw99FdkHDUNAA0IABIEaGf+2Gbpm5rYRny8MeAB7Eyzg3aWi4bGaGzH+LfvbhjEOvvWWhU3Bls+dMnTLQ1YT0CqDI8mbpbrLm5D7l4Y=",
+     "sm3_hash": "09ca31cf928d5db9ccec26e8da53a2d055013bd3862467e8744f8cde54bd31b7",
      "sm9_identity": "SM9-ID-Operator-A",
      "source_chain": "fabric",
-     "source_chain_tx_id": "FABRIC-93f78b2f745a7b2d7b22f2c6fb8122a1",
+     "source_chain_tx_id": "FABRIC-0023d194ee1811a8fa9803b07cdd69dd",
      "status": "SUCCESS",
-     "target_chain_tx_id": "FISCO-BCOS-f3cd2101f64b861cf27831769dd7a68a",
-     "updated_at": "2026-10-13 15:17:44.221",
+     "target_chain_tx_id": "FISCO-BCOS-9c45f6d77f71750178c674f68f93e89d",
+     "updated_at": "2026-10-13 16:27:00.999",
      "verify_result": "PASS"
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.222",
-   "trace_id": "TRACE-20261013-761410"
+   "timestamp": "2026-10-13 16:27:00.999",
+   "trace_id": "TRACE-20261013-ebbf20"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.missionSubmitReq",
-   "timestamp": "2026-10-13 15:17:44.293",
-   "trace_id": "TRACE-20261013-adb53f"
+   "timestamp": "2026-10-13 16:27:01.082",
+   "trace_id": "TRACE-20261013-5f2bf6"
   }
  },
  {
@@ -1370,18 +1370,18 @@ window.ENDPOINTS = [
   "summary": "审核记录查询",
   "operationId": "reviewQuery",
   "req": {
-   "application_id": "APP-20261013-c2d3ee"
+   "application_id": "APP-20261013-b21531"
   },
   "resp": {
    "code": 0,
    "data": {
     "records": [
      {
-      "application_id": "APP-20261013-c2d3ee",
+      "application_id": "APP-20261013-b21531",
       "comment": "同意执行",
       "result": "APPROVED",
-      "review_id": "REV-27f738cbf4f9",
-      "review_time": "2026-10-13 15:17:44.222",
+      "review_id": "REV-775bff78817f",
+      "review_time": "2026-10-13 16:27:01.000",
       "reviewer": "FISCO-ADMIN",
       "rules_hit": "[\"R-ALT-001\"]"
      }
@@ -1389,15 +1389,15 @@ window.ENDPOINTS = [
     "total": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.227",
-   "trace_id": "TRACE-20261013-cef460"
+   "timestamp": "2026-10-13 16:27:01.007",
+   "trace_id": "TRACE-20261013-cf2ece"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.reviewQueryReq",
-   "timestamp": "2026-10-13 15:17:44.294",
-   "trace_id": "TRACE-20261013-ee98d7"
+   "timestamp": "2026-10-13 16:27:01.082",
+   "trace_id": "TRACE-20261013-d5dff4"
   }
  },
  {
@@ -1406,7 +1406,7 @@ window.ENDPOINTS = [
   "summary": "审核裁决（MISSION_REVIEW_RESULT 回传源链）",
   "operationId": "reviewSubmit",
   "req": {
-   "application_id": "APP-20261013-c2d3ee",
+   "application_id": "APP-20261013-b21531",
    "comment": "同意执行",
    "result": "APPROVED",
    "reviewer": "FISCO-ADMIN",
@@ -1418,33 +1418,33 @@ window.ENDPOINTS = [
    "code": 0,
    "data": {
     "crosschain": {
-     "business_id": "REV-27f738cbf4f9",
-     "created_at": "2026-10-13 15:17:44.223",
-     "cross_tx_id": "CX-0794736b1d17",
+     "business_id": "REV-775bff78817f",
+     "created_at": "2026-10-13 16:27:01.001",
+     "cross_tx_id": "CX-4d7c101d5c96",
      "error_code": 0,
      "final_target_chain": "fabric",
-     "idempotency_key": "47c4f81bbe9d3c67de6c537439231b7b848b9aa22271567faded48894a13741c",
-     "latency_ms": 3,
+     "idempotency_key": "2e0722b21c8ddac2c3241c2892338d98fef4aab2db93ccffb058c27f3d0380c4",
+     "latency_ms": 4,
      "message_type": "MISSION_REVIEW_RESULT",
      "policy_result": "PASS",
-     "reg_receive_tx_id": "CHAINMAKER-10dbc357fb46856a20238baf6479fafa",
-     "reg_record_id": "REGREC-4aeea1f37eb1",
-     "reg_relay_tx_id": "CHAINMAKER-56db713859990600d6433e811a9640b2",
+     "reg_receive_tx_id": "CHAINMAKER-5b0ad503f11fd97d941bbef96008e5dc",
+     "reg_record_id": "REGREC-7507ee0c2177",
+     "reg_relay_tx_id": "CHAINMAKER-865c1e236e9a90a218c254cb7e545da6",
      "retry_of": "",
-     "signature": "MGYEIH2tX3AsQ7gfbc2xN9PjpvDhCrIsX2i++jcczVBR5FIeA0IABDaCnpLLzWRUzWUAsJIjFpYq+Z4NDlF7KPTY1PIGMiAvIQt+r4xT9CGIoLUACAdKOtRpI60QC0fL8eMme/qAzCM=",
-     "sm3_hash": "8fe32749d82fcef3bfc00ea9a24560a5ed0c0f6dad41602080cfa307dbb2e09f",
+     "signature": "MGYEIGjTR8LavQZW7K4T7ZhNE2MBodBEGTCldM/IwFy3RR0fA0IABDHvgRKCjfHiniMpkbfZvcHDZvCy5rc6c/5YLSHjiqfXnxfdUKebEnazwzmvz2Nir3Vt2jNnBIS3yD7CDMa1v7k=",
+     "sm3_hash": "395c92b9b8b2faef11312bc9cd5db17bb510dd2f174b5bfc610684c4a44c8d30",
      "sm9_identity": "SM9-ID-FISCO-ADMIN",
      "source_chain": "fisco-bcos",
-     "source_chain_tx_id": "FISCO-BCOS-0dedac6e184e9d49a9d78bdfc39ba0c2",
+     "source_chain_tx_id": "FISCO-BCOS-f1c4783ade8093ece8e076899fd5106a",
      "status": "SUCCESS",
-     "target_chain_tx_id": "FABRIC-c117b7d7022f38e4911faefa570d6c38",
-     "updated_at": "2026-10-13 15:17:44.226",
+     "target_chain_tx_id": "FABRIC-19d98e1d19c631903c99bbb272585b7c",
+     "updated_at": "2026-10-13 16:27:01.005",
      "verify_result": "PASS"
     },
     "mission": {
      "altitude_max": 120,
      "altitude_min": 60,
-     "created_at": "2026-10-13 15:17:44.216",
+     "created_at": "2026-10-13 16:27:00.992",
      "end_time": "2026-09-12 11:00:00.000",
      "masked_value": "巡线走廊****",
      "mission_id": "MISSION-2026-001",
@@ -1453,35 +1453,35 @@ window.ENDPOINTS = [
      "payload_type": "CAMERA",
      "pilot_license_id": "",
      "route_segments": "[\"R101\",\"R205\",\"R306\"]",
-     "signature": "MGYEIGIl3x+k9DN3ioVTzyfayLrWzsUX6HLCU5wumLkJmRrYA0IABIYz/Tr3H462sQOjLMKULUOljuq424pGXJPec1+T9f8Wsy313HA4BUdKlkb0kbrBh5NrZsmvI70ctj4h+oe3qYY=",
+     "signature": "MGYEIGx3mmyxi9LoSGvj4NTmOLpGejcpnqTP4Pmh6LQv+/pjA0IABHUpAV1QIzRH/YzIKKxeEW/btxs1wCQUuZhkgtOOdTvTYHxRMZkpP+FzwIAMShrh2jU+kepOEHa/Qm/9JA/eBzs=",
      "sm3_hash": "7472ef680f2e572c2c5de6e6496fc01cb9f3f3e0e209ef662508e28c9f675e79",
      "sm9_identity": "SM9-ID-UAV-A-001",
      "start_time": "2026-09-12 09:00:00.000",
      "status": "APPROVED",
      "uav_id": "UAV-A-001",
-     "updated_at": "2026-10-13 15:17:44.227",
+     "updated_at": "2026-10-13 16:27:01.005",
      "zones": "[\"Zone-A\",\"Zone-B\"]"
     },
     "review": {
-     "application_id": "APP-20261013-c2d3ee",
+     "application_id": "APP-20261013-b21531",
      "comment": "同意执行",
      "result": "APPROVED",
-     "review_id": "REV-27f738cbf4f9",
-     "review_time": "2026-10-13 15:17:44.222",
+     "review_id": "REV-775bff78817f",
+     "review_time": "2026-10-13 16:27:01.000",
      "reviewer": "FISCO-ADMIN",
      "rules_hit": "[\"R-ALT-001\"]"
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.227",
-   "trace_id": "TRACE-20261013-27c822"
+   "timestamp": "2026-10-13 16:27:01.007",
+   "trace_id": "TRACE-20261013-f0e769"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.reviewSubmitReq",
-   "timestamp": "2026-10-13 15:17:44.294",
-   "trace_id": "TRACE-20261013-0e4733"
+   "timestamp": "2026-10-13 16:27:01.082",
+   "trace_id": "TRACE-20261013-e15b63"
   }
  },
  {
@@ -1499,15 +1499,15 @@ window.ENDPOINTS = [
     "count": 0
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.228",
-   "trace_id": "TRACE-20261013-722029"
+   "timestamp": "2026-10-13 16:27:01.008",
+   "trace_id": "TRACE-20261013-41f5a3"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.conflictDetectReq",
-   "timestamp": "2026-10-13 15:17:44.294",
-   "trace_id": "TRACE-20261013-c11042"
+   "timestamp": "2026-10-13 16:27:01.083",
+   "trace_id": "TRACE-20261013-03e0b8"
   }
  },
  {
@@ -1524,80 +1524,80 @@ window.ENDPOINTS = [
    "code": 6002,
    "data": null,
    "message": "biz error 6002: conflict_id \"CFL-NOPE-001\" 不存在",
-   "timestamp": "2026-10-13 15:17:44.228",
-   "trace_id": "TRACE-20261013-c5ba70"
+   "timestamp": "2026-10-13 16:27:01.008",
+   "trace_id": "TRACE-20261013-a698bc"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.conflictResolveReq",
-   "timestamp": "2026-10-13 15:17:44.294",
-   "trace_id": "TRACE-20261013-be640b"
+   "timestamp": "2026-10-13 16:27:01.083",
+   "trace_id": "TRACE-20261013-6cadc7"
   }
  },
  {
   "path": "/api/pass/issue",
   "tag": "通行许可",
-  "summary": "飞行许可签发（FLIGHT_PASS 管理→监管→运营）",
+  "summary": "飞行许可签发（FLIGHT_PASS 证照→监管→运营）",
   "operationId": "passIssue",
   "req": {
-   "issuer": "FISCO-ADMIN",
+   "issuer": "REGISTRY-ADMIN",
    "mission_id": "MISSION-2026-001",
    "pass_id": "PASS-2026-001",
-   "valid_from": "2026-10-13 14:17:44.180",
-   "valid_to": "2026-10-13 16:17:44.180"
+   "valid_from": "2026-10-13 15:27:00.960",
+   "valid_to": "2026-10-13 17:27:00.960"
   },
   "resp": {
    "code": 0,
    "data": {
     "crosschain": {
      "business_id": "PASS-2026-001",
-     "created_at": "2026-10-13 15:17:44.230",
-     "cross_tx_id": "CX-334e4b53897a",
+     "created_at": "2026-10-13 16:27:01.012",
+     "cross_tx_id": "CX-c30ba90d0bc6",
      "error_code": 0,
      "final_target_chain": "fabric",
      "idempotency_key": "6cf6ad87e7ca30944f0ef5f2754e605446dcb43f46cc058b29fbaef3410a8582",
-     "latency_ms": 2,
+     "latency_ms": 3,
      "message_type": "FLIGHT_PASS",
      "policy_result": "PASS",
-     "reg_receive_tx_id": "CHAINMAKER-f8c335a1cb006a54fcf0b65a0ba0c11d",
-     "reg_record_id": "REGREC-a7041fa64401",
-     "reg_relay_tx_id": "CHAINMAKER-280f63ecfa8a2029e2e51ce8629685f9",
+     "reg_receive_tx_id": "CHAINMAKER-3738a3d274976f3fe837956a10f99acb",
+     "reg_record_id": "REGREC-3505535ecc31",
+     "reg_relay_tx_id": "CHAINMAKER-8e451df4ec9c430534ce87317b41b79c",
      "retry_of": "",
-     "signature": "MGYEIAcDmMtqCsxGcyLqFyXeJpNC/pyiqt05XCiIC6MVFHixA0IABDH8fdMxhUOgzvuCKNLvU3ZMwpqkv7lTtuZtn+w4AdBacM16jT9aeKXm/iqUNjhCosuQ0FKKt3Qy4PQBr85mYKQ=",
-     "sm3_hash": "5d5ac694a0e647caa8599c05fafe90b7e1b464fb758fea34270ed6981d05e010",
-     "sm9_identity": "SM9-ID-FISCO-ADMIN",
-     "source_chain": "fisco-bcos",
-     "source_chain_tx_id": "FISCO-BCOS-08c9b6d36ce5413c83db2927cc54dd5f",
+     "signature": "MGYEIBETLlHX/rED51hphH9KV0bhEbWYu5uK6BdT3XMHYU0EA0IABFKf11USsABTwbAdup3qHbuVgqV9xYg5MhDtRkwKP958I0xhr04C2QYy5tb5tJITqrY2YXs8vlmMZbo2x//ALO0=",
+     "sm3_hash": "00a44f288128c04712564533edf0206746af7acd8a51fbc9b43810b455bf3839",
+     "sm9_identity": "SM9-ID-REGISTRY-ADMIN",
+     "source_chain": "irita",
+     "source_chain_tx_id": "IRITA-e1f7448824e6b110d556a17f7ddccb4d",
      "status": "SUCCESS",
-     "target_chain_tx_id": "FABRIC-439e5ae98e9c43954867bc917f6e7e87",
-     "updated_at": "2026-10-13 15:17:44.233",
+     "target_chain_tx_id": "FABRIC-7578f55d0615359bfcae79f1f0269b49",
+     "updated_at": "2026-10-13 16:27:01.015",
      "verify_result": "PASS"
     },
     "pass": {
-     "created_at": "2026-10-13 15:17:44.229",
+     "created_at": "2026-10-13 16:27:01.010",
      "mission_id": "MISSION-2026-001",
      "pass_id": "PASS-2026-001",
      "route": "[\"R101\",\"R205\",\"R306\"]",
-     "signature": "MGYEIDARFPpbVcCo5pZ5HldRfoOkPXBJcuUIQ0ovfzKdya5uA0IABCI9JpofLCgc6jvQ8iu3MWXhzCp1voe4HOwCsHWffMe+UtwkgyYHdburAVa5tGaQC23HG853wTpGDnHNOIiOngw=",
-     "sm3_hash": "52aa516b586f2e8d08eaf9399c402fabb0a3eaf6757f7625db5ac414fc572fad",
+     "signature": "MGYEIJE0Si0RsJC7nckAS4jFSdPzRtBX5+9w+iS2Ga93MOhKA0IABI2fztMhQMVhJrIPK8+wMp089//xB8/KbQo3AGPB5iJIOwUmWeQD9NK7Vyo5MXsf+6mmnwiQlPUI7cZ5LT8MSXU=",
+     "sm3_hash": "99f2c0002ec52f3545e028c271ff1df608079802dd8794c8538a5476e8472808",
      "status": "VALID",
      "uav_id": "UAV-A-001",
-     "updated_at": "2026-10-13 15:17:44.233",
-     "valid_from": "2026-10-13 14:17:44.180",
-     "valid_to": "2026-10-13 16:17:44.180"
+     "updated_at": "2026-10-13 16:27:01.015",
+     "valid_from": "2026-10-13 15:27:00.960",
+     "valid_to": "2026-10-13 17:27:00.960"
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.233",
-   "trace_id": "TRACE-20261013-048ff9"
+   "timestamp": "2026-10-13 16:27:01.016",
+   "trace_id": "TRACE-20261013-0be5d6"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.passIssueReq",
-   "timestamp": "2026-10-13 15:17:44.294",
-   "trace_id": "TRACE-20261013-83e896"
+   "timestamp": "2026-10-13 16:27:01.083",
+   "trace_id": "TRACE-20261013-191b20"
   }
  },
  {
@@ -1613,31 +1613,31 @@ window.ENDPOINTS = [
     "page_size": 20,
     "records": [
      {
-      "created_at": "2026-10-13 15:17:44.229",
+      "created_at": "2026-10-13 16:27:01.010",
       "mission_id": "MISSION-2026-001",
       "pass_id": "PASS-2026-001",
       "route": "[\"R101\",\"R205\",\"R306\"]",
-      "signature": "MGYEIDARFPpbVcCo5pZ5HldRfoOkPXBJcuUIQ0ovfzKdya5uA0IABCI9JpofLCgc6jvQ8iu3MWXhzCp1voe4HOwCsHWffMe+UtwkgyYHdburAVa5tGaQC23HG853wTpGDnHNOIiOngw=",
-      "sm3_hash": "52aa516b586f2e8d08eaf9399c402fabb0a3eaf6757f7625db5ac414fc572fad",
+      "signature": "MGYEIJE0Si0RsJC7nckAS4jFSdPzRtBX5+9w+iS2Ga93MOhKA0IABI2fztMhQMVhJrIPK8+wMp089//xB8/KbQo3AGPB5iJIOwUmWeQD9NK7Vyo5MXsf+6mmnwiQlPUI7cZ5LT8MSXU=",
+      "sm3_hash": "99f2c0002ec52f3545e028c271ff1df608079802dd8794c8538a5476e8472808",
       "status": "VALID",
       "uav_id": "UAV-A-001",
-      "updated_at": "2026-10-13 15:17:44.233",
-      "valid_from": "2026-10-13 14:17:44.180",
-      "valid_to": "2026-10-13 16:17:44.180"
+      "updated_at": "2026-10-13 16:27:01.015",
+      "valid_from": "2026-10-13 15:27:00.960",
+      "valid_to": "2026-10-13 17:27:00.960"
      }
     ],
     "total": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.234",
-   "trace_id": "TRACE-20261013-573efe"
+   "timestamp": "2026-10-13 16:27:01.017",
+   "trace_id": "TRACE-20261013-a7094b"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.295",
-   "trace_id": "TRACE-20261013-4cea6f"
+   "timestamp": "2026-10-13 16:27:01.083",
+   "trace_id": "TRACE-20261013-d51940"
   }
  },
  {
@@ -1651,28 +1651,28 @@ window.ENDPOINTS = [
   "resp": {
    "code": 0,
    "data": {
-    "created_at": "2026-10-13 15:17:44.229",
+    "created_at": "2026-10-13 16:27:01.010",
     "mission_id": "MISSION-2026-001",
     "pass_id": "PASS-2026-001",
     "route": "[\"R101\",\"R205\",\"R306\"]",
-    "signature": "MGYEIDARFPpbVcCo5pZ5HldRfoOkPXBJcuUIQ0ovfzKdya5uA0IABCI9JpofLCgc6jvQ8iu3MWXhzCp1voe4HOwCsHWffMe+UtwkgyYHdburAVa5tGaQC23HG853wTpGDnHNOIiOngw=",
-    "sm3_hash": "52aa516b586f2e8d08eaf9399c402fabb0a3eaf6757f7625db5ac414fc572fad",
+    "signature": "MGYEIJE0Si0RsJC7nckAS4jFSdPzRtBX5+9w+iS2Ga93MOhKA0IABI2fztMhQMVhJrIPK8+wMp089//xB8/KbQo3AGPB5iJIOwUmWeQD9NK7Vyo5MXsf+6mmnwiQlPUI7cZ5LT8MSXU=",
+    "sm3_hash": "99f2c0002ec52f3545e028c271ff1df608079802dd8794c8538a5476e8472808",
     "status": "VALID",
     "uav_id": "UAV-A-001",
-    "updated_at": "2026-10-13 15:17:44.233",
-    "valid_from": "2026-10-13 14:17:44.180",
-    "valid_to": "2026-10-13 16:17:44.180"
+    "updated_at": "2026-10-13 16:27:01.015",
+    "valid_from": "2026-10-13 15:27:00.960",
+    "valid_to": "2026-10-13 17:27:00.960"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.234",
-   "trace_id": "TRACE-20261013-5e766e"
+   "timestamp": "2026-10-13 16:27:01.016",
+   "trace_id": "TRACE-20261013-187e42"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.passIDReq",
-   "timestamp": "2026-10-13 15:17:44.294",
-   "trace_id": "TRACE-20261013-4b6082"
+   "timestamp": "2026-10-13 16:27:01.083",
+   "trace_id": "TRACE-20261013-49a168"
   }
  },
  {
@@ -1681,7 +1681,7 @@ window.ENDPOINTS = [
   "summary": "许可吊销（PASS_REVOKE 跨链重发）",
   "operationId": "passRevoke",
   "req": {
-   "operator": "FISCO-ADMIN",
+   "operator": "REGISTRY-ADMIN",
    "pass_id": "PASS-2026-001",
    "reason": "任务结束"
   },
@@ -1690,59 +1690,59 @@ window.ENDPOINTS = [
    "data": {
     "crosschain": {
      "business_id": "PASS-2026-001",
-     "created_at": "2026-10-13 15:17:44.237",
-     "cross_tx_id": "CX-f4dc5f8c5e9e",
+     "created_at": "2026-10-13 16:27:01.020",
+     "cross_tx_id": "CX-0bfdf4a7f507",
      "error_code": 0,
      "final_target_chain": "fabric",
      "idempotency_key": "370a264f2a3c8eb216f62dec3bdd0cd36b2ab9b89f667ab461ef50bc9f8e2595",
-     "latency_ms": 5,
+     "latency_ms": 2,
      "message_type": "PASS_REVOKE",
      "policy_result": "PASS",
-     "reg_receive_tx_id": "CHAINMAKER-dce9ee800b5c5b9cf0466c0a68294a29",
-     "reg_record_id": "REGREC-eaa7a917ae70",
-     "reg_relay_tx_id": "CHAINMAKER-fc651e065b917733ebf71826c014c610",
+     "reg_receive_tx_id": "CHAINMAKER-081dfd4df738364bd7c63894eb215b43",
+     "reg_record_id": "REGREC-06fecba4066b",
+     "reg_relay_tx_id": "CHAINMAKER-adc7498647023eeccfa7458b2649b18a",
      "retry_of": "",
-     "signature": "MGYEIKr/14XlwjyjNpqi7AEVnwP3CCF/eZIR1Q1oDdKC6/yYA0IABFA6iu5YNzQuUql0/pU6yLM0RwJ/TN+3xX0wABZKGf6AcZSDovpkI/Tx4b0xdUFGZCVHQvi/IseL0LXjhtXlwbg=",
-     "sm3_hash": "2415ada93c6f4314f8d6e56468afd733ec356f2d08383fab9c0d7af9ac54c5c3",
-     "sm9_identity": "SM9-ID-FISCO-ADMIN",
-     "source_chain": "fisco-bcos",
-     "source_chain_tx_id": "FISCO-BCOS-52e36d043d0e2d9f71b59117e783da28",
+     "signature": "MGYEIKfioQwKoRGaJHNR/3Iky/czhfu1c48oaUrRAKhwhlOgA0IABGfQ2pX9dh2/NJewf91xUc7gcxbA2ui+gZJcrGzmypcNka3gQIYGn9y0UaLkujEbZXOkbl/9ap5H1QP9xWMxM5E=",
+     "sm3_hash": "1b20b87b6b376e073977da0ae417f5a783ba43cfa9496997e209e0f611e55d2e",
+     "sm9_identity": "SM9-ID-REGISTRY-ADMIN",
+     "source_chain": "irita",
+     "source_chain_tx_id": "IRITA-55a84d9eb2521d7ebef2c9c60621d534",
      "status": "SUCCESS",
-     "target_chain_tx_id": "FABRIC-9866b543c0781e937f1fc6b4c55d31c5",
-     "updated_at": "2026-10-13 15:17:44.243",
+     "target_chain_tx_id": "FABRIC-f940482d4b81d054b0e01f459d0f6664",
+     "updated_at": "2026-10-13 16:27:01.022",
      "verify_result": "PASS"
     },
     "crosschain_status": "SUCCESS",
     "pass": {
-     "created_at": "2026-10-13 15:17:44.229",
+     "created_at": "2026-10-13 16:27:01.010",
      "mission_id": "MISSION-2026-001",
      "pass_id": "PASS-2026-001",
      "route": "[\"R101\",\"R205\",\"R306\"]",
-     "signature": "MGYEIDARFPpbVcCo5pZ5HldRfoOkPXBJcuUIQ0ovfzKdya5uA0IABCI9JpofLCgc6jvQ8iu3MWXhzCp1voe4HOwCsHWffMe+UtwkgyYHdburAVa5tGaQC23HG853wTpGDnHNOIiOngw=",
-     "sm3_hash": "52aa516b586f2e8d08eaf9399c402fabb0a3eaf6757f7625db5ac414fc572fad",
+     "signature": "MGYEIJE0Si0RsJC7nckAS4jFSdPzRtBX5+9w+iS2Ga93MOhKA0IABI2fztMhQMVhJrIPK8+wMp089//xB8/KbQo3AGPB5iJIOwUmWeQD9NK7Vyo5MXsf+6mmnwiQlPUI7cZ5LT8MSXU=",
+     "sm3_hash": "99f2c0002ec52f3545e028c271ff1df608079802dd8794c8538a5476e8472808",
      "status": "REVOKED",
      "uav_id": "UAV-A-001",
-     "updated_at": "2026-10-13 15:17:44.236",
-     "valid_from": "2026-10-13 14:17:44.180",
-     "valid_to": "2026-10-13 16:17:44.180"
+     "updated_at": "2026-10-13 16:27:01.018",
+     "valid_from": "2026-10-13 15:27:00.960",
+     "valid_to": "2026-10-13 17:27:00.960"
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.244",
-   "trace_id": "TRACE-20261013-2bc7d9"
+   "timestamp": "2026-10-13 16:27:01.023",
+   "trace_id": "TRACE-20261013-c3bc81"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.passRevokeReq",
-   "timestamp": "2026-10-13 15:17:44.295",
-   "trace_id": "TRACE-20261013-4a7438"
+   "timestamp": "2026-10-13 16:27:01.084",
+   "trace_id": "TRACE-20261013-85aa1c"
   }
  },
  {
   "path": "/api/pass/verify",
   "tag": "通行许可",
-  "summary": "许可验证（valid/reasons/status；吊销后 valid=false）",
+  "summary": "许可验证（valid/reasons/status；SM9 双身份兼容验签——迁移前 FISCO-ADMIN 签名存量证照不断代；吊销后 valid=false）",
   "operationId": "passVerify",
   "req": {
    "pass_id": "PASS-2026-001"
@@ -1756,15 +1756,15 @@ window.ENDPOINTS = [
     "valid": true
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.236",
-   "trace_id": "TRACE-20261013-68b960"
+   "timestamp": "2026-10-13 16:27:01.018",
+   "trace_id": "TRACE-20261013-c46288"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.passIDReq",
-   "timestamp": "2026-10-13 15:17:44.295",
-   "trace_id": "TRACE-20261013-38528d"
+   "timestamp": "2026-10-13 16:27:01.083",
+   "trace_id": "TRACE-20261013-9d9622"
   }
  },
  {
@@ -1780,7 +1780,7 @@ window.ENDPOINTS = [
     "page_size": 20,
     "records": [
      {
-      "created_at": "2026-10-13 15:17:44.189",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.62,
       "lon": 114.42,
       "neighbors": "[\"N4\"]",
@@ -1792,7 +1792,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.246",
+      "created_at": "2026-10-13 16:27:01.024",
       "lat": 0,
       "lon": 0,
       "neighbors": "[]",
@@ -1804,7 +1804,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.188",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.53,
       "lon": 114.33,
       "neighbors": "[\"UAV-A-001-NODE\",\"N2\"]",
@@ -1816,7 +1816,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.188",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.548,
       "lon": 114.348,
       "neighbors": "[\"N1\",\"N3\"]",
@@ -1828,7 +1828,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.188",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.572,
       "lon": 114.372,
       "neighbors": "[\"N2\",\"N4\"]",
@@ -1840,7 +1840,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.189",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.598,
       "lon": 114.398,
       "neighbors": "[\"N3\",\"MGR\"]",
@@ -1852,7 +1852,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.189",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.556,
       "lon": 114.356,
       "neighbors": "[]",
@@ -1864,7 +1864,7 @@ window.ENDPOINTS = [
       "status": "OFFLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.189",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.64,
       "lon": 114.44,
       "neighbors": "[]",
@@ -1876,7 +1876,7 @@ window.ENDPOINTS = [
       "status": "OFFLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.188",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.51,
       "lon": 114.31,
       "neighbors": "[\"N1\"]",
@@ -1891,15 +1891,15 @@ window.ENDPOINTS = [
     "total": 9
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.247",
-   "trace_id": "TRACE-20261013-192ee4"
+   "timestamp": "2026-10-13 16:27:01.024",
+   "trace_id": "TRACE-20261013-c9046c"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.296",
-   "trace_id": "TRACE-20261013-89c3ce"
+   "timestamp": "2026-10-13 16:27:01.085",
+   "trace_id": "TRACE-20261013-053fab"
   }
  },
  {
@@ -1918,7 +1918,7 @@ window.ENDPOINTS = [
   "resp": {
    "code": 0,
    "data": {
-    "created_at": "2026-10-13 15:17:44.246",
+    "created_at": "2026-10-13 16:27:01.024",
     "lat": 0,
     "lon": 0,
     "neighbors": "[]",
@@ -1930,15 +1930,15 @@ window.ENDPOINTS = [
     "status": "ONLINE"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.247",
-   "trace_id": "TRACE-20261013-1b0a7e"
+   "timestamp": "2026-10-13 16:27:01.024",
+   "trace_id": "TRACE-20261013-9d573c"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type offchain.NodeRegisterRequest",
-   "timestamp": "2026-10-13 15:17:44.296",
-   "trace_id": "TRACE-20261013-6bb72d"
+   "timestamp": "2026-10-13 16:27:01.085",
+   "trace_id": "TRACE-20261013-f69c57"
   }
  },
  {
@@ -1991,7 +1991,7 @@ window.ENDPOINTS = [
     "isolated": [],
     "nodes": [
      {
-      "created_at": "2026-10-13 15:17:44.189",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.62,
       "lon": 114.42,
       "neighbors": "[\"N4\"]",
@@ -2003,7 +2003,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.188",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.53,
       "lon": 114.33,
       "neighbors": "[\"UAV-A-001-NODE\",\"N2\"]",
@@ -2015,7 +2015,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.188",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.548,
       "lon": 114.348,
       "neighbors": "[\"N1\",\"N3\"]",
@@ -2027,7 +2027,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.188",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.572,
       "lon": 114.372,
       "neighbors": "[\"N2\",\"N4\"]",
@@ -2039,7 +2039,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.189",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.598,
       "lon": 114.398,
       "neighbors": "[\"N3\",\"MGR\"]",
@@ -2051,7 +2051,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.189",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.556,
       "lon": 114.356,
       "neighbors": "[]",
@@ -2063,7 +2063,7 @@ window.ENDPOINTS = [
       "status": "OFFLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.189",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.64,
       "lon": 114.44,
       "neighbors": "[]",
@@ -2075,7 +2075,7 @@ window.ENDPOINTS = [
       "status": "OFFLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.188",
+      "created_at": "2026-10-13 16:27:00.969",
       "lat": 30.51,
       "lon": 114.31,
       "neighbors": "[\"N1\"]",
@@ -2090,8 +2090,8 @@ window.ENDPOINTS = [
     "wormhole_enabled": false
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.245",
-   "trace_id": "TRACE-20261013-1cf30d"
+   "timestamp": "2026-10-13 16:27:01.023",
+   "trace_id": "TRACE-20261013-93aad9"
   },
   "err": {
    "code": 0,
@@ -2137,7 +2137,7 @@ window.ENDPOINTS = [
     "isolated": [],
     "nodes": [
      {
-      "created_at": "2026-10-13 15:17:44.286",
+      "created_at": "2026-10-13 16:27:01.078",
       "lat": 30.62,
       "lon": 114.42,
       "neighbors": "[\"N4\"]",
@@ -2149,7 +2149,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.285",
+      "created_at": "2026-10-13 16:27:01.077",
       "lat": 30.53,
       "lon": 114.33,
       "neighbors": "[\"UAV-A-001-NODE\",\"N2\"]",
@@ -2161,7 +2161,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.285",
+      "created_at": "2026-10-13 16:27:01.077",
       "lat": 30.548,
       "lon": 114.348,
       "neighbors": "[\"N1\",\"N3\"]",
@@ -2173,7 +2173,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.286",
+      "created_at": "2026-10-13 16:27:01.078",
       "lat": 30.572,
       "lon": 114.372,
       "neighbors": "[\"N2\",\"N4\"]",
@@ -2185,7 +2185,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.286",
+      "created_at": "2026-10-13 16:27:01.078",
       "lat": 30.598,
       "lon": 114.398,
       "neighbors": "[\"N3\",\"MGR\"]",
@@ -2197,7 +2197,7 @@ window.ENDPOINTS = [
       "status": "ONLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.286",
+      "created_at": "2026-10-13 16:27:01.078",
       "lat": 30.556,
       "lon": 114.356,
       "neighbors": "[]",
@@ -2209,7 +2209,7 @@ window.ENDPOINTS = [
       "status": "OFFLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.287",
+      "created_at": "2026-10-13 16:27:01.078",
       "lat": 30.64,
       "lon": 114.44,
       "neighbors": "[]",
@@ -2221,7 +2221,7 @@ window.ENDPOINTS = [
       "status": "OFFLINE"
      },
      {
-      "created_at": "2026-10-13 15:17:44.284",
+      "created_at": "2026-10-13 16:27:01.077",
       "lat": 30.51,
       "lon": 114.31,
       "neighbors": "[\"N1\"]",
@@ -2236,8 +2236,8 @@ window.ENDPOINTS = [
     "wormhole_enabled": false
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.295",
-   "trace_id": "TRACE-20261013-f0c979"
+   "timestamp": "2026-10-13 16:27:01.084",
+   "trace_id": "TRACE-20261013-d2a8a9"
   }
  },
  {
@@ -2248,30 +2248,30 @@ window.ENDPOINTS = [
   "req": {
    "operator": "OP-1",
    "reason": "文档演示完毕",
-   "session_id": "SESS-2218c9c52d3d"
+   "session_id": "SESS-2884037e6405"
   },
   "resp": {
    "code": 0,
    "data": {
-    "created_at": "2026-10-13 15:17:44.249",
+    "created_at": "2026-10-13 16:27:01.026",
     "current_path": "[\"UAV-A-001-NODE\",\"N1\",\"N2\",\"N3\",\"N4\",\"MGR\"]",
     "mission_id": "",
     "pass_id": "",
-    "session_id": "SESS-2218c9c52d3d",
+    "session_id": "SESS-2884037e6405",
     "status": "CLOSED",
     "uav_id": "UAV-A-001",
-    "updated_at": "2026-10-13 15:17:44.259"
+    "updated_at": "2026-10-13 16:27:01.033"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.259",
-   "trace_id": "TRACE-20261013-aa6567"
+   "timestamp": "2026-10-13 16:27:01.033",
+   "trace_id": "TRACE-20261013-cc877a"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type offchain.SessionCloseRequest",
-   "timestamp": "2026-10-13 15:17:44.298",
-   "trace_id": "TRACE-20261013-17f8da"
+   "timestamp": "2026-10-13 16:27:01.088",
+   "trace_id": "TRACE-20261013-231ca2"
   }
  },
  {
@@ -2287,28 +2287,28 @@ window.ENDPOINTS = [
     "page_size": 20,
     "records": [
      {
-      "created_at": "2026-10-13 15:17:44.249",
+      "created_at": "2026-10-13 16:27:01.026",
       "current_path": "[\"UAV-A-001-NODE\",\"N1\",\"N2\",\"N3\",\"N4\",\"MGR\"]",
       "mission_id": "",
       "pass_id": "",
-      "session_id": "SESS-2218c9c52d3d",
+      "session_id": "SESS-2884037e6405",
       "status": "ACTIVE",
       "uav_id": "UAV-A-001",
-      "updated_at": "2026-10-13 15:17:44.249"
+      "updated_at": "2026-10-13 16:27:01.026"
      }
     ],
     "total": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.250",
-   "trace_id": "TRACE-20261013-16c052"
+   "timestamp": "2026-10-13 16:27:01.026",
+   "trace_id": "TRACE-20261013-9dc251"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.296",
-   "trace_id": "TRACE-20261013-d076ab"
+   "timestamp": "2026-10-13 16:27:01.086",
+   "trace_id": "TRACE-20261013-358fa7"
   }
  },
  {
@@ -2323,8 +2323,8 @@ window.ENDPOINTS = [
    "code": 0,
    "data": {
     "auth": {
-     "nonce": "NONCE-eb4143a4be89378f89bb3239c5355e41",
-     "signature": "MGYEIBbWCRGYqOt5n6NpGKdWNuw8ezdE6iozO3E4W6XJRSl3A0IABLDFZJQ72xXmwxWTDr5KW6uqTOHzG6Tt2ObTropxeLEvmC/043E4ed+dqx48Jo77Kb1KdA++td3T1l+vOvgjrZE=",
+     "nonce": "NONCE-5a79980aafd4b725044691dde952189f",
+     "signature": "MGYEIFoNBX1Ix9U21EHnZTqiV4MynPUk8CgBl/2O3fnlkEN0A0IABHbgFcnq8fzPDgzYmAxhrldovn3PmIbi8B7hpWeFF+5QeaBCc/6BF63AYQLYUP4hJ9mIOT/pm5wxk+tvlhl17as=",
      "sm9_identity": "SM9-ID-UAV-A-001-NODE",
      "verified": true
     },
@@ -2337,26 +2337,26 @@ window.ENDPOINTS = [
      "MGR"
     ],
     "session": {
-     "created_at": "2026-10-13 15:17:44.249",
+     "created_at": "2026-10-13 16:27:01.026",
      "current_path": "[\"UAV-A-001-NODE\",\"N1\",\"N2\",\"N3\",\"N4\",\"MGR\"]",
      "mission_id": "",
      "pass_id": "",
-     "session_id": "SESS-2218c9c52d3d",
+     "session_id": "SESS-2884037e6405",
      "status": "ACTIVE",
      "uav_id": "UAV-A-001",
-     "updated_at": "2026-10-13 15:17:44.249"
+     "updated_at": "2026-10-13 16:27:01.026"
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.249",
-   "trace_id": "TRACE-20261013-1295b9"
+   "timestamp": "2026-10-13 16:27:01.026",
+   "trace_id": "TRACE-20261013-03ed55"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type offchain.SessionOpenRequest",
-   "timestamp": "2026-10-13 15:17:44.296",
-   "trace_id": "TRACE-20261013-1796de"
+   "timestamp": "2026-10-13 16:27:01.085",
+   "trace_id": "TRACE-20261013-a02fba"
   }
  },
  {
@@ -2365,7 +2365,7 @@ window.ENDPOINTS = [
   "summary": "消息列表（可选过滤 session_id/status）",
   "operationId": "messageList",
   "req": {
-   "session_id": "SESS-2218c9c52d3d"
+   "session_id": "SESS-2884037e6405"
   },
   "resp": {
    "code": 0,
@@ -2374,19 +2374,19 @@ window.ENDPOINTS = [
     "page_size": 20,
     "records": [
      {
-      "created_at": "2026-10-13 15:17:44.251",
-      "evidence": "{\"path_detail\":[{\"from\":\"UAV-A-001-NODE\",\"to\":\"N1\",\"latency_ms\":9},{\"from\":\"N1\",\"to\":\"N2\",\"latency_ms\":9},{\"from\":\"N2\",\"to\":\"N3\",\"latency_ms\":9},{\"from\":\"N3\",\"to\":\"N4\",\"latency_ms\":9},{\"from\":\"N4\",\"to\":\"MGR\",\"latency_ms\":9}],\"proxy_signed\":true,\"signature\":\"MGYEIBsJTcdWBP7DEyt1qZ4Y/U10sJu6I4kTg7U+fPelza8dA0IABJixgwlnJN6MYGhk5/0WEm7d/J6YBbioH7i+sweFgnmGscSwxiDrBpH+go7xCm1YPTnlwO11YI7IXBKNDYTuemQ=\",\"sm9_identity\":\"SM9-ID-UAV-A-001-NODE\"}",
+      "created_at": "2026-10-13 16:27:01.028",
+      "evidence": "{\"path_detail\":[{\"from\":\"UAV-A-001-NODE\",\"to\":\"N1\",\"latency_ms\":9},{\"from\":\"N1\",\"to\":\"N2\",\"latency_ms\":9},{\"from\":\"N2\",\"to\":\"N3\",\"latency_ms\":9},{\"from\":\"N3\",\"to\":\"N4\",\"latency_ms\":9},{\"from\":\"N4\",\"to\":\"MGR\",\"latency_ms\":9}],\"proxy_signed\":true,\"signature\":\"MGYEIAKSClHyBJPhPufpw29QS7fcANSzCAcFqm6dl87Rqr/ZA0IABHIPvbetvQZQOpr36UgEO2Ms2lqQZYM/8XneWQ9A8ivskh0DhhKzXfg+Wychq4VjeyvbMw0EepXUQX03jHIGeEA=\",\"sm9_identity\":\"SM9-ID-UAV-A-001-NODE\"}",
       "latency_ms": 45,
-      "message_id": "MSG-bab6126e34841000",
+      "message_id": "MSG-a3ea7ecd0218a568",
       "msg_type": "HEARTBEAT",
       "path": "[\"UAV-A-001-NODE\",\"N1\",\"N2\",\"N3\",\"N4\",\"MGR\"]",
       "seq": 1,
-      "session_id": "SESS-2218c9c52d3d",
-      "sm3_hash": "290e8e7a10758333c77fce07bec21b204795222d8f7fd2939421f51fed150d84",
+      "session_id": "SESS-2884037e6405",
+      "sm3_hash": "312cc3c885162abebee8d40c74ef490a333c13e25c85dca5d723d110b4a96d8b",
       "source_node": "UAV-A-001-NODE",
       "status": "SUCCESS",
       "target_node": "MGR",
-      "timestamp": "2026-10-13 15:17:44.251"
+      "timestamp": "2026-10-13 16:27:01.027"
      }
     ],
     "stats": {
@@ -2401,15 +2401,15 @@ window.ENDPOINTS = [
     "total": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.254",
-   "trace_id": "TRACE-20261013-fbb1bb"
+   "timestamp": "2026-10-13 16:27:01.028",
+   "trace_id": "TRACE-20261013-a9f665"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.297",
-   "trace_id": "TRACE-20261013-f240f3"
+   "timestamp": "2026-10-13 16:27:01.086",
+   "trace_id": "TRACE-20261013-cc441f"
   }
  },
  {
@@ -2419,7 +2419,7 @@ window.ENDPOINTS = [
   "operationId": "messageSend",
   "req": {
    "msg_type": "HEARTBEAT",
-   "session_id": "SESS-2218c9c52d3d",
+   "session_id": "SESS-2884037e6405",
    "source_node": "UAV-A-001-NODE",
    "target_node": "MGR"
   },
@@ -2427,19 +2427,19 @@ window.ENDPOINTS = [
    "code": 0,
    "data": {
     "message": {
-     "created_at": "2026-10-13 15:17:44.251",
-     "evidence": "{\"path_detail\":[{\"from\":\"UAV-A-001-NODE\",\"to\":\"N1\",\"latency_ms\":9},{\"from\":\"N1\",\"to\":\"N2\",\"latency_ms\":9},{\"from\":\"N2\",\"to\":\"N3\",\"latency_ms\":9},{\"from\":\"N3\",\"to\":\"N4\",\"latency_ms\":9},{\"from\":\"N4\",\"to\":\"MGR\",\"latency_ms\":9}],\"proxy_signed\":true,\"signature\":\"MGYEIBsJTcdWBP7DEyt1qZ4Y/U10sJu6I4kTg7U+fPelza8dA0IABJixgwlnJN6MYGhk5/0WEm7d/J6YBbioH7i+sweFgnmGscSwxiDrBpH+go7xCm1YPTnlwO11YI7IXBKNDYTuemQ=\",\"sm9_identity\":\"SM9-ID-UAV-A-001-NODE\"}",
+     "created_at": "2026-10-13 16:27:01.028",
+     "evidence": "{\"path_detail\":[{\"from\":\"UAV-A-001-NODE\",\"to\":\"N1\",\"latency_ms\":9},{\"from\":\"N1\",\"to\":\"N2\",\"latency_ms\":9},{\"from\":\"N2\",\"to\":\"N3\",\"latency_ms\":9},{\"from\":\"N3\",\"to\":\"N4\",\"latency_ms\":9},{\"from\":\"N4\",\"to\":\"MGR\",\"latency_ms\":9}],\"proxy_signed\":true,\"signature\":\"MGYEIAKSClHyBJPhPufpw29QS7fcANSzCAcFqm6dl87Rqr/ZA0IABHIPvbetvQZQOpr36UgEO2Ms2lqQZYM/8XneWQ9A8ivskh0DhhKzXfg+Wychq4VjeyvbMw0EepXUQX03jHIGeEA=\",\"sm9_identity\":\"SM9-ID-UAV-A-001-NODE\"}",
      "latency_ms": 45,
-     "message_id": "MSG-bab6126e34841000",
+     "message_id": "MSG-a3ea7ecd0218a568",
      "msg_type": "HEARTBEAT",
      "path": "[\"UAV-A-001-NODE\",\"N1\",\"N2\",\"N3\",\"N4\",\"MGR\"]",
      "seq": 1,
-     "session_id": "SESS-2218c9c52d3d",
-     "sm3_hash": "290e8e7a10758333c77fce07bec21b204795222d8f7fd2939421f51fed150d84",
+     "session_id": "SESS-2884037e6405",
+     "sm3_hash": "312cc3c885162abebee8d40c74ef490a333c13e25c85dca5d723d110b4a96d8b",
      "source_node": "UAV-A-001-NODE",
      "status": "SUCCESS",
      "target_node": "MGR",
-     "timestamp": "2026-10-13 15:17:44.251"
+     "timestamp": "2026-10-13 16:27:01.027"
     },
     "path_detail": [
      {
@@ -2470,15 +2470,15 @@ window.ENDPOINTS = [
     ]
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.251",
-   "trace_id": "TRACE-20261013-2e3168"
+   "timestamp": "2026-10-13 16:27:01.028",
+   "trace_id": "TRACE-20261013-427ad0"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type offchain.MessageSendRequest",
-   "timestamp": "2026-10-13 15:17:44.297",
-   "trace_id": "TRACE-20261013-efd21b"
+   "timestamp": "2026-10-13 16:27:01.086",
+   "trace_id": "TRACE-20261013-e2c802"
   }
  },
  {
@@ -2487,37 +2487,37 @@ window.ENDPOINTS = [
   "summary": "最新遥测（session_id/uav_id 至少一个，否则→6002；无记录→code 0 + telemetry=null）",
   "operationId": "telemetryLatest",
   "req": {
-   "session_id": "SESS-2218c9c52d3d"
+   "session_id": "SESS-2884037e6405"
   },
   "resp": {
    "code": 0,
    "data": {
     "telemetry": {
      "alt": 85,
-     "created_at": "2026-10-13 15:17:44.255",
+     "created_at": "2026-10-13 16:27:01.029",
      "heading": 45,
      "lat": 30.52,
      "lon": 114.32,
      "mission_id": "",
-     "reported_at": "2026-10-13 15:17:44.255",
+     "reported_at": "2026-10-13 16:27:01.029",
      "seq": 1,
-     "session_id": "SESS-2218c9c52d3d",
+     "session_id": "SESS-2884037e6405",
      "source": "MANUAL",
      "speed": 12,
-     "telemetry_id": "TLM-1d94e1cf0b04",
+     "telemetry_id": "TLM-f564e67362da",
      "uav_id": "UAV-A-001"
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.256",
-   "trace_id": "TRACE-20261013-585022"
+   "timestamp": "2026-10-13 16:27:01.030",
+   "trace_id": "TRACE-20261013-870d3a"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.297",
-   "trace_id": "TRACE-20261013-c38d62"
+   "timestamp": "2026-10-13 16:27:01.087",
+   "trace_id": "TRACE-20261013-469646"
   }
  },
  {
@@ -2526,7 +2526,7 @@ window.ENDPOINTS = [
   "summary": "遥测分页列表（session_id/uav_id 过滤）",
   "operationId": "telemetryList",
   "req": {
-   "session_id": "SESS-2218c9c52d3d"
+   "session_id": "SESS-2884037e6405"
   },
   "resp": {
    "code": 0,
@@ -2536,32 +2536,32 @@ window.ENDPOINTS = [
     "records": [
      {
       "alt": 85,
-      "created_at": "2026-10-13 15:17:44.255",
+      "created_at": "2026-10-13 16:27:01.029",
       "heading": 45,
       "lat": 30.52,
       "lon": 114.32,
       "mission_id": "",
-      "reported_at": "2026-10-13 15:17:44.255",
+      "reported_at": "2026-10-13 16:27:01.029",
       "seq": 1,
-      "session_id": "SESS-2218c9c52d3d",
+      "session_id": "SESS-2884037e6405",
       "source": "MANUAL",
       "speed": 12,
-      "telemetry_id": "TLM-1d94e1cf0b04",
+      "telemetry_id": "TLM-f564e67362da",
       "uav_id": "UAV-A-001"
      }
     ],
     "total": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.256",
-   "trace_id": "TRACE-20261013-c23554"
+   "timestamp": "2026-10-13 16:27:01.030",
+   "trace_id": "TRACE-20261013-234f83"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.297",
-   "trace_id": "TRACE-20261013-5ba498"
+   "timestamp": "2026-10-13 16:27:01.086",
+   "trace_id": "TRACE-20261013-ac58b0"
   }
  },
  {
@@ -2574,7 +2574,7 @@ window.ENDPOINTS = [
    "heading": 45,
    "lat": 30.52,
    "lon": 114.32,
-   "session_id": "SESS-2218c9c52d3d",
+   "session_id": "SESS-2884037e6405",
    "speed": 12
   },
   "resp": {
@@ -2582,30 +2582,30 @@ window.ENDPOINTS = [
    "data": {
     "telemetry": {
      "alt": 85,
-     "created_at": "2026-10-13 15:17:44.255",
+     "created_at": "2026-10-13 16:27:01.029",
      "heading": 45,
      "lat": 30.52,
      "lon": 114.32,
      "mission_id": "",
-     "reported_at": "2026-10-13 15:17:44.255",
+     "reported_at": "2026-10-13 16:27:01.029",
      "seq": 1,
-     "session_id": "SESS-2218c9c52d3d",
+     "session_id": "SESS-2884037e6405",
      "source": "MANUAL",
      "speed": 12,
-     "telemetry_id": "TLM-1d94e1cf0b04",
+     "telemetry_id": "TLM-f564e67362da",
      "uav_id": "UAV-A-001"
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.255",
-   "trace_id": "TRACE-20261013-9f3fc8"
+   "timestamp": "2026-10-13 16:27:01.029",
+   "trace_id": "TRACE-20261013-dbe43e"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type offchain.TelemetryReportRequest",
-   "timestamp": "2026-10-13 15:17:44.297",
-   "trace_id": "TRACE-20261013-979d47"
+   "timestamp": "2026-10-13 16:27:01.086",
+   "trace_id": "TRACE-20261013-790984"
   }
  },
  {
@@ -2614,7 +2614,7 @@ window.ENDPOINTS = [
   "summary": "安全事件列表（DETECT/ISOLATE/RECOVER 留痕）",
   "operationId": "eventList",
   "req": {
-   "session_id": "SESS-2218c9c52d3d"
+   "session_id": "SESS-2884037e6405"
   },
   "resp": {
    "code": 0,
@@ -2625,15 +2625,15 @@ window.ENDPOINTS = [
     "total": 0
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.259",
-   "trace_id": "TRACE-20261013-132258"
+   "timestamp": "2026-10-13 16:27:01.033",
+   "trace_id": "TRACE-20261013-cbf600"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.297",
-   "trace_id": "TRACE-20261013-57965a"
+   "timestamp": "2026-10-13 16:27:01.087",
+   "trace_id": "TRACE-20261013-88bc56"
   }
  },
  {
@@ -2649,15 +2649,15 @@ window.ENDPOINTS = [
    "code": 6002,
    "data": null,
    "message": "biz error 6002: session SESS-NOPE-001 not found",
-   "timestamp": "2026-10-13 15:17:44.258",
-   "trace_id": "TRACE-20261013-00b15a"
+   "timestamp": "2026-10-13 16:27:01.032",
+   "trace_id": "TRACE-20261013-325986"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type offchain.PathSwitchRequest",
-   "timestamp": "2026-10-13 15:17:44.297",
-   "trace_id": "TRACE-20261013-0208c2"
+   "timestamp": "2026-10-13 16:27:01.087",
+   "trace_id": "TRACE-20261013-393446"
   }
  },
  {
@@ -2666,7 +2666,7 @@ window.ENDPOINTS = [
   "summary": "会话风险评估（DETECT/PASS；样例会话建于开洞前→干净路径）",
   "operationId": "riskEvaluate",
   "req": {
-   "session_id": "SESS-2218c9c52d3d"
+   "session_id": "SESS-2884037e6405"
   },
   "resp": {
    "code": 0,
@@ -2685,15 +2685,15 @@ window.ENDPOINTS = [
     "verdict": "PASS"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.258",
-   "trace_id": "TRACE-20261013-8d5e45"
+   "timestamp": "2026-10-13 16:27:01.032",
+   "trace_id": "TRACE-20261013-74514a"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type offchain.RiskEvaluateRequest",
-   "timestamp": "2026-10-13 15:17:44.297",
-   "trace_id": "TRACE-20261013-7883ec"
+   "timestamp": "2026-10-13 16:27:01.087",
+   "trace_id": "TRACE-20261013-6bbd03"
   }
  },
  {
@@ -2717,15 +2717,15 @@ window.ENDPOINTS = [
     "wormhole_enabled": true
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.257",
-   "trace_id": "TRACE-20261013-9a3f75"
+   "timestamp": "2026-10-13 16:27:01.031",
+   "trace_id": "TRACE-20261013-da165b"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type offchain.WormholeToggleRequest",
-   "timestamp": "2026-10-13 15:17:44.297",
-   "trace_id": "TRACE-20261013-e2b04d"
+   "timestamp": "2026-10-13 16:27:01.087",
+   "trace_id": "TRACE-20261013-f10fd5"
   }
  },
  {
@@ -2742,7 +2742,7 @@ window.ENDPOINTS = [
     "records": [
      {
       "alert_id": "ALERT-2026-001",
-      "created_at": "2026-10-13 15:17:44.259",
+      "created_at": "2026-10-13 16:27:01.034",
       "event_type": "ROUTE_DEVIATION",
       "evidence_hash": "d40fa926a8e49341a85c3799bd3860b6663223378f87124733ab0b996e94f6ad",
       "mission_id": "MISSION-2026-001",
@@ -2750,21 +2750,21 @@ window.ENDPOINTS = [
       "source_system": "MANUAL",
       "status": "OPEN",
       "uav_pseudonym": "PSEUDO-UAV-83921",
-      "updated_at": "2026-10-13 15:17:44.259"
+      "updated_at": "2026-10-13 16:27:01.034"
      }
     ],
     "total": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.260",
-   "trace_id": "TRACE-20261013-d2cf12"
+   "timestamp": "2026-10-13 16:27:01.035",
+   "trace_id": "TRACE-20261013-244aa9"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.298",
-   "trace_id": "TRACE-20261013-1bd51a"
+   "timestamp": "2026-10-13 16:27:01.088",
+   "trace_id": "TRACE-20261013-3b7e63"
   }
  },
  {
@@ -2785,7 +2785,7 @@ window.ENDPOINTS = [
    "code": 0,
    "data": {
     "alert_id": "ALERT-2026-001",
-    "created_at": "2026-10-13 15:17:44.259",
+    "created_at": "2026-10-13 16:27:01.034",
     "event_type": "ROUTE_DEVIATION",
     "evidence_hash": "d40fa926a8e49341a85c3799bd3860b6663223378f87124733ab0b996e94f6ad",
     "mission_id": "MISSION-2026-001",
@@ -2793,18 +2793,18 @@ window.ENDPOINTS = [
     "source_system": "MANUAL",
     "status": "OPEN",
     "uav_pseudonym": "PSEUDO-UAV-83921",
-    "updated_at": "2026-10-13 15:17:44.259"
+    "updated_at": "2026-10-13 16:27:01.034"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.260",
-   "trace_id": "TRACE-20261013-694d67"
+   "timestamp": "2026-10-13 16:27:01.034",
+   "trace_id": "TRACE-20261013-deacc6"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type regulatory.AlertRaiseRequest",
-   "timestamp": "2026-10-13 15:17:44.298",
-   "trace_id": "TRACE-20261013-ed320f"
+   "timestamp": "2026-10-13 16:27:01.088",
+   "trace_id": "TRACE-20261013-498881"
   }
  },
  {
@@ -2822,7 +2822,7 @@ window.ENDPOINTS = [
    "code": 0,
    "data": {
     "alert_id": "ALERT-2026-001",
-    "created_at": "2026-10-13 15:17:44.259",
+    "created_at": "2026-10-13 16:27:01.034",
     "event_type": "ROUTE_DEVIATION",
     "evidence_hash": "d40fa926a8e49341a85c3799bd3860b6663223378f87124733ab0b996e94f6ad",
     "mission_id": "MISSION-2026-001",
@@ -2830,18 +2830,18 @@ window.ENDPOINTS = [
     "source_system": "MANUAL",
     "status": "IDENTIFIED",
     "uav_pseudonym": "PSEUDO-UAV-83921",
-    "updated_at": "2026-10-13 15:17:44.261"
+    "updated_at": "2026-10-13 16:27:01.035"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.261",
-   "trace_id": "TRACE-20261013-ffe889"
+   "timestamp": "2026-10-13 16:27:01.035",
+   "trace_id": "TRACE-20261013-d90f5a"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type regulatory.AlertStatusRequest",
-   "timestamp": "2026-10-13 15:17:44.298",
-   "trace_id": "TRACE-20261013-62bb8a"
+   "timestamp": "2026-10-13 16:27:01.089",
+   "trace_id": "TRACE-20261013-8ecf46"
   }
  },
  {
@@ -2922,15 +2922,15 @@ window.ENDPOINTS = [
     "trace_latency_ms": 0
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.261",
-   "trace_id": "TRACE-20261013-3eed1d"
+   "timestamp": "2026-10-13 16:27:01.036",
+   "trace_id": "TRACE-20261013-042857"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type regulatory.TraceRequest",
-   "timestamp": "2026-10-13 15:17:44.298",
-   "trace_id": "TRACE-20261013-6ba259"
+   "timestamp": "2026-10-13 16:27:01.089",
+   "trace_id": "TRACE-20261013-e96b64"
   }
  },
  {
@@ -2954,29 +2954,29 @@ window.ENDPOINTS = [
   "resp": {
    "code": 0,
    "data": {
-    "audit_hash": "e37c923b3527a83b5fd86b2b49768d24a405de7f40703b213e9f58751e8f93c1",
+    "audit_hash": "1b276e5609711a43581794a6fca46fd85548823cd196ab6ca18b1bb07d528dbf",
     "authorization_id": "AUTH-2026-001",
-    "created_at": "2026-10-13 15:17:44.262",
+    "created_at": "2026-10-13 16:27:01.037",
     "reason": "核查告警 ALERT-2026-001",
     "regulator_id": "REG-01",
     "scope": "[\"MISSION\",\"ROUTE\",\"PAYLOAD\",\"IDENTITY\"]",
     "status": "PENDING",
     "target_id": "MISSION-2026-001",
     "target_type": "MISSION",
-    "updated_at": "2026-10-13 15:17:44.262",
-    "valid_from": "2026-10-13 15:17:44.262",
-    "valid_to": "2026-10-14 15:17:44.262"
+    "updated_at": "2026-10-13 16:27:01.037",
+    "valid_from": "2026-10-13 16:27:01.037",
+    "valid_to": "2026-10-14 16:27:01.037"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.262",
-   "trace_id": "TRACE-20261013-cd63b3"
+   "timestamp": "2026-10-13 16:27:01.037",
+   "trace_id": "TRACE-20261013-510a7c"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type regulatory.AuthApplyRequest",
-   "timestamp": "2026-10-13 15:17:44.298",
-   "trace_id": "TRACE-20261013-0056f1"
+   "timestamp": "2026-10-13 16:27:01.089",
+   "trace_id": "TRACE-20261013-b26590"
   }
  },
  {
@@ -2996,41 +2996,41 @@ window.ENDPOINTS = [
     "audit": {
      "action": "AUTH_APPROVE",
      "alert_id": "",
-     "audit_hash": "e37c923b3527a83b5fd86b2b49768d24a405de7f40703b213e9f58751e8f93c1",
-     "audit_id": "AUD-219c3575eae0",
+     "audit_hash": "1b276e5609711a43581794a6fca46fd85548823cd196ab6ca18b1bb07d528dbf",
+     "audit_id": "AUD-9fbb8c50ec49",
      "authorization_id": "AUTH-2026-001",
-     "chain_tx_id": "CHAINMAKER-313f541c5a3aef8865296d20676ae483",
-     "created_at": "2026-10-13 15:17:44.262",
+     "chain_tx_id": "CHAINMAKER-1d221bf4312d6b356e0a14a6b1d958d3",
+     "created_at": "2026-10-13 16:27:01.037",
      "operator_id": "REG-ADMIN",
      "result": "{\"comment\":\"同意\",\"decision\":\"APPROVE\"}",
      "target": "MISSION-2026-001"
     },
     "auth": {
-     "audit_hash": "e37c923b3527a83b5fd86b2b49768d24a405de7f40703b213e9f58751e8f93c1",
+     "audit_hash": "1b276e5609711a43581794a6fca46fd85548823cd196ab6ca18b1bb07d528dbf",
      "authorization_id": "AUTH-2026-001",
-     "created_at": "2026-10-13 15:17:44.262",
+     "created_at": "2026-10-13 16:27:01.037",
      "reason": "核查告警 ALERT-2026-001",
      "regulator_id": "REG-01",
      "scope": "[\"MISSION\",\"ROUTE\",\"PAYLOAD\",\"IDENTITY\"]",
      "status": "AUTHORIZED",
      "target_id": "MISSION-2026-001",
      "target_type": "MISSION",
-     "updated_at": "2026-10-13 15:17:44.262",
-     "valid_from": "2026-10-13 15:17:44.262",
-     "valid_to": "2026-10-14 15:17:44.262"
+     "updated_at": "2026-10-13 16:27:01.037",
+     "valid_from": "2026-10-13 16:27:01.037",
+     "valid_to": "2026-10-14 16:27:01.037"
     },
-    "chain_tx_id": "CHAINMAKER-313f541c5a3aef8865296d20676ae483"
+    "chain_tx_id": "CHAINMAKER-1d221bf4312d6b356e0a14a6b1d958d3"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.262",
-   "trace_id": "TRACE-20261013-5c9a56"
+   "timestamp": "2026-10-13 16:27:01.038",
+   "trace_id": "TRACE-20261013-d2990b"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type regulatory.AuthReviewRequest",
-   "timestamp": "2026-10-13 15:17:44.298",
-   "trace_id": "TRACE-20261013-d0c9d6"
+   "timestamp": "2026-10-13 16:27:01.089",
+   "trace_id": "TRACE-20261013-c14cd5"
   }
  },
  {
@@ -3049,7 +3049,7 @@ window.ENDPOINTS = [
    "code": 0,
    "data": {
     "authorized": true,
-    "chain_tx_id": "CHAINMAKER-3014151b5338ea079a8d92ed2a6faa3e",
+    "chain_tx_id": "CHAINMAKER-a797aa7d5971c81ee0dd8d73ff439333",
     "conclusion": {
      "payload_verdict": "PAYLOAD_OK",
      "raised_alerts": [],
@@ -3059,7 +3059,7 @@ window.ENDPOINTS = [
     "mission": {
      "altitude_max": 120,
      "altitude_min": 60,
-     "created_at": "2026-10-13 15:17:44.216",
+     "created_at": "2026-10-13 16:27:00.992",
      "end_time": "2026-09-12 11:00:00.000",
      "masked_value": "巡线走廊****",
      "mission_id": "MISSION-2026-001",
@@ -3068,16 +3068,16 @@ window.ENDPOINTS = [
      "payload_type": "CAMERA",
      "pilot_license_id": "",
      "route_segments": "[\"R101\",\"R205\",\"R306\"]",
-     "signature": "MGYEIGIl3x+k9DN3ioVTzyfayLrWzsUX6HLCU5wumLkJmRrYA0IABIYz/Tr3H462sQOjLMKULUOljuq424pGXJPec1+T9f8Wsy313HA4BUdKlkb0kbrBh5NrZsmvI70ctj4h+oe3qYY=",
+     "signature": "MGYEIGx3mmyxi9LoSGvj4NTmOLpGejcpnqTP4Pmh6LQv+/pjA0IABHUpAV1QIzRH/YzIKKxeEW/btxs1wCQUuZhkgtOOdTvTYHxRMZkpP+FzwIAMShrh2jU+kepOEHa/Qm/9JA/eBzs=",
      "sm3_hash": "7472ef680f2e572c2c5de6e6496fc01cb9f3f3e0e209ef662508e28c9f675e79",
      "sm9_identity": "SM9-ID-UAV-A-001",
      "start_time": "2026-09-12 09:00:00.000",
      "status": "APPROVED",
      "uav_id": "UAV-A-001",
-     "updated_at": "2026-10-13 15:17:44.227",
+     "updated_at": "2026-10-13 16:27:01.005",
      "zones": "[\"Zone-A\",\"Zone-B\"]"
     },
-    "reg_audit_id": "AUD-522c62ed2a46",
+    "reg_audit_id": "AUD-0e456c476d06",
     "scope": [
      "MISSION",
      "ROUTE",
@@ -3092,21 +3092,21 @@ window.ENDPOINTS = [
      "sm3_hash": "7472ef680f2e572c2c5de6e6496fc01cb9f3f3e0e209ef662508e28c9f675e79"
     },
     "verification": {
-     "audit_hash": "d770418e33a46709f9c3877e522948669ee2d6b48f01e2aef7642050aa228442",
+     "audit_hash": "24f65596b8996c7f3f570c9b2c8a244ecbddfe094679d18251f99744ce1faa9b",
      "digest_match": true,
      "signature_valid": true
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.265",
-   "trace_id": "TRACE-20261013-869b3a"
+   "timestamp": "2026-10-13 16:27:01.040",
+   "trace_id": "TRACE-20261013-d30f71"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type regulatory.InspectRequest",
-   "timestamp": "2026-10-13 15:17:44.298",
-   "trace_id": "TRACE-20261013-52ea45"
+   "timestamp": "2026-10-13 16:27:01.090",
+   "trace_id": "TRACE-20261013-98a06a"
   }
  },
  {
@@ -3118,20 +3118,20 @@ window.ENDPOINTS = [
   "resp": {
    "code": 0,
    "data": {
-    "content": "audit_id,alert_id,authorization_id,action,operator_id,target,result,audit_hash,chain_tx_id,created_at\nAUD-522c62ed2a46,,AUTH-2026-001,INSPECT,REG-01,MISSION-2026-001,\"{\"\"digest_match\"\":true,\"\"payload_verdict\"\":\"\"PAYLOAD_OK\"\",\"\"route_verdict\"\":\"\"ROUTE_OK\"\",\"\"signature_valid\"\":true}\",d770418e33a46709f9c3877e522948669ee2d6b48f01e2aef7642050aa228442,CHAINMAKER-3014151b5338ea079a8d92ed2a6faa3e,2026-10-13 15:17:44.265\nAUD-219c3575eae0,,AUTH-2026-001,AUTH_APPROVE,REG-ADMIN,MISSION-2026-001,\"{\"\"comment\"\":\"\"同意\"\",\"\"decision\"\":\"\"APPROVE\"\"}\",e37c923b3527a83b5fd86b2b49768d24a405de7f40703b213e9f58751e8f93c1,CHAINMAKER-313f541c5a3aef8865296d20676ae483,2026-10-13 15:17:44.262\n",
+    "content": "audit_id,alert_id,authorization_id,action,operator_id,target,result,audit_hash,chain_tx_id,created_at\nAUD-0e456c476d06,,AUTH-2026-001,INSPECT,REG-01,MISSION-2026-001,\"{\"\"digest_match\"\":true,\"\"payload_verdict\"\":\"\"PAYLOAD_OK\"\",\"\"route_verdict\"\":\"\"ROUTE_OK\"\",\"\"signature_valid\"\":true}\",24f65596b8996c7f3f570c9b2c8a244ecbddfe094679d18251f99744ce1faa9b,CHAINMAKER-a797aa7d5971c81ee0dd8d73ff439333,2026-10-13 16:27:01.040\nAUD-9fbb8c50ec49,,AUTH-2026-001,AUTH_APPROVE,REG-ADMIN,MISSION-2026-001,\"{\"\"comment\"\":\"\"同意\"\",\"\"decision\"\":\"\"APPROVE\"\"}\",1b276e5609711a43581794a6fca46fd85548823cd196ab6ca18b1bb07d528dbf,CHAINMAKER-1d221bf4312d6b356e0a14a6b1d958d3,2026-10-13 16:27:01.037\n",
     "format": "csv",
     "rows": 2
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.266",
-   "trace_id": "TRACE-20261013-96fe33"
+   "timestamp": "2026-10-13 16:27:01.042",
+   "trace_id": "TRACE-20261013-d5f020"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.298",
-   "trace_id": "TRACE-20261013-41ba42"
+   "timestamp": "2026-10-13 16:27:01.090",
+   "trace_id": "TRACE-20261013-6fcc8b"
   }
  },
  {
@@ -3151,11 +3151,11 @@ window.ENDPOINTS = [
      {
       "action": "INSPECT",
       "alert_id": "",
-      "audit_hash": "d770418e33a46709f9c3877e522948669ee2d6b48f01e2aef7642050aa228442",
-      "audit_id": "AUD-522c62ed2a46",
+      "audit_hash": "24f65596b8996c7f3f570c9b2c8a244ecbddfe094679d18251f99744ce1faa9b",
+      "audit_id": "AUD-0e456c476d06",
       "authorization_id": "AUTH-2026-001",
-      "chain_tx_id": "CHAINMAKER-3014151b5338ea079a8d92ed2a6faa3e",
-      "created_at": "2026-10-13 15:17:44.265",
+      "chain_tx_id": "CHAINMAKER-a797aa7d5971c81ee0dd8d73ff439333",
+      "created_at": "2026-10-13 16:27:01.040",
       "operator_id": "REG-01",
       "result": "{\"digest_match\":true,\"payload_verdict\":\"PAYLOAD_OK\",\"route_verdict\":\"ROUTE_OK\",\"signature_valid\":true}",
       "target": "MISSION-2026-001"
@@ -3164,15 +3164,15 @@ window.ENDPOINTS = [
     "total": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.266",
-   "trace_id": "TRACE-20261013-c7591c"
+   "timestamp": "2026-10-13 16:27:01.041",
+   "trace_id": "TRACE-20261013-7f9db2"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.298",
-   "trace_id": "TRACE-20261013-29da39"
+   "timestamp": "2026-10-13 16:27:01.090",
+   "trace_id": "TRACE-20261013-aaa753"
   }
  },
  {
@@ -3184,20 +3184,20 @@ window.ENDPOINTS = [
   "resp": {
    "code": 0,
    "data": {
-    "content": "id,trace_id,actor,action,target_type,target_id,detail,created_at\n77,TRACE-20261013-869b3a,REG-01,INSPECT,MISSION,MISSION-2026-001,\"{\"\"authorization_id\"\":\"\"AUTH-2026-001\"\",\"\"chain_tx_id\"\":\"\"CHAINMAKER-3014151b5338ea079a8d92ed2a6faa3e\"\",\"\"digest_match\"\":true,\"\"payload_verdict\"\":\"\"PAYLOAD_OK\"\",\"\"raised_alerts\"\":[],\"\"route_verdict\"\":\"\"ROUTE_OK\"\",\"\"signature_valid\"\":true}\",2026-10-13 15:17:44.265\n76,TRACE-20261013-5c9a56,REG-ADMIN,AUTH_REVIEW,AUTH,AUTH-2026-001,\"{\"\"chain_tx_id\"\":\"\"CHAINMAKER-313f541c5a3aef8865296d20676ae483\"\",\"\"comment\"\":\"\"同意\"\",\"\"decision\"\":\"\"APPROVE\"\",\"\"status\"\":\"\"AUTHORIZED\"\"}\",2026-10-13 15:17:44.262\n75,TRACE-20261013-cd63b3,REG-01,AUTH_APPLY,AUTH,AUTH-2026-001,\"{\"\"reason\"\":\"\"核查告警 ALERT-2026-001\"\",\"\"scope\"\":[\"\"MISSION\"\",\"\"ROUTE\"\",\"\"PAYLOAD\"\",\"\"IDENTITY\"\"],\"\"target_id\"\":\"\"MISSION-2026-001\"\",\"\"target_type\"\":\"\"MISSION\"\",\"\"valid_from\"\":\"\"2026-10-13 15:17:44.262\"\",\"\"valid_to\"\":\"\"2026-10-14 15:17:44.262\"\"}\",2026-10-13 15:17:44.262\n74,TRACE-20261013-3eed1d,REG-01,TRACE_IDENTITY,PSEUDO,PSEUDO-UAV-83921,\"{\"\"entry\"\":\"\"ALERT-2026-001\"\",\"\"entry_type\"\":\"\"ALERT_ID\"\",\"\"manufacturer_id\"\":\"\"Manufacturer-B\"\",\"\"operator_id\"\":\"\"Operator-A\"\",\"\"trace_latency_ms\"\":0,\"\"uav_id\"\":\"\"UAV-A-001\"\"}\",2026-10-13 15:17:44.261\n73,TRACE-20261013-ffe889,REG-01,ALERT_STATUS,ALERT,ALERT-2026-001,\"{\"\"from\"\":\"\"OPEN\"\",\"\"reason\"\":\"\"初判成立\"\",\"\"to\"\":\"\"IDENTIFIED\"\"}\",2026-10-13 15:17:44.261\n72,TRACE-20261013-694d67,REG-01,ALERT_RAISE,ALERT,ALERT-2026-001,\"{\"\"event_type\"\":\"\"ROUTE_DEVIATION\"\",\"\"evidence_hash\"\":\"\"d40fa926a8e49341a85c3799bd3860b6663223378f87124733ab0b996e94f6ad\"\",\"\"mission_id\"\":\"\"MISSION-2026-001\"\",\"\"risk_level\"\":\"\"HIGH\"\",\"\"source_system\"\":\"\"MANUAL\"\",\"\"uav_pseudonym\"\":\"\"PSEUDO-UAV-83921\"\",\"\"wormhole_event_id\"\":\"\"\"\"}\",2026-10-13 15:17:44.260\n71,TRACE-20261013-aa6567,OP-1,SESSION_CLOSE,SESSION,SESS-2218c9c52d3d,\"{\"\"reason\"\":\"\"文档演示完毕\"\"}\",2026-10-13 15:17:44.259\n70,TRACE-20261013-aa6567,OP-1,STATE_TRANSITION,SESSION,SESS-2218c9c52d3d,\"{\"\"from\"\":\"\"ACTIVE\"\",\"\"reason\"\":\"\"文档演示完毕\"\",\"\"to\"\":\"\"CLOSED\"\"}\",2026-10-13 15:17:44.259\n69,TRACE-20261013-9a3f75,ATTACKER-SIM,WORMHOLE_ENABLE,NODE,NODE-X+NODE-Y,\"{\"\"fake_adjacency\"\":{\"\"NODE-X\"\":[\"\"N1\"\",\"\"NODE-Y\"\"],\"\"NODE-Y\"\":[\"\"NODE-X\"\",\"\"N4\"\"]}}\",2026-10-13 15:17:44.257\n68,TRACE-20261013-9f3fc8,UAV-A-001,TELEMETRY_REPORT,TELEMETRY,TLM-1d94e1cf0b04,\"{\"\"position\"\":[30.52,114.32,85],\"\"seq\"\":1,\"\"session_id\"\":\"\"SESS-2218c9c52d3d\"\",\"\"source\"\":\"\"MANUAL\"\"}\",2026-10-13 15:17:44.255\n67,TRACE-20261013-2e3168,UAV-A-001-NODE,MESSAGE_SEND,MESSAGE,MSG-bab6126e34841000,\"{\"\"latency_ms\"\":45,\"\"msg_type\"\":\"\"HEARTBEAT\"\",\"\"seq\"\":1,\"\"session_id\"\":\"\"SESS-2218c9c52d3d\"\"}\",2026-10-13 15:17:44.251\n66,TRACE-20261013-1295b9,UAV-A-001-NODE,SESSION_OPEN,SESSION,SESS-2218c9c52d3d,\"{\"\"mission_id\"\":\"\"\"\",\"\"pass_id\"\":\"\"\"\",\"\"path\"\":[\"\"UAV-A-001-NODE\"\",\"\"N1\"\",\"\"N2\"\",\"\"N3\"\",\"\"N4\"\",\"\"MGR\"\"],\"\"uav_id\"\":\"\"UAV-A-001\"\"}\",2026-10-13 15:17:44.249\n65,TRACE-20261013-1295b9,UAV-A-001-NODE,STATE_TRANSITION,SESSION,SESS-2218c9c52d3d,\"{\"\"from\"\":\"\"AUTHENTICATED\"\",\"\"to\"\":\"\"ACTIVE\"\"}\",2026-10-13 15:17:44.249\n64,TRACE-20261013-1295b9,UAV-A-001-NODE,STATE_TRANSITION,SESSION,SESS-2218c9c52d3d,\"{\"\"from\"\":\"\"INIT\"\",\"\"to\"\":\"\"AUTHENTICATED\"\"}\",2026-10-13 15:17:44.249\n63,TRACE-20261013-1b0a7e,PLATFORM,NODE_REGISTER,NODE,N-DOC-1,\"{\"\"node_type\"\":\"\"EDGE\"\",\"\"sm9_identity\"\":\"\"SM9-ID-N-DOC-1\"\",\"\"status\"\":\"\"ONLINE\"\"}\",2026-10-13 15:17:44.246\n62,TRACE-20261013-2bc7d9,GATEWAY,CROSSCHAIN_PASS_REVOKE,CROSSCHAIN_TX,CX-f4dc5f8c5e9e,\"{\"\"business_id\"\":\"\"PASS-2026-001\"\",\"\"error_code\"\":0,\"\"fail_reason\"\":\"\"\"\",\"\"latency_ms\"\":5,\"\"reg_receive_tx_id\"\":\"\"CHAINMAKER-dce9ee800b5c5b9cf0466c0a68294a29\"\",\"\"reg_record_id\"\":\"\"REGREC-eaa7a917ae70\"\",\"\"reg_relay_tx_id\"\":\"\"CHAINMAKER-fc651e065b917733ebf71826c014c610\"\",\"\"source_chain_tx_id\"\":\"\"FISCO-BCOS-52e36d043d0e2d9f71b59117e783da28\"\",\"\"status\"\":\"\"SUCCESS\"\",\"\"target_chain_tx_id\"\":\"\"FABRIC-9866b543c0781e937f1fc6b4c55d31c5\"\",\"\"verify_result\"\":\"\"PASS\"\"}\",2026-10-13 15:17:44.244\n61,TRACE-20261013-2bc7d9,GATEWAY,STATE_TRANSITION,CROSSCHAIN_TX,CX-f4dc5f8c5e9e,\"{\"\"from\"\":\"\"RETURN_REG_RECEIVED\"\",\"\"to\"\":\"\"SUCCESS\"\",\"\"trace_id\"\":\"\"TRACE-20261013-2bc7d9\"\"}\",2026-10-13 15:17:44.243\n60,TRACE-20261013-2bc7d9,GATEWAY,STATE_TRANSITION,CROSSCHAIN_TX,CX-f4dc5f8c5e9e,\"{\"\"from\"\":\"\"TARGET_CONFIRMED\"\",\"\"to\"\":\"\"RETURN_REG_RECEIVED\"\",\"\"trace_id\"\":\"\"TRACE-20261013-2bc7d9\"\"}\",2026-10-13 15:17:44.242\n59,TRACE-20261013-2bc7d9,GATEWAY,STATE_TRANSITION,CROSSCHAIN_TX,CX-f4dc5f8c5e9e,\"{\"\"from\"\":\"\"REG_RELAYED\"\",\"\"to\"\":\"\"TARGET_CONFIRMED\"\",\"\"trace_id\"\":\"\"TRACE-20261013-2bc7d9\"\"}\",2026-10-13 15:17:44.242\n58,TRACE-20261013-2bc7d9,GATEWAY,STATE_TRANSITION,CROSSCHAIN_TX,CX-f4dc5f8c5e9e,\"{\"\"from\"\":\"\"REG_VERIFIED\"\",\"\"to\"\":\"\"REG_RELAYED\"\",\"\"trace_id\"\":\"\"TRACE-20261013-2bc7d9\"\"}\",2026-10-13 15:17:44.242\n",
+    "content": "id,trace_id,actor,action,target_type,target_id,detail,created_at\n77,TRACE-20261013-d30f71,REG-01,INSPECT,MISSION,MISSION-2026-001,\"{\"\"authorization_id\"\":\"\"AUTH-2026-001\"\",\"\"chain_tx_id\"\":\"\"CHAINMAKER-a797aa7d5971c81ee0dd8d73ff439333\"\",\"\"digest_match\"\":true,\"\"payload_verdict\"\":\"\"PAYLOAD_OK\"\",\"\"raised_alerts\"\":[],\"\"route_verdict\"\":\"\"ROUTE_OK\"\",\"\"signature_valid\"\":true}\",2026-10-13 16:27:01.040\n76,TRACE-20261013-d2990b,REG-ADMIN,AUTH_REVIEW,AUTH,AUTH-2026-001,\"{\"\"chain_tx_id\"\":\"\"CHAINMAKER-1d221bf4312d6b356e0a14a6b1d958d3\"\",\"\"comment\"\":\"\"同意\"\",\"\"decision\"\":\"\"APPROVE\"\",\"\"status\"\":\"\"AUTHORIZED\"\"}\",2026-10-13 16:27:01.037\n75,TRACE-20261013-510a7c,REG-01,AUTH_APPLY,AUTH,AUTH-2026-001,\"{\"\"reason\"\":\"\"核查告警 ALERT-2026-001\"\",\"\"scope\"\":[\"\"MISSION\"\",\"\"ROUTE\"\",\"\"PAYLOAD\"\",\"\"IDENTITY\"\"],\"\"target_id\"\":\"\"MISSION-2026-001\"\",\"\"target_type\"\":\"\"MISSION\"\",\"\"valid_from\"\":\"\"2026-10-13 16:27:01.037\"\",\"\"valid_to\"\":\"\"2026-10-14 16:27:01.037\"\"}\",2026-10-13 16:27:01.037\n74,TRACE-20261013-042857,REG-01,TRACE_IDENTITY,PSEUDO,PSEUDO-UAV-83921,\"{\"\"entry\"\":\"\"ALERT-2026-001\"\",\"\"entry_type\"\":\"\"ALERT_ID\"\",\"\"manufacturer_id\"\":\"\"Manufacturer-B\"\",\"\"operator_id\"\":\"\"Operator-A\"\",\"\"trace_latency_ms\"\":0,\"\"uav_id\"\":\"\"UAV-A-001\"\"}\",2026-10-13 16:27:01.036\n73,TRACE-20261013-d90f5a,REG-01,ALERT_STATUS,ALERT,ALERT-2026-001,\"{\"\"from\"\":\"\"OPEN\"\",\"\"reason\"\":\"\"初判成立\"\",\"\"to\"\":\"\"IDENTIFIED\"\"}\",2026-10-13 16:27:01.035\n72,TRACE-20261013-deacc6,REG-01,ALERT_RAISE,ALERT,ALERT-2026-001,\"{\"\"event_type\"\":\"\"ROUTE_DEVIATION\"\",\"\"evidence_hash\"\":\"\"d40fa926a8e49341a85c3799bd3860b6663223378f87124733ab0b996e94f6ad\"\",\"\"mission_id\"\":\"\"MISSION-2026-001\"\",\"\"risk_level\"\":\"\"HIGH\"\",\"\"source_system\"\":\"\"MANUAL\"\",\"\"uav_pseudonym\"\":\"\"PSEUDO-UAV-83921\"\",\"\"wormhole_event_id\"\":\"\"\"\"}\",2026-10-13 16:27:01.034\n71,TRACE-20261013-cc877a,OP-1,SESSION_CLOSE,SESSION,SESS-2884037e6405,\"{\"\"reason\"\":\"\"文档演示完毕\"\"}\",2026-10-13 16:27:01.033\n70,TRACE-20261013-cc877a,OP-1,STATE_TRANSITION,SESSION,SESS-2884037e6405,\"{\"\"from\"\":\"\"ACTIVE\"\",\"\"reason\"\":\"\"文档演示完毕\"\",\"\"to\"\":\"\"CLOSED\"\"}\",2026-10-13 16:27:01.033\n69,TRACE-20261013-da165b,ATTACKER-SIM,WORMHOLE_ENABLE,NODE,NODE-X+NODE-Y,\"{\"\"fake_adjacency\"\":{\"\"NODE-X\"\":[\"\"N1\"\",\"\"NODE-Y\"\"],\"\"NODE-Y\"\":[\"\"NODE-X\"\",\"\"N4\"\"]}}\",2026-10-13 16:27:01.031\n68,TRACE-20261013-dbe43e,UAV-A-001,TELEMETRY_REPORT,TELEMETRY,TLM-f564e67362da,\"{\"\"position\"\":[30.52,114.32,85],\"\"seq\"\":1,\"\"session_id\"\":\"\"SESS-2884037e6405\"\",\"\"source\"\":\"\"MANUAL\"\"}\",2026-10-13 16:27:01.029\n67,TRACE-20261013-427ad0,UAV-A-001-NODE,MESSAGE_SEND,MESSAGE,MSG-a3ea7ecd0218a568,\"{\"\"latency_ms\"\":45,\"\"msg_type\"\":\"\"HEARTBEAT\"\",\"\"seq\"\":1,\"\"session_id\"\":\"\"SESS-2884037e6405\"\"}\",2026-10-13 16:27:01.028\n66,TRACE-20261013-03ed55,UAV-A-001-NODE,SESSION_OPEN,SESSION,SESS-2884037e6405,\"{\"\"mission_id\"\":\"\"\"\",\"\"pass_id\"\":\"\"\"\",\"\"path\"\":[\"\"UAV-A-001-NODE\"\",\"\"N1\"\",\"\"N2\"\",\"\"N3\"\",\"\"N4\"\",\"\"MGR\"\"],\"\"uav_id\"\":\"\"UAV-A-001\"\"}\",2026-10-13 16:27:01.026\n65,TRACE-20261013-03ed55,UAV-A-001-NODE,STATE_TRANSITION,SESSION,SESS-2884037e6405,\"{\"\"from\"\":\"\"AUTHENTICATED\"\",\"\"to\"\":\"\"ACTIVE\"\"}\",2026-10-13 16:27:01.026\n64,TRACE-20261013-03ed55,UAV-A-001-NODE,STATE_TRANSITION,SESSION,SESS-2884037e6405,\"{\"\"from\"\":\"\"INIT\"\",\"\"to\"\":\"\"AUTHENTICATED\"\"}\",2026-10-13 16:27:01.026\n63,TRACE-20261013-9d573c,PLATFORM,NODE_REGISTER,NODE,N-DOC-1,\"{\"\"node_type\"\":\"\"EDGE\"\",\"\"sm9_identity\"\":\"\"SM9-ID-N-DOC-1\"\",\"\"status\"\":\"\"ONLINE\"\"}\",2026-10-13 16:27:01.024\n62,TRACE-20261013-c3bc81,GATEWAY,CROSSCHAIN_PASS_REVOKE,CROSSCHAIN_TX,CX-0bfdf4a7f507,\"{\"\"business_id\"\":\"\"PASS-2026-001\"\",\"\"error_code\"\":0,\"\"fail_reason\"\":\"\"\"\",\"\"latency_ms\"\":2,\"\"reg_receive_tx_id\"\":\"\"CHAINMAKER-081dfd4df738364bd7c63894eb215b43\"\",\"\"reg_record_id\"\":\"\"REGREC-06fecba4066b\"\",\"\"reg_relay_tx_id\"\":\"\"CHAINMAKER-adc7498647023eeccfa7458b2649b18a\"\",\"\"source_chain_tx_id\"\":\"\"IRITA-55a84d9eb2521d7ebef2c9c60621d534\"\",\"\"status\"\":\"\"SUCCESS\"\",\"\"target_chain_tx_id\"\":\"\"FABRIC-f940482d4b81d054b0e01f459d0f6664\"\",\"\"verify_result\"\":\"\"PASS\"\"}\",2026-10-13 16:27:01.023\n61,TRACE-20261013-c3bc81,GATEWAY,STATE_TRANSITION,CROSSCHAIN_TX,CX-0bfdf4a7f507,\"{\"\"from\"\":\"\"RETURN_REG_RECEIVED\"\",\"\"to\"\":\"\"SUCCESS\"\",\"\"trace_id\"\":\"\"TRACE-20261013-c3bc81\"\"}\",2026-10-13 16:27:01.022\n60,TRACE-20261013-c3bc81,GATEWAY,STATE_TRANSITION,CROSSCHAIN_TX,CX-0bfdf4a7f507,\"{\"\"from\"\":\"\"TARGET_CONFIRMED\"\",\"\"to\"\":\"\"RETURN_REG_RECEIVED\"\",\"\"trace_id\"\":\"\"TRACE-20261013-c3bc81\"\"}\",2026-10-13 16:27:01.022\n59,TRACE-20261013-c3bc81,GATEWAY,STATE_TRANSITION,CROSSCHAIN_TX,CX-0bfdf4a7f507,\"{\"\"from\"\":\"\"REG_RELAYED\"\",\"\"to\"\":\"\"TARGET_CONFIRMED\"\",\"\"trace_id\"\":\"\"TRACE-20261013-c3bc81\"\"}\",2026-10-13 16:27:01.022\n58,TRACE-20261013-c3bc81,GATEWAY,STATE_TRANSITION,CROSSCHAIN_TX,CX-0bfdf4a7f507,\"{\"\"from\"\":\"\"REG_VERIFIED\"\",\"\"to\"\":\"\"REG_RELAYED\"\",\"\"trace_id\"\":\"\"TRACE-20261013-c3bc81\"\"}\",2026-10-13 16:27:01.022\n",
     "format": "csv",
     "rows": 20
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.268",
-   "trace_id": "TRACE-20261013-657b5b"
+   "timestamp": "2026-10-13 16:27:01.043",
+   "trace_id": "TRACE-20261013-1c0c21"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.299",
-   "trace_id": "TRACE-20261013-82078b"
+   "timestamp": "2026-10-13 16:27:01.091",
+   "trace_id": "TRACE-20261013-0260dc"
   }
  },
  {
@@ -3213,216 +3213,216 @@ window.ENDPOINTS = [
      {
       "action": "INSPECT",
       "actor": "REG-01",
-      "created_at": "2026-10-13 15:17:44.265",
-      "detail": "{\"authorization_id\":\"AUTH-2026-001\",\"chain_tx_id\":\"CHAINMAKER-3014151b5338ea079a8d92ed2a6faa3e\",\"digest_match\":true,\"payload_verdict\":\"PAYLOAD_OK\",\"raised_alerts\":[],\"route_verdict\":\"ROUTE_OK\",\"signature_valid\":true}",
+      "created_at": "2026-10-13 16:27:01.040",
+      "detail": "{\"authorization_id\":\"AUTH-2026-001\",\"chain_tx_id\":\"CHAINMAKER-a797aa7d5971c81ee0dd8d73ff439333\",\"digest_match\":true,\"payload_verdict\":\"PAYLOAD_OK\",\"raised_alerts\":[],\"route_verdict\":\"ROUTE_OK\",\"signature_valid\":true}",
       "id": 77,
       "target_id": "MISSION-2026-001",
       "target_type": "MISSION",
-      "trace_id": "TRACE-20261013-869b3a"
+      "trace_id": "TRACE-20261013-d30f71"
      },
      {
       "action": "AUTH_REVIEW",
       "actor": "REG-ADMIN",
-      "created_at": "2026-10-13 15:17:44.262",
-      "detail": "{\"chain_tx_id\":\"CHAINMAKER-313f541c5a3aef8865296d20676ae483\",\"comment\":\"同意\",\"decision\":\"APPROVE\",\"status\":\"AUTHORIZED\"}",
+      "created_at": "2026-10-13 16:27:01.037",
+      "detail": "{\"chain_tx_id\":\"CHAINMAKER-1d221bf4312d6b356e0a14a6b1d958d3\",\"comment\":\"同意\",\"decision\":\"APPROVE\",\"status\":\"AUTHORIZED\"}",
       "id": 76,
       "target_id": "AUTH-2026-001",
       "target_type": "AUTH",
-      "trace_id": "TRACE-20261013-5c9a56"
+      "trace_id": "TRACE-20261013-d2990b"
      },
      {
       "action": "AUTH_APPLY",
       "actor": "REG-01",
-      "created_at": "2026-10-13 15:17:44.262",
-      "detail": "{\"reason\":\"核查告警 ALERT-2026-001\",\"scope\":[\"MISSION\",\"ROUTE\",\"PAYLOAD\",\"IDENTITY\"],\"target_id\":\"MISSION-2026-001\",\"target_type\":\"MISSION\",\"valid_from\":\"2026-10-13 15:17:44.262\",\"valid_to\":\"2026-10-14 15:17:44.262\"}",
+      "created_at": "2026-10-13 16:27:01.037",
+      "detail": "{\"reason\":\"核查告警 ALERT-2026-001\",\"scope\":[\"MISSION\",\"ROUTE\",\"PAYLOAD\",\"IDENTITY\"],\"target_id\":\"MISSION-2026-001\",\"target_type\":\"MISSION\",\"valid_from\":\"2026-10-13 16:27:01.037\",\"valid_to\":\"2026-10-14 16:27:01.037\"}",
       "id": 75,
       "target_id": "AUTH-2026-001",
       "target_type": "AUTH",
-      "trace_id": "TRACE-20261013-cd63b3"
+      "trace_id": "TRACE-20261013-510a7c"
      },
      {
       "action": "TRACE_IDENTITY",
       "actor": "REG-01",
-      "created_at": "2026-10-13 15:17:44.261",
+      "created_at": "2026-10-13 16:27:01.036",
       "detail": "{\"entry\":\"ALERT-2026-001\",\"entry_type\":\"ALERT_ID\",\"manufacturer_id\":\"Manufacturer-B\",\"operator_id\":\"Operator-A\",\"trace_latency_ms\":0,\"uav_id\":\"UAV-A-001\"}",
       "id": 74,
       "target_id": "PSEUDO-UAV-83921",
       "target_type": "PSEUDO",
-      "trace_id": "TRACE-20261013-3eed1d"
+      "trace_id": "TRACE-20261013-042857"
      },
      {
       "action": "ALERT_STATUS",
       "actor": "REG-01",
-      "created_at": "2026-10-13 15:17:44.261",
+      "created_at": "2026-10-13 16:27:01.035",
       "detail": "{\"from\":\"OPEN\",\"reason\":\"初判成立\",\"to\":\"IDENTIFIED\"}",
       "id": 73,
       "target_id": "ALERT-2026-001",
       "target_type": "ALERT",
-      "trace_id": "TRACE-20261013-ffe889"
+      "trace_id": "TRACE-20261013-d90f5a"
      },
      {
       "action": "ALERT_RAISE",
       "actor": "REG-01",
-      "created_at": "2026-10-13 15:17:44.260",
+      "created_at": "2026-10-13 16:27:01.034",
       "detail": "{\"event_type\":\"ROUTE_DEVIATION\",\"evidence_hash\":\"d40fa926a8e49341a85c3799bd3860b6663223378f87124733ab0b996e94f6ad\",\"mission_id\":\"MISSION-2026-001\",\"risk_level\":\"HIGH\",\"source_system\":\"MANUAL\",\"uav_pseudonym\":\"PSEUDO-UAV-83921\",\"wormhole_event_id\":\"\"}",
       "id": 72,
       "target_id": "ALERT-2026-001",
       "target_type": "ALERT",
-      "trace_id": "TRACE-20261013-694d67"
+      "trace_id": "TRACE-20261013-deacc6"
      },
      {
       "action": "SESSION_CLOSE",
       "actor": "OP-1",
-      "created_at": "2026-10-13 15:17:44.259",
+      "created_at": "2026-10-13 16:27:01.033",
       "detail": "{\"reason\":\"文档演示完毕\"}",
       "id": 71,
-      "target_id": "SESS-2218c9c52d3d",
+      "target_id": "SESS-2884037e6405",
       "target_type": "SESSION",
-      "trace_id": "TRACE-20261013-aa6567"
+      "trace_id": "TRACE-20261013-cc877a"
      },
      {
       "action": "STATE_TRANSITION",
       "actor": "OP-1",
-      "created_at": "2026-10-13 15:17:44.259",
+      "created_at": "2026-10-13 16:27:01.033",
       "detail": "{\"from\":\"ACTIVE\",\"reason\":\"文档演示完毕\",\"to\":\"CLOSED\"}",
       "id": 70,
-      "target_id": "SESS-2218c9c52d3d",
+      "target_id": "SESS-2884037e6405",
       "target_type": "SESSION",
-      "trace_id": "TRACE-20261013-aa6567"
+      "trace_id": "TRACE-20261013-cc877a"
      },
      {
       "action": "WORMHOLE_ENABLE",
       "actor": "ATTACKER-SIM",
-      "created_at": "2026-10-13 15:17:44.257",
+      "created_at": "2026-10-13 16:27:01.031",
       "detail": "{\"fake_adjacency\":{\"NODE-X\":[\"N1\",\"NODE-Y\"],\"NODE-Y\":[\"NODE-X\",\"N4\"]}}",
       "id": 69,
       "target_id": "NODE-X+NODE-Y",
       "target_type": "NODE",
-      "trace_id": "TRACE-20261013-9a3f75"
+      "trace_id": "TRACE-20261013-da165b"
      },
      {
       "action": "TELEMETRY_REPORT",
       "actor": "UAV-A-001",
-      "created_at": "2026-10-13 15:17:44.255",
-      "detail": "{\"position\":[30.52,114.32,85],\"seq\":1,\"session_id\":\"SESS-2218c9c52d3d\",\"source\":\"MANUAL\"}",
+      "created_at": "2026-10-13 16:27:01.029",
+      "detail": "{\"position\":[30.52,114.32,85],\"seq\":1,\"session_id\":\"SESS-2884037e6405\",\"source\":\"MANUAL\"}",
       "id": 68,
-      "target_id": "TLM-1d94e1cf0b04",
+      "target_id": "TLM-f564e67362da",
       "target_type": "TELEMETRY",
-      "trace_id": "TRACE-20261013-9f3fc8"
+      "trace_id": "TRACE-20261013-dbe43e"
      },
      {
       "action": "MESSAGE_SEND",
       "actor": "UAV-A-001-NODE",
-      "created_at": "2026-10-13 15:17:44.251",
-      "detail": "{\"latency_ms\":45,\"msg_type\":\"HEARTBEAT\",\"seq\":1,\"session_id\":\"SESS-2218c9c52d3d\"}",
+      "created_at": "2026-10-13 16:27:01.028",
+      "detail": "{\"latency_ms\":45,\"msg_type\":\"HEARTBEAT\",\"seq\":1,\"session_id\":\"SESS-2884037e6405\"}",
       "id": 67,
-      "target_id": "MSG-bab6126e34841000",
+      "target_id": "MSG-a3ea7ecd0218a568",
       "target_type": "MESSAGE",
-      "trace_id": "TRACE-20261013-2e3168"
+      "trace_id": "TRACE-20261013-427ad0"
      },
      {
       "action": "SESSION_OPEN",
       "actor": "UAV-A-001-NODE",
-      "created_at": "2026-10-13 15:17:44.249",
+      "created_at": "2026-10-13 16:27:01.026",
       "detail": "{\"mission_id\":\"\",\"pass_id\":\"\",\"path\":[\"UAV-A-001-NODE\",\"N1\",\"N2\",\"N3\",\"N4\",\"MGR\"],\"uav_id\":\"UAV-A-001\"}",
       "id": 66,
-      "target_id": "SESS-2218c9c52d3d",
+      "target_id": "SESS-2884037e6405",
       "target_type": "SESSION",
-      "trace_id": "TRACE-20261013-1295b9"
+      "trace_id": "TRACE-20261013-03ed55"
      },
      {
       "action": "STATE_TRANSITION",
       "actor": "UAV-A-001-NODE",
-      "created_at": "2026-10-13 15:17:44.249",
+      "created_at": "2026-10-13 16:27:01.026",
       "detail": "{\"from\":\"AUTHENTICATED\",\"to\":\"ACTIVE\"}",
       "id": 65,
-      "target_id": "SESS-2218c9c52d3d",
+      "target_id": "SESS-2884037e6405",
       "target_type": "SESSION",
-      "trace_id": "TRACE-20261013-1295b9"
+      "trace_id": "TRACE-20261013-03ed55"
      },
      {
       "action": "STATE_TRANSITION",
       "actor": "UAV-A-001-NODE",
-      "created_at": "2026-10-13 15:17:44.249",
+      "created_at": "2026-10-13 16:27:01.026",
       "detail": "{\"from\":\"INIT\",\"to\":\"AUTHENTICATED\"}",
       "id": 64,
-      "target_id": "SESS-2218c9c52d3d",
+      "target_id": "SESS-2884037e6405",
       "target_type": "SESSION",
-      "trace_id": "TRACE-20261013-1295b9"
+      "trace_id": "TRACE-20261013-03ed55"
      },
      {
       "action": "NODE_REGISTER",
       "actor": "PLATFORM",
-      "created_at": "2026-10-13 15:17:44.246",
+      "created_at": "2026-10-13 16:27:01.024",
       "detail": "{\"node_type\":\"EDGE\",\"sm9_identity\":\"SM9-ID-N-DOC-1\",\"status\":\"ONLINE\"}",
       "id": 63,
       "target_id": "N-DOC-1",
       "target_type": "NODE",
-      "trace_id": "TRACE-20261013-1b0a7e"
+      "trace_id": "TRACE-20261013-9d573c"
      },
      {
       "action": "CROSSCHAIN_PASS_REVOKE",
       "actor": "GATEWAY",
-      "created_at": "2026-10-13 15:17:44.244",
-      "detail": "{\"business_id\":\"PASS-2026-001\",\"error_code\":0,\"fail_reason\":\"\",\"latency_ms\":5,\"reg_receive_tx_id\":\"CHAINMAKER-dce9ee800b5c5b9cf0466c0a68294a29\",\"reg_record_id\":\"REGREC-eaa7a917ae70\",\"reg_relay_tx_id\":\"CHAINMAKER-fc651e065b917733ebf71826c014c610\",\"source_chain_tx_id\":\"FISCO-BCOS-52e36d043d0e2d9f71b59117e783da28\",\"status\":\"SUCCESS\",\"target_chain_tx_id\":\"FABRIC-9866b543c0781e937f1fc6b4c55d31c5\",\"verify_result\":\"PASS\"}",
+      "created_at": "2026-10-13 16:27:01.023",
+      "detail": "{\"business_id\":\"PASS-2026-001\",\"error_code\":0,\"fail_reason\":\"\",\"latency_ms\":2,\"reg_receive_tx_id\":\"CHAINMAKER-081dfd4df738364bd7c63894eb215b43\",\"reg_record_id\":\"REGREC-06fecba4066b\",\"reg_relay_tx_id\":\"CHAINMAKER-adc7498647023eeccfa7458b2649b18a\",\"source_chain_tx_id\":\"IRITA-55a84d9eb2521d7ebef2c9c60621d534\",\"status\":\"SUCCESS\",\"target_chain_tx_id\":\"FABRIC-f940482d4b81d054b0e01f459d0f6664\",\"verify_result\":\"PASS\"}",
       "id": 62,
-      "target_id": "CX-f4dc5f8c5e9e",
+      "target_id": "CX-0bfdf4a7f507",
       "target_type": "CROSSCHAIN_TX",
-      "trace_id": "TRACE-20261013-2bc7d9"
+      "trace_id": "TRACE-20261013-c3bc81"
      },
      {
       "action": "STATE_TRANSITION",
       "actor": "GATEWAY",
-      "created_at": "2026-10-13 15:17:44.243",
-      "detail": "{\"from\":\"RETURN_REG_RECEIVED\",\"to\":\"SUCCESS\",\"trace_id\":\"TRACE-20261013-2bc7d9\"}",
+      "created_at": "2026-10-13 16:27:01.022",
+      "detail": "{\"from\":\"RETURN_REG_RECEIVED\",\"to\":\"SUCCESS\",\"trace_id\":\"TRACE-20261013-c3bc81\"}",
       "id": 61,
-      "target_id": "CX-f4dc5f8c5e9e",
+      "target_id": "CX-0bfdf4a7f507",
       "target_type": "CROSSCHAIN_TX",
-      "trace_id": "TRACE-20261013-2bc7d9"
+      "trace_id": "TRACE-20261013-c3bc81"
      },
      {
       "action": "STATE_TRANSITION",
       "actor": "GATEWAY",
-      "created_at": "2026-10-13 15:17:44.242",
-      "detail": "{\"from\":\"TARGET_CONFIRMED\",\"to\":\"RETURN_REG_RECEIVED\",\"trace_id\":\"TRACE-20261013-2bc7d9\"}",
+      "created_at": "2026-10-13 16:27:01.022",
+      "detail": "{\"from\":\"TARGET_CONFIRMED\",\"to\":\"RETURN_REG_RECEIVED\",\"trace_id\":\"TRACE-20261013-c3bc81\"}",
       "id": 60,
-      "target_id": "CX-f4dc5f8c5e9e",
+      "target_id": "CX-0bfdf4a7f507",
       "target_type": "CROSSCHAIN_TX",
-      "trace_id": "TRACE-20261013-2bc7d9"
+      "trace_id": "TRACE-20261013-c3bc81"
      },
      {
       "action": "STATE_TRANSITION",
       "actor": "GATEWAY",
-      "created_at": "2026-10-13 15:17:44.242",
-      "detail": "{\"from\":\"REG_RELAYED\",\"to\":\"TARGET_CONFIRMED\",\"trace_id\":\"TRACE-20261013-2bc7d9\"}",
+      "created_at": "2026-10-13 16:27:01.022",
+      "detail": "{\"from\":\"REG_RELAYED\",\"to\":\"TARGET_CONFIRMED\",\"trace_id\":\"TRACE-20261013-c3bc81\"}",
       "id": 59,
-      "target_id": "CX-f4dc5f8c5e9e",
+      "target_id": "CX-0bfdf4a7f507",
       "target_type": "CROSSCHAIN_TX",
-      "trace_id": "TRACE-20261013-2bc7d9"
+      "trace_id": "TRACE-20261013-c3bc81"
      },
      {
       "action": "STATE_TRANSITION",
       "actor": "GATEWAY",
-      "created_at": "2026-10-13 15:17:44.242",
-      "detail": "{\"from\":\"REG_VERIFIED\",\"to\":\"REG_RELAYED\",\"trace_id\":\"TRACE-20261013-2bc7d9\"}",
+      "created_at": "2026-10-13 16:27:01.022",
+      "detail": "{\"from\":\"REG_VERIFIED\",\"to\":\"REG_RELAYED\",\"trace_id\":\"TRACE-20261013-c3bc81\"}",
       "id": 58,
-      "target_id": "CX-f4dc5f8c5e9e",
+      "target_id": "CX-0bfdf4a7f507",
       "target_type": "CROSSCHAIN_TX",
-      "trace_id": "TRACE-20261013-2bc7d9"
+      "trace_id": "TRACE-20261013-c3bc81"
      }
     ],
     "total": 77
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.267",
-   "trace_id": "TRACE-20261013-c6b377"
+   "timestamp": "2026-10-13 16:27:01.042",
+   "trace_id": "TRACE-20261013-d6451a"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.298",
-   "trace_id": "TRACE-20261013-0a2938"
+   "timestamp": "2026-10-13 16:27:01.091",
+   "trace_id": "TRACE-20261013-c1d6d2"
   }
  },
  {
@@ -3439,161 +3439,161 @@ window.ENDPOINTS = [
     "records": [
      {
       "business_id": "UAV-A-001",
-      "created_at": "2026-10-13 15:17:44.270",
-      "cross_tx_id": "CX-9c2600733c8f",
+      "created_at": "2026-10-13 16:27:01.045",
+      "cross_tx_id": "CX-0fd833b200c5",
       "error_code": 0,
       "final_target_chain": "chainmaker",
       "idempotency_key": "42e1e19c143d5f999df2d44f70cb28994de179d492036bd077a9530e7b2df48a",
-      "latency_ms": 2,
+      "latency_ms": 11,
       "message_type": "UAV_REGISTER_PROOF",
       "policy_result": "PASS",
-      "reg_receive_tx_id": "CHAINMAKER-04c5365d92da78607c64bbed8504fdcb",
-      "reg_record_id": "REGREC-f460d3f0f07a",
-      "reg_relay_tx_id": "CHAINMAKER-b014242c841564afe4d50fb86f5d76bb",
+      "reg_receive_tx_id": "CHAINMAKER-1a5d438773cb2e93d034d62ba9e96b54",
+      "reg_record_id": "REGREC-8701abd24613",
+      "reg_relay_tx_id": "CHAINMAKER-4aab890d842f713c2ef36560c9919334",
       "retry_of": "",
-      "signature": "MGYEIDvrLF79zOEhux97DTVW0fe/GiJTINFkGrcYQ5Xnc5qjA0IABABLgcK5pO8wfZTaUuNe+8NVR1rI+47+lkI7ciuxdYPMLvjhhnbZn/aIKDRX7MVKmo4wYqDRHw1jCOhYaOSrvXg=",
+      "signature": "MGYEIHyEVtCCimJZ3W4A2tofCiq9k3PG/mWBngp4BU6aKaP3A0IABJkqEWy+vK8FVgoN6nAXRFtufiwA5DvcMZiTsKKuQc+nGKAccaKX2emkKWFAp3X1nBYmNNYLkMO0baQCsIhJxhU=",
       "sm3_hash": "03498f970c993e589254eb2d0c6eea6fd22bda0935c8e72cf5bdc693e9409eed",
       "sm9_identity": "SM9-ID-UAV-A-001",
       "source_chain": "fabric",
-      "source_chain_tx_id": "FABRIC-af63eaf8d263c511b3ff6c4abced3a9f",
+      "source_chain_tx_id": "FABRIC-913c599c9ff38ccfed9480da1cf5c7aa",
       "status": "SUCCESS",
       "target_chain_tx_id": "CHAINMAKER-78efe3f91e8fb98d02dede45a842c107",
-      "updated_at": "2026-10-13 15:17:44.273",
+      "updated_at": "2026-10-13 16:27:01.056",
       "verify_result": "PASS"
      },
      {
       "business_id": "PASS-2026-001",
-      "created_at": "2026-10-13 15:17:44.237",
-      "cross_tx_id": "CX-f4dc5f8c5e9e",
+      "created_at": "2026-10-13 16:27:01.020",
+      "cross_tx_id": "CX-0bfdf4a7f507",
       "error_code": 0,
       "final_target_chain": "fabric",
       "idempotency_key": "370a264f2a3c8eb216f62dec3bdd0cd36b2ab9b89f667ab461ef50bc9f8e2595",
-      "latency_ms": 5,
+      "latency_ms": 2,
       "message_type": "PASS_REVOKE",
       "policy_result": "PASS",
-      "reg_receive_tx_id": "CHAINMAKER-dce9ee800b5c5b9cf0466c0a68294a29",
-      "reg_record_id": "REGREC-eaa7a917ae70",
-      "reg_relay_tx_id": "CHAINMAKER-fc651e065b917733ebf71826c014c610",
+      "reg_receive_tx_id": "CHAINMAKER-081dfd4df738364bd7c63894eb215b43",
+      "reg_record_id": "REGREC-06fecba4066b",
+      "reg_relay_tx_id": "CHAINMAKER-adc7498647023eeccfa7458b2649b18a",
       "retry_of": "",
-      "signature": "MGYEIKr/14XlwjyjNpqi7AEVnwP3CCF/eZIR1Q1oDdKC6/yYA0IABFA6iu5YNzQuUql0/pU6yLM0RwJ/TN+3xX0wABZKGf6AcZSDovpkI/Tx4b0xdUFGZCVHQvi/IseL0LXjhtXlwbg=",
-      "sm3_hash": "2415ada93c6f4314f8d6e56468afd733ec356f2d08383fab9c0d7af9ac54c5c3",
-      "sm9_identity": "SM9-ID-FISCO-ADMIN",
-      "source_chain": "fisco-bcos",
-      "source_chain_tx_id": "FISCO-BCOS-52e36d043d0e2d9f71b59117e783da28",
+      "signature": "MGYEIKfioQwKoRGaJHNR/3Iky/czhfu1c48oaUrRAKhwhlOgA0IABGfQ2pX9dh2/NJewf91xUc7gcxbA2ui+gZJcrGzmypcNka3gQIYGn9y0UaLkujEbZXOkbl/9ap5H1QP9xWMxM5E=",
+      "sm3_hash": "1b20b87b6b376e073977da0ae417f5a783ba43cfa9496997e209e0f611e55d2e",
+      "sm9_identity": "SM9-ID-REGISTRY-ADMIN",
+      "source_chain": "irita",
+      "source_chain_tx_id": "IRITA-55a84d9eb2521d7ebef2c9c60621d534",
       "status": "SUCCESS",
-      "target_chain_tx_id": "FABRIC-9866b543c0781e937f1fc6b4c55d31c5",
-      "updated_at": "2026-10-13 15:17:44.243",
+      "target_chain_tx_id": "FABRIC-f940482d4b81d054b0e01f459d0f6664",
+      "updated_at": "2026-10-13 16:27:01.022",
       "verify_result": "PASS"
      },
      {
       "business_id": "PASS-2026-001",
-      "created_at": "2026-10-13 15:17:44.230",
-      "cross_tx_id": "CX-334e4b53897a",
+      "created_at": "2026-10-13 16:27:01.012",
+      "cross_tx_id": "CX-c30ba90d0bc6",
       "error_code": 0,
       "final_target_chain": "fabric",
       "idempotency_key": "6cf6ad87e7ca30944f0ef5f2754e605446dcb43f46cc058b29fbaef3410a8582",
-      "latency_ms": 2,
+      "latency_ms": 3,
       "message_type": "FLIGHT_PASS",
       "policy_result": "PASS",
-      "reg_receive_tx_id": "CHAINMAKER-f8c335a1cb006a54fcf0b65a0ba0c11d",
-      "reg_record_id": "REGREC-a7041fa64401",
-      "reg_relay_tx_id": "CHAINMAKER-280f63ecfa8a2029e2e51ce8629685f9",
+      "reg_receive_tx_id": "CHAINMAKER-3738a3d274976f3fe837956a10f99acb",
+      "reg_record_id": "REGREC-3505535ecc31",
+      "reg_relay_tx_id": "CHAINMAKER-8e451df4ec9c430534ce87317b41b79c",
       "retry_of": "",
-      "signature": "MGYEIAcDmMtqCsxGcyLqFyXeJpNC/pyiqt05XCiIC6MVFHixA0IABDH8fdMxhUOgzvuCKNLvU3ZMwpqkv7lTtuZtn+w4AdBacM16jT9aeKXm/iqUNjhCosuQ0FKKt3Qy4PQBr85mYKQ=",
-      "sm3_hash": "5d5ac694a0e647caa8599c05fafe90b7e1b464fb758fea34270ed6981d05e010",
-      "sm9_identity": "SM9-ID-FISCO-ADMIN",
-      "source_chain": "fisco-bcos",
-      "source_chain_tx_id": "FISCO-BCOS-08c9b6d36ce5413c83db2927cc54dd5f",
+      "signature": "MGYEIBETLlHX/rED51hphH9KV0bhEbWYu5uK6BdT3XMHYU0EA0IABFKf11USsABTwbAdup3qHbuVgqV9xYg5MhDtRkwKP958I0xhr04C2QYy5tb5tJITqrY2YXs8vlmMZbo2x//ALO0=",
+      "sm3_hash": "00a44f288128c04712564533edf0206746af7acd8a51fbc9b43810b455bf3839",
+      "sm9_identity": "SM9-ID-REGISTRY-ADMIN",
+      "source_chain": "irita",
+      "source_chain_tx_id": "IRITA-e1f7448824e6b110d556a17f7ddccb4d",
       "status": "SUCCESS",
-      "target_chain_tx_id": "FABRIC-439e5ae98e9c43954867bc917f6e7e87",
-      "updated_at": "2026-10-13 15:17:44.233",
+      "target_chain_tx_id": "FABRIC-7578f55d0615359bfcae79f1f0269b49",
+      "updated_at": "2026-10-13 16:27:01.015",
       "verify_result": "PASS"
      },
      {
-      "business_id": "REV-27f738cbf4f9",
-      "created_at": "2026-10-13 15:17:44.223",
-      "cross_tx_id": "CX-0794736b1d17",
+      "business_id": "REV-775bff78817f",
+      "created_at": "2026-10-13 16:27:01.001",
+      "cross_tx_id": "CX-4d7c101d5c96",
       "error_code": 0,
       "final_target_chain": "fabric",
-      "idempotency_key": "47c4f81bbe9d3c67de6c537439231b7b848b9aa22271567faded48894a13741c",
-      "latency_ms": 3,
+      "idempotency_key": "2e0722b21c8ddac2c3241c2892338d98fef4aab2db93ccffb058c27f3d0380c4",
+      "latency_ms": 4,
       "message_type": "MISSION_REVIEW_RESULT",
       "policy_result": "PASS",
-      "reg_receive_tx_id": "CHAINMAKER-10dbc357fb46856a20238baf6479fafa",
-      "reg_record_id": "REGREC-4aeea1f37eb1",
-      "reg_relay_tx_id": "CHAINMAKER-56db713859990600d6433e811a9640b2",
+      "reg_receive_tx_id": "CHAINMAKER-5b0ad503f11fd97d941bbef96008e5dc",
+      "reg_record_id": "REGREC-7507ee0c2177",
+      "reg_relay_tx_id": "CHAINMAKER-865c1e236e9a90a218c254cb7e545da6",
       "retry_of": "",
-      "signature": "MGYEIH2tX3AsQ7gfbc2xN9PjpvDhCrIsX2i++jcczVBR5FIeA0IABDaCnpLLzWRUzWUAsJIjFpYq+Z4NDlF7KPTY1PIGMiAvIQt+r4xT9CGIoLUACAdKOtRpI60QC0fL8eMme/qAzCM=",
-      "sm3_hash": "8fe32749d82fcef3bfc00ea9a24560a5ed0c0f6dad41602080cfa307dbb2e09f",
+      "signature": "MGYEIGjTR8LavQZW7K4T7ZhNE2MBodBEGTCldM/IwFy3RR0fA0IABDHvgRKCjfHiniMpkbfZvcHDZvCy5rc6c/5YLSHjiqfXnxfdUKebEnazwzmvz2Nir3Vt2jNnBIS3yD7CDMa1v7k=",
+      "sm3_hash": "395c92b9b8b2faef11312bc9cd5db17bb510dd2f174b5bfc610684c4a44c8d30",
       "sm9_identity": "SM9-ID-FISCO-ADMIN",
       "source_chain": "fisco-bcos",
-      "source_chain_tx_id": "FISCO-BCOS-0dedac6e184e9d49a9d78bdfc39ba0c2",
+      "source_chain_tx_id": "FISCO-BCOS-f1c4783ade8093ece8e076899fd5106a",
       "status": "SUCCESS",
-      "target_chain_tx_id": "FABRIC-c117b7d7022f38e4911faefa570d6c38",
-      "updated_at": "2026-10-13 15:17:44.226",
+      "target_chain_tx_id": "FABRIC-19d98e1d19c631903c99bbb272585b7c",
+      "updated_at": "2026-10-13 16:27:01.005",
       "verify_result": "PASS"
      },
      {
-      "business_id": "APP-20261013-c2d3ee",
-      "created_at": "2026-10-13 15:17:44.219",
-      "cross_tx_id": "CX-a79e8e0e09b1",
+      "business_id": "APP-20261013-b21531",
+      "created_at": "2026-10-13 16:27:00.996",
+      "cross_tx_id": "CX-efd2c0599850",
       "error_code": 0,
       "final_target_chain": "fisco-bcos",
-      "idempotency_key": "093d071ea9e128df0479c75b487a71dc5a18422c74ab011c79f81637cf1f52b4",
-      "latency_ms": 2,
+      "idempotency_key": "2f41f0d1e58acee79ce068f008896b12bb236e1cf4bfda8ef930b0624da16c42",
+      "latency_ms": 3,
       "message_type": "MISSION_APPLICATION",
       "policy_result": "PASS",
-      "reg_receive_tx_id": "CHAINMAKER-aef0a2398cde5aa8d50cb1114bc13033",
-      "reg_record_id": "REGREC-d37f61b605ad",
-      "reg_relay_tx_id": "CHAINMAKER-9156d8bc6a5704bf07d81c55dcdb433b",
+      "reg_receive_tx_id": "CHAINMAKER-ed2fa92be828160e08befae7ceb42ae7",
+      "reg_record_id": "REGREC-e623b89e3410",
+      "reg_relay_tx_id": "CHAINMAKER-f06d548ccc2ebfbe12ec54d653003084",
       "retry_of": "",
-      "signature": "MGYEIBt4FrQLqCXdx0UCbgyfh+TLGtnD49BRORNxm1cXXlLrA0IABGxs631V5RP1ExIEHGvaletN7G+co+1zgSX1UQP1EM4wQEqSM9ir9wq7WT8PyQGI4PCfRhBInsw1IYUeU3oUvyw=",
-      "sm3_hash": "d29a303817150114ef42cc9540d17d8aeb1b13d083214d3218a39080214b6018",
+      "signature": "MGYEIFTAModvBn9w+RG/Wkms+qWsiEJaoy/JAw99FdkHDUNAA0IABIEaGf+2Gbpm5rYRny8MeAB7Eyzg3aWi4bGaGzH+LfvbhjEOvvWWhU3Bls+dMnTLQ1YT0CqDI8mbpbrLm5D7l4Y=",
+      "sm3_hash": "09ca31cf928d5db9ccec26e8da53a2d055013bd3862467e8744f8cde54bd31b7",
       "sm9_identity": "SM9-ID-Operator-A",
       "source_chain": "fabric",
-      "source_chain_tx_id": "FABRIC-93f78b2f745a7b2d7b22f2c6fb8122a1",
+      "source_chain_tx_id": "FABRIC-0023d194ee1811a8fa9803b07cdd69dd",
       "status": "SUCCESS",
-      "target_chain_tx_id": "FISCO-BCOS-f3cd2101f64b861cf27831769dd7a68a",
-      "updated_at": "2026-10-13 15:17:44.221",
+      "target_chain_tx_id": "FISCO-BCOS-9c45f6d77f71750178c674f68f93e89d",
+      "updated_at": "2026-10-13 16:27:00.999",
       "verify_result": "PASS"
      },
      {
       "business_id": "UAV-DOC-001",
-      "created_at": "2026-10-13 15:17:44.204",
-      "cross_tx_id": "CX-ead1cb1594dd",
+      "created_at": "2026-10-13 16:27:00.981",
+      "cross_tx_id": "CX-c84decb13aae",
       "error_code": 0,
       "final_target_chain": "chainmaker",
       "idempotency_key": "e96d6a7b347e180add22c6f67dcd1e8f5a1b5d21b05fe9073bbac0fa58c764c9",
       "latency_ms": 3,
       "message_type": "UAV_REGISTER_PROOF",
       "policy_result": "PASS",
-      "reg_receive_tx_id": "CHAINMAKER-afb306b0f993121ca7c4044d5567e688",
-      "reg_record_id": "REGREC-f05248e0a158",
-      "reg_relay_tx_id": "CHAINMAKER-c62eb0675575046769d96bb2fc8c8ba8",
+      "reg_receive_tx_id": "CHAINMAKER-8b669ead8dc7fa20933a942438bc8ba2",
+      "reg_record_id": "REGREC-dcf1444d2864",
+      "reg_relay_tx_id": "CHAINMAKER-12098ed82e821c1552e40492da16c642",
       "retry_of": "",
-      "signature": "MGYEIC/OSGB0swrFjSjQEVBAlSc6mqUp3VWfqamq3ZMxf1D1A0IABHAJ/rwvOAe0UVvHusNNtta9bnnB3Y0tagUYH/+nA5YxPrLJ/IFpwLvbL8UO0jiqEK4bd15MxE9AnSpVw4wjy2w=",
+      "signature": "MGYEIEkE6CKq8rS44faqMDN3T/oKsl0DHodWDlmYOspShcRWA0IABLJq8jqgFu5T8N6krpyTJM7tPmj6zC9Pugx7oR/Vgyy+kBiJ7P+AvXZU1yvyXWKhyUmAZ0Sl2/zpBFMoLNcR+8I=",
       "sm3_hash": "751407a1789478f6d055d713b4b0d78f5d946b7ce4eaec9a75dddcc1b210482c",
       "sm9_identity": "SM9-ID-UAV-DOC-001",
       "source_chain": "fabric",
-      "source_chain_tx_id": "FABRIC-776de8b441c9f4f91dc2ec33263e9828",
+      "source_chain_tx_id": "FABRIC-d8a0fe29b4904ecdc953319a676401ce",
       "status": "SUCCESS",
       "target_chain_tx_id": "CHAINMAKER-87e4bb4581dfe616507211e01ebf5d83",
-      "updated_at": "2026-10-13 15:17:44.207",
+      "updated_at": "2026-10-13 16:27:00.984",
       "verify_result": "PASS"
      }
     ],
     "total": 6
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.274",
-   "trace_id": "TRACE-20261013-737034"
+   "timestamp": "2026-10-13 16:27:01.062",
+   "trace_id": "TRACE-20261013-bc3bc4"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.299",
-   "trace_id": "TRACE-20261013-980418"
+   "timestamp": "2026-10-13 16:27:01.092",
+   "trace_id": "TRACE-20261013-92779f"
   }
  },
  {
@@ -3602,44 +3602,44 @@ window.ENDPOINTS = [
   "summary": "跨链交易查询（四段 TxID/验签结果/时延）",
   "operationId": "crosschainQuery",
   "req": {
-   "cross_tx_id": "CX-9c2600733c8f"
+   "cross_tx_id": "CX-0fd833b200c5"
   },
   "resp": {
    "code": 0,
    "data": {
     "business_id": "UAV-A-001",
-    "created_at": "2026-10-13 15:17:44.270",
-    "cross_tx_id": "CX-9c2600733c8f",
+    "created_at": "2026-10-13 16:27:01.045",
+    "cross_tx_id": "CX-0fd833b200c5",
     "error_code": 0,
     "final_target_chain": "chainmaker",
     "idempotency_key": "42e1e19c143d5f999df2d44f70cb28994de179d492036bd077a9530e7b2df48a",
-    "latency_ms": 2,
+    "latency_ms": 11,
     "message_type": "UAV_REGISTER_PROOF",
     "policy_result": "PASS",
-    "reg_receive_tx_id": "CHAINMAKER-04c5365d92da78607c64bbed8504fdcb",
-    "reg_record_id": "REGREC-f460d3f0f07a",
-    "reg_relay_tx_id": "CHAINMAKER-b014242c841564afe4d50fb86f5d76bb",
+    "reg_receive_tx_id": "CHAINMAKER-1a5d438773cb2e93d034d62ba9e96b54",
+    "reg_record_id": "REGREC-8701abd24613",
+    "reg_relay_tx_id": "CHAINMAKER-4aab890d842f713c2ef36560c9919334",
     "retry_of": "",
-    "signature": "MGYEIDvrLF79zOEhux97DTVW0fe/GiJTINFkGrcYQ5Xnc5qjA0IABABLgcK5pO8wfZTaUuNe+8NVR1rI+47+lkI7ciuxdYPMLvjhhnbZn/aIKDRX7MVKmo4wYqDRHw1jCOhYaOSrvXg=",
+    "signature": "MGYEIHyEVtCCimJZ3W4A2tofCiq9k3PG/mWBngp4BU6aKaP3A0IABJkqEWy+vK8FVgoN6nAXRFtufiwA5DvcMZiTsKKuQc+nGKAccaKX2emkKWFAp3X1nBYmNNYLkMO0baQCsIhJxhU=",
     "sm3_hash": "03498f970c993e589254eb2d0c6eea6fd22bda0935c8e72cf5bdc693e9409eed",
     "sm9_identity": "SM9-ID-UAV-A-001",
     "source_chain": "fabric",
-    "source_chain_tx_id": "FABRIC-af63eaf8d263c511b3ff6c4abced3a9f",
+    "source_chain_tx_id": "FABRIC-913c599c9ff38ccfed9480da1cf5c7aa",
     "status": "SUCCESS",
     "target_chain_tx_id": "CHAINMAKER-78efe3f91e8fb98d02dede45a842c107",
-    "updated_at": "2026-10-13 15:17:44.273",
+    "updated_at": "2026-10-13 16:27:01.056",
     "verify_result": "PASS"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.273",
-   "trace_id": "TRACE-20261013-1b9715"
+   "timestamp": "2026-10-13 16:27:01.060",
+   "trace_id": "TRACE-20261013-597d91"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.crosschainQueryReq",
-   "timestamp": "2026-10-13 15:17:44.299",
-   "trace_id": "TRACE-20261013-fcc24a"
+   "timestamp": "2026-10-13 16:27:01.091",
+   "trace_id": "TRACE-20261013-bea882"
   }
  },
  {
@@ -3665,38 +3665,38 @@ window.ENDPOINTS = [
    "code": 0,
    "data": {
     "business_id": "UAV-A-001",
-    "created_at": "2026-10-13 15:17:44.270",
-    "cross_tx_id": "CX-9c2600733c8f",
+    "created_at": "2026-10-13 16:27:01.045",
+    "cross_tx_id": "CX-0fd833b200c5",
     "error_code": 0,
     "final_target_chain": "chainmaker",
     "idempotency_key": "42e1e19c143d5f999df2d44f70cb28994de179d492036bd077a9530e7b2df48a",
-    "latency_ms": 2,
+    "latency_ms": 11,
     "message_type": "UAV_REGISTER_PROOF",
     "policy_result": "PASS",
-    "reg_receive_tx_id": "CHAINMAKER-04c5365d92da78607c64bbed8504fdcb",
-    "reg_record_id": "REGREC-f460d3f0f07a",
-    "reg_relay_tx_id": "CHAINMAKER-b014242c841564afe4d50fb86f5d76bb",
+    "reg_receive_tx_id": "CHAINMAKER-1a5d438773cb2e93d034d62ba9e96b54",
+    "reg_record_id": "REGREC-8701abd24613",
+    "reg_relay_tx_id": "CHAINMAKER-4aab890d842f713c2ef36560c9919334",
     "retry_of": "",
-    "signature": "MGYEIDvrLF79zOEhux97DTVW0fe/GiJTINFkGrcYQ5Xnc5qjA0IABABLgcK5pO8wfZTaUuNe+8NVR1rI+47+lkI7ciuxdYPMLvjhhnbZn/aIKDRX7MVKmo4wYqDRHw1jCOhYaOSrvXg=",
+    "signature": "MGYEIHyEVtCCimJZ3W4A2tofCiq9k3PG/mWBngp4BU6aKaP3A0IABJkqEWy+vK8FVgoN6nAXRFtufiwA5DvcMZiTsKKuQc+nGKAccaKX2emkKWFAp3X1nBYmNNYLkMO0baQCsIhJxhU=",
     "sm3_hash": "03498f970c993e589254eb2d0c6eea6fd22bda0935c8e72cf5bdc693e9409eed",
     "sm9_identity": "SM9-ID-UAV-A-001",
     "source_chain": "fabric",
-    "source_chain_tx_id": "FABRIC-af63eaf8d263c511b3ff6c4abced3a9f",
+    "source_chain_tx_id": "FABRIC-913c599c9ff38ccfed9480da1cf5c7aa",
     "status": "SUCCESS",
     "target_chain_tx_id": "CHAINMAKER-78efe3f91e8fb98d02dede45a842c107",
-    "updated_at": "2026-10-13 15:17:44.273",
+    "updated_at": "2026-10-13 16:27:01.056",
     "verify_result": "PASS"
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.273",
-   "trace_id": "TRACE-20261013-b28fcf"
+   "timestamp": "2026-10-13 16:27:01.057",
+   "trace_id": "TRACE-20261013-e35aed"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type api.crosschainSendReq",
-   "timestamp": "2026-10-13 15:17:44.299",
-   "trace_id": "TRACE-20261013-b3ba3f"
+   "timestamp": "2026-10-13 16:27:01.091",
+   "trace_id": "TRACE-20261013-9d57a2"
   }
  },
  {
@@ -3728,11 +3728,11 @@ window.ENDPOINTS = [
      "pending": 0,
      "total": 1
     },
-    "generated_at": "2026-10-13 15:17:44.274",
+    "generated_at": "2026-10-13 16:27:01.063",
     "recent_alerts": [
      {
       "alert_id": "ALERT-2026-001",
-      "created_at": "2026-10-13 15:17:44.259",
+      "created_at": "2026-10-13 16:27:01.034",
       "event_type": "ROUTE_DEVIATION",
       "evidence_hash": "d40fa926a8e49341a85c3799bd3860b6663223378f87124733ab0b996e94f6ad",
       "mission_id": "MISSION-2026-001",
@@ -3740,7 +3740,7 @@ window.ENDPOINTS = [
       "source_system": "MANUAL",
       "status": "IDENTIFIED",
       "uav_pseudonym": "PSEUDO-UAV-83921",
-      "updated_at": "2026-10-13 15:17:44.261"
+      "updated_at": "2026-10-13 16:27:01.035"
      }
     ],
     "sessions": {
@@ -3760,8 +3760,8 @@ window.ENDPOINTS = [
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.275",
-   "trace_id": "TRACE-20261013-b800de"
+   "timestamp": "2026-10-13 16:27:01.066",
+   "trace_id": "TRACE-20261013-08805c"
   },
   "err": {
    "code": 0,
@@ -3784,7 +3784,7 @@ window.ENDPOINTS = [
      "pending": 0,
      "total": 0
     },
-    "generated_at": "2026-10-13 15:17:44.299",
+    "generated_at": "2026-10-13 16:27:01.092",
     "recent_alerts": [],
     "sessions": {
      "active": 0,
@@ -3803,8 +3803,8 @@ window.ENDPOINTS = [
     }
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.300",
-   "trace_id": "TRACE-20261013-683b19"
+   "timestamp": "2026-10-13 16:27:01.093",
+   "trace_id": "TRACE-20261013-5565f6"
   }
  },
  {
@@ -3816,20 +3816,20 @@ window.ENDPOINTS = [
   "resp": {
    "code": 0,
    "data": {
-    "content": "experiment_id,run_id,experiment_type,scenario,status,count,success_count,success_rate,avg_latency_ms,p50_latency_ms,p95_latency_ms,max_latency_ms,failed_count,failure_reasons,started_at,completed_at\nEXP-20261013-4ccc6e,RUN-657cd295e6b0,SM3_INTEGRITY,,DONE,5,5,1,0,0,0,0,0,{},2026-10-13 15:17:44.277,2026-10-13 15:17:44.277\n",
+    "content": "experiment_id,run_id,experiment_type,scenario,status,count,success_count,success_rate,avg_latency_ms,p50_latency_ms,p95_latency_ms,max_latency_ms,failed_count,failure_reasons,started_at,completed_at\nEXP-20261013-274de4,RUN-3e0c00563617,SM3_INTEGRITY,,DONE,5,5,1,0,0,0,0,0,{},2026-10-13 16:27:01.068,2026-10-13 16:27:01.069\n",
     "format": "csv",
     "rows": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.280",
-   "trace_id": "TRACE-20261013-20b539"
+   "timestamp": "2026-10-13 16:27:01.071",
+   "trace_id": "TRACE-20261013-02c409"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.301",
-   "trace_id": "TRACE-20261013-8a8493"
+   "timestamp": "2026-10-13 16:27:01.094",
+   "trace_id": "TRACE-20261013-9efac6"
   }
  },
  {
@@ -3846,19 +3846,19 @@ window.ENDPOINTS = [
     "records": [
      {
       "avg_latency_ms": 0,
-      "completed_at": "2026-10-13 15:17:44.277",
+      "completed_at": "2026-10-13 16:27:01.069",
       "config": "{}",
       "count": 5,
-      "experiment_id": "EXP-20261013-4ccc6e",
+      "experiment_id": "EXP-20261013-274de4",
       "experiment_type": "SM3_INTEGRITY",
       "failed_count": 0,
       "failure_reasons": "{}",
       "max_latency_ms": 0,
       "p50_latency_ms": 0,
       "p95_latency_ms": 0,
-      "run_id": "RUN-657cd295e6b0",
+      "run_id": "RUN-3e0c00563617",
       "scenario": "",
-      "started_at": "2026-10-13 15:17:44.277",
+      "started_at": "2026-10-13 16:27:01.068",
       "status": "DONE",
       "success_count": 5,
       "success_rate": 1
@@ -3867,15 +3867,15 @@ window.ENDPOINTS = [
     "total": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.279",
-   "trace_id": "TRACE-20261013-ec8d39"
+   "timestamp": "2026-10-13 16:27:01.071",
+   "trace_id": "TRACE-20261013-e75628"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "请求体格式错误",
-   "timestamp": "2026-10-13 15:17:44.301",
-   "trace_id": "TRACE-20261013-1e8018"
+   "timestamp": "2026-10-13 16:27:01.094",
+   "trace_id": "TRACE-20261013-dd10dd"
   }
  },
  {
@@ -3884,39 +3884,39 @@ window.ENDPOINTS = [
   "summary": "实验结果查询（成功率/时延分位/失败原因）",
   "operationId": "experimentResult",
   "req": {
-   "run_id": "RUN-657cd295e6b0"
+   "run_id": "RUN-3e0c00563617"
   },
   "resp": {
    "code": 0,
    "data": {
     "avg_latency_ms": 0,
-    "completed_at": "2026-10-13 15:17:44.277",
+    "completed_at": "2026-10-13 16:27:01.069",
     "config": "{}",
     "count": 5,
-    "experiment_id": "EXP-20261013-4ccc6e",
+    "experiment_id": "EXP-20261013-274de4",
     "experiment_type": "SM3_INTEGRITY",
     "failed_count": 0,
     "failure_reasons": "{}",
     "max_latency_ms": 0,
     "p50_latency_ms": 0,
     "p95_latency_ms": 0,
-    "run_id": "RUN-657cd295e6b0",
+    "run_id": "RUN-3e0c00563617",
     "scenario": "",
-    "started_at": "2026-10-13 15:17:44.277",
+    "started_at": "2026-10-13 16:27:01.068",
     "status": "DONE",
     "success_count": 5,
     "success_rate": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.279",
-   "trace_id": "TRACE-20261013-aeb31e"
+   "timestamp": "2026-10-13 16:27:01.070",
+   "trace_id": "TRACE-20261013-30271b"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type struct { RunID string \"json:\\\"run_id\\\" binding:\\\"required\\\"\" }",
-   "timestamp": "2026-10-13 15:17:44.300",
-   "trace_id": "TRACE-20261013-a4410f"
+   "timestamp": "2026-10-13 16:27:01.093",
+   "trace_id": "TRACE-20261013-85d804"
   }
  },
  {
@@ -3932,33 +3932,33 @@ window.ENDPOINTS = [
    "code": 0,
    "data": {
     "avg_latency_ms": 0,
-    "completed_at": "2026-10-13 15:17:44.277",
+    "completed_at": "2026-10-13 16:27:01.069",
     "config": "{}",
     "count": 5,
-    "experiment_id": "EXP-20261013-4ccc6e",
+    "experiment_id": "EXP-20261013-274de4",
     "experiment_type": "SM3_INTEGRITY",
     "failed_count": 0,
     "failure_reasons": "{}",
     "max_latency_ms": 0,
     "p50_latency_ms": 0,
     "p95_latency_ms": 0,
-    "run_id": "RUN-657cd295e6b0",
+    "run_id": "RUN-3e0c00563617",
     "scenario": "",
-    "started_at": "2026-10-13 15:17:44.277",
+    "started_at": "2026-10-13 16:27:01.068",
     "status": "DONE",
     "success_count": 5,
     "success_rate": 1
    },
    "message": "success",
-   "timestamp": "2026-10-13 15:17:44.277",
-   "trace_id": "TRACE-20261013-78f7b7"
+   "timestamp": "2026-10-13 16:27:01.069",
+   "trace_id": "TRACE-20261013-b2200f"
   },
   "err": {
    "code": 6002,
    "data": null,
    "message": "参数错误: json: cannot unmarshal array into Go value of type experiment.RunRequest",
-   "timestamp": "2026-10-13 15:17:44.300",
-   "trace_id": "TRACE-20261013-6f9d7d"
+   "timestamp": "2026-10-13 16:27:01.093",
+   "trace_id": "TRACE-20261013-8dc9c6"
   }
  }
 ];

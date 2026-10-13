@@ -198,6 +198,11 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 		return fail(errcode.CrosschainSend, "unknown target chain adapter %q", req.FinalTargetChain)
 	}
 	tx.PolicyResult = "PASS"
+	// 地雷②已拆：源链合约映射显式解析（第 3/12 步共用）——未知源链在代提交前即失败留痕。
+	srcContract, e := sourceContract(req.SourceChain)
+	if e != nil {
+		return fail(e.Code, "%s", e.Msg)
+	}
 
 	// 步 3：源链确认。
 	if req.SourceChainTxID != "" {
@@ -211,7 +216,7 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 		tx.SourceChainTxID = rc.TxID
 	} else {
 		rc, err := withRetry(g.retryDelay, func() (*chainadapter.TxReceipt, error) {
-			return src.SubmitTx(ctx, sourceContract(req.SourceChain), SourceSubmitMethod, map[string]any{
+			return src.SubmitTx(ctx, srcContract, SourceSubmitMethod, map[string]any{
 				"cross_tx_id": tx.CrossTxID, "message_type": req.MessageType, "business_id": req.BusinessID,
 			})
 		})
@@ -362,7 +367,7 @@ func (g *Gateway) Send(ctx context.Context, traceID string, req *SendRequest) (*
 
 	// 步 12：源链统一 ACK → SUCCESS。
 	ack, err := withRetry(g.retryDelay, func() (*chainadapter.TxReceipt, error) {
-		return src.SubmitTx(ctx, sourceContract(req.SourceChain), "CrosschainAck", map[string]any{
+		return src.SubmitTx(ctx, srcContract, "CrosschainAck", map[string]any{
 			"cross_tx_id": tx.CrossTxID, "reg_record_id": tx.RegRecordID,
 			"target_chain_tx_id": tx.TargetChainTxID, "status": "SUCCESS",
 		})

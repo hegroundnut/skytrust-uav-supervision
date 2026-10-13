@@ -38,8 +38,8 @@ func TestCheckRoute(t *testing.T) {
 		MsgUAVRegisterProof:    {"fabric", "chainmaker"},
 		MsgMissionApplication:  {"fabric", "fisco-bcos"},
 		MsgMissionReviewResult: {"fisco-bcos", "fabric"},
-		MsgFlightPass:          {"fisco-bcos", "fabric"},
-		MsgPassRevoke:          {"fisco-bcos", "fabric"},
+		MsgFlightPass:          {"irita", "fabric"},
+		MsgPassRevoke:          {"irita", "fabric"},
 	}
 	for mt, rt := range want {
 		if err := CheckRoute(mt, rt[0], rt[1]); err != nil {
@@ -53,7 +53,7 @@ func TestCheckRoute(t *testing.T) {
 		t.Errorf("unknown type must give 6002, got %v", err)
 	}
 	s, tg, ok := ExpectedRoute(MsgFlightPass)
-	if !ok || s != "fisco-bcos" || tg != "fabric" {
+	if !ok || s != "irita" || tg != "fabric" {
 		t.Errorf("ExpectedRoute = %s,%s,%v", s, tg, ok)
 	}
 	if _, _, ok := ExpectedRoute("BOGUS"); ok {
@@ -101,9 +101,21 @@ func TestContractMappings(t *testing.T) {
 	if c, m := targetContractMethod("BOGUS"); c != "" || m != "" {
 		t.Error("unknown type must map to empty")
 	}
-	if sourceContract("fabric") != ContractFabricOperator ||
-		sourceContract("fisco-bcos") != ContractFiscoManage ||
-		sourceContract("chainmaker") != ContractRegRecord {
-		t.Error("sourceContract mapping wrong")
+	for chain, want := range map[string]string{
+		"fabric":     ContractFabricOperator,
+		"fisco-bcos": ContractFiscoManage,
+		"irita":      ContractLicenseRegistry,
+	} {
+		if c, e := sourceContract(chain); e != nil || c != want {
+			t.Errorf("sourceContract(%q) = %q, %v; want %q, nil", chain, c, e, want)
+		}
+	}
+	// 地雷②：未知链名显式报错，绝不静默兜底；chainmaker 只作中继链，不是合法源链。
+	for _, bad := range []string{"chainmaker", "bogus"} {
+		if c, e := sourceContract(bad); e == nil {
+			t.Errorf("sourceContract(%q) = %q, want error", bad, c)
+		} else if e.Code != errcode.CrosschainSend {
+			t.Errorf("sourceContract(%q) error code = %d, want 2001", bad, e.Code)
+		}
 	}
 }

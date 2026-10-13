@@ -107,10 +107,10 @@ cd services/skytrust-backend && go run ./cmd/server
 | review | `POST /api/review/query` | 按 review_id 或 application_id 查询审核记录 |
 | conflict | `POST /api/conflict/detect` | 三维冲突检测（时间∧航路∧高度同时重叠）→ 双方进 COORDINATING（已获批任务只标记不迁移） |
 | conflict | `POST /api/conflict/resolve` | 冲突解决 → RESOLVED，相关任务回 REVIEWING |
-| pass | `POST /api/pass/issue` | 飞行许可签发（APPROVED 任务；FLIGHT_PASS 跨链 fisco-bcos→fabric）→ VALID |
+| pass | `POST /api/pass/issue` | 飞行许可签发（APPROVED 任务；FLIGHT_PASS 跨链 irita→fabric）→ VALID |
 | pass | `POST /api/pass/query` | 按 pass_id 查询 |
 | pass | `POST /api/pass/list` | 分页列表（mission_id / uav_id / status 过滤） |
-| pass | `POST /api/pass/verify` | 放行验证（SM3/SM9 重算 + 窗口检查；过期自动 EXPIRED）；永远 code=0，有效性看 `valid/reasons` |
+| pass | `POST /api/pass/verify` | 放行验证（SM3/SM9 重算 + 窗口检查；SM9 双身份兼容验签——先新身份 REGISTRY-ADMIN、回退存量 FISCO-ADMIN，过渡语义见 version-matrix §12；过期自动 EXPIRED）；永远 code=0，有效性看 `valid/reasons` |
 | pass | `POST /api/pass/revoke` | 吊销（本地先行立即生效 + PASS_REVOKE 跨链 best-effort） |
 | offchain | `POST /api/topology/get` | 链下网络拓扑视图（nodes/edges/wormhole_enabled/isolated/active_sessions） |
 | offchain | `POST /api/node/register` | 链下节点注册（node_type 四类；sm9_identity 空=自动派生；重复→6002）；可选 lat/lon 结构化坐标 |

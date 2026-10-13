@@ -12,8 +12,9 @@ import (
 	"skytrust-backend/internal/timex"
 )
 
-// pilotSignerUID 执照签署人 = 管理方身份（与 passSignerUID 对齐，spec §3.4：
-// 前端可用 crypto/sm9/verify 以同一 canonical 材料复核防篡改）。
+// pilotSignerUID 执照签署人 = 管理方身份（spec §3.4：前端可用 crypto/sm9/verify 以
+// 同一 canonical 材料复核防篡改）。2026-10-13 pass 迁移后 passSignerUID 已换代为
+// 证照链 REGISTRY-ADMIN——操控员执照不随迁，仍由管理方 FISCO-ADMIN 签名，两者不再对齐。
 func pilotSignerUID() string { return crypto.SM9IdentityOf("FISCO-ADMIN") }
 
 // validLicenseCategories 执照类别枚举（spec §3.4）。

@@ -15,10 +15,17 @@ import (
 	"skytrust-backend/internal/timex"
 )
 
-// passSignerUID 许可签署/验签权威固定为管理方身份（Ruling：FlightPass 无 issuer
-// 字段，验签需确定 uid；Global Constraint 管理方签名者 = SM9-ID-FISCO-ADMIN）。
-// issuer 参数仅记入审计与 payload 作归因。
-func passSignerUID() string { return crypto.SM9IdentityOf("FISCO-ADMIN") }
+// passSignerUID 许可签署/验签权威 = 证照链（IRITA）证照中心管理员身份（Ruling：
+// FlightPass 无 issuer 字段，验签需确定 uid）。2026-10-13 pass 迁移 fisco-bcos→irita：
+// 新签发许可一律由 SM9-ID-REGISTRY-ADMIN 签名；迁移前存量许可（SM9-ID-FISCO-ADMIN
+// 签名）由 VerifyPass 双身份回退兼容验签——存量证照不断代。过渡语义（双身份验签 +
+// C16 迁移即断代）须如实登记 version-matrix §12 偏差。issuer 参数仅记入审计与
+// payload 作归因。
+func passSignerUID() string { return crypto.SM9IdentityOf("REGISTRY-ADMIN") }
+
+// legacyPassSignerUID 迁移前（fisco-bcos 时代）许可签名身份 = 管理方 FISCO-ADMIN。
+// 仅供 VerifyPass 双身份回退验签存量许可；新签发绝不使用（签发面旧身份已封板）。
+func legacyPassSignerUID() string { return crypto.SM9IdentityOf("FISCO-ADMIN") }
 
 // transitionPass 许可状态迁移统一出口（Global Constraint 7）：非法 → 3002。
 func (s *Service) transitionPass(traceID, actor string, p *model.FlightPass, to, trigger string) error {
@@ -76,7 +83,7 @@ type PassIssueInput struct {
 
 // IssuePass 飞行许可签发：任务须 APPROVED（3004），且任务引用的 UAV 须 VERIFIED
 // （B4 跨域守卫 → 6002 + 文案含 UAV 实际状态）。本地签名落库 GENERATING →
-// FLIGHT_PASS 跨链（fisco-bcos→fabric，网关代提交源链）→ 成功迁移 VALID；
+// FLIGHT_PASS 跨链（irita→fabric，网关代提交源链）→ 成功迁移 VALID；
 // 失败停留 GENERATING，可用同 pass_id 重试（复用 FAILED 记录的源链 TxID）。
 func (s *Service) IssuePass(ctx context.Context, traceID string, in PassIssueInput) (*model.FlightPass, *model.CrosschainTx, error) {
 	if in.MissionID == "" || in.Issuer == "" {
@@ -165,7 +172,7 @@ func (s *Service) IssuePass(ctx context.Context, traceID string, in PassIssueInp
 	return &p, tx, nil
 }
 
-// sendFlightPassCrosschain FLIGHT_PASS fisco-bcos→fabric；重试复用 FAILED 记录的源链 TxID。
+// sendFlightPassCrosschain FLIGHT_PASS irita→fabric；重试复用 FAILED 记录的源链 TxID。
 func (s *Service) sendFlightPassCrosschain(ctx context.Context, traceID string, p *model.FlightPass, issuer string) (*model.CrosschainTx, error) {
 	var segIDs []string
 	if err := json.Unmarshal([]byte(p.Route), &segIDs); err != nil {
@@ -178,7 +185,7 @@ func (s *Service) sendFlightPassCrosschain(ctx context.Context, traceID string, 
 	}
 	sourceTxID := s.prevFailedSourceTxID(crosschain.MsgFlightPass, p.PassID)
 	return s.sendCrosschain(ctx, traceID, crosschain.MsgFlightPass, p.PassID,
-		"fisco-bcos", "fabric", payload, passSignerUID(), sourceTxID)
+		"irita", "fabric", payload, passSignerUID(), sourceTxID)
 }
 
 // QueryPass 不存在 → 6002。
@@ -240,7 +247,7 @@ func (s *Service) ListPass(ctx context.Context, traceID string, f PassListFilter
 
 // VerifyPass 许可验证。不存在 → 6002；其余永远 code 0，valid = reasons 为空。
 // VALID 且已过窗 → 自动迁移 EXPIRED（AUTO_EXPIRE）。VALID 时重算规范化哈希
-// 比对 SM3 + SM9 验签 + now ≥ valid_from。
+// 比对 SM3 + SM9 双身份过渡验签（先 REGISTRY-ADMIN、回退 FISCO-ADMIN）+ now ≥ valid_from。
 func (s *Service) VerifyPass(ctx context.Context, traceID, passID string) (bool, []string, *model.FlightPass, error) {
 	p, err := s.QueryPass(ctx, traceID, passID)
 	if err != nil {
@@ -268,9 +275,15 @@ func (s *Service) VerifyPass(ctx context.Context, traceID, passID string) (bool,
 		if crypto.SM3Hex(cb) != p.SM3Hash {
 			reasons = append(reasons, "SM3完整性校验失败")
 		}
+		// SM9 双身份过渡验签（2026-10-13 pass 迁移 irita，存量证照不断代）：先试新
+		// 身份 REGISTRY-ADMIN（迁移后签发），失败回退旧身份 FISCO-ADMIN（迁移前存量）；
+		// 双败 = 验签失败 → valid=false（无效是数据不是错误，envelope 仍 code 0）。
+		// 过渡语义须如实登记 version-matrix §12 偏差。
 		ok, verr := s.cs.SM9VerifyUserID(passSignerUID(), cb, p.Signature)
 		if verr != nil || !ok {
-			reasons = append(reasons, "SM9验签失败")
+			if okLegacy, lerr := s.cs.SM9VerifyUserID(legacyPassSignerUID(), cb, p.Signature); lerr != nil || !okLegacy {
+				reasons = append(reasons, "SM9验签失败")
+			}
 		}
 	case "GENERATING":
 		reasons = append(reasons, "许可未生效（跨链确认未完成）")
@@ -323,7 +336,7 @@ func (s *Service) RevokePass(ctx context.Context, traceID, passID, reason, opera
 	}
 	sourceTxID := s.prevFailedSourceTxID(crosschain.MsgPassRevoke, p.PassID)
 	tx, cerr := s.sendCrosschain(ctx, traceID, crosschain.MsgPassRevoke, p.PassID,
-		"fisco-bcos", "fabric", payload, passSignerUID(), sourceTxID)
+		"irita", "fabric", payload, passSignerUID(), sourceTxID)
 	if cerr != nil {
 		s.logAudit(traceID, operator, "PASS_REVOKE_CROSSCHAIN_FAILED", "PASS", p.PassID,
 			map[string]any{"reason": reason, "error": cerr.Error()})

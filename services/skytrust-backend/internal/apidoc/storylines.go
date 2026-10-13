@@ -52,8 +52,8 @@ var Storylines = []Scenario{
 		{Path: "/api/mission/query", Body: map[string]any{"mission_id": "MISSION-B-002"}, ExpectCode: 0},
 		{Path: "/api/mission/query", Body: map[string]any{"mission_id": "MISSION-2026-001"}, ExpectCode: 0},
 	}},
-	{ID: "TC1-07", Name: "许可签发与验证", System: "system1", Steps: []ScenarioStep{
-		{Path: "/api/pass/issue", Body: map[string]any{"pass_id": "PASS-2026-001", "mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN", "valid_from": "${now-1h}", "valid_to": "${now+1h}"}, ExpectCode: 0},
+	{ID: "TC1-07", Name: "许可签发与验证（证照链）", System: "system1", Steps: []ScenarioStep{
+		{Path: "/api/pass/issue", Body: map[string]any{"pass_id": "PASS-2026-001", "mission_id": "MISSION-2026-001", "issuer": "REGISTRY-ADMIN", "valid_from": "${now-1h}", "valid_to": "${now+1h}"}, ExpectCode: 0},
 		{Path: "/api/pass/verify", Body: map[string]any{"pass_id": "PASS-2026-001"}, ExpectCode: 0},
 	}},
 	{ID: "TC1-08", Name: "跨链批量吞吐", System: "system1", Steps: []ScenarioStep{
@@ -64,7 +64,7 @@ var Storylines = []Scenario{
 		{Path: "/api/session/open", Body: map[string]any{"uav_id": "UAV-A-001"}, ExpectCode: 0, Capture: map[string]string{"s1": "data.session.session_id"}},
 	}},
 	{ID: "TC2-02", Name: "吊销许可拒绝", System: "system2", Steps: []ScenarioStep{
-		{Path: "/api/pass/revoke", Body: map[string]any{"pass_id": "PASS-2026-001", "reason": "任务结束", "operator": "FISCO-ADMIN"}, ExpectCode: 0},
+		{Path: "/api/pass/revoke", Body: map[string]any{"pass_id": "PASS-2026-001", "reason": "任务结束", "operator": "REGISTRY-ADMIN"}, ExpectCode: 0},
 		{Path: "/api/pass/verify", Body: map[string]any{"pass_id": "PASS-2026-001"}, ExpectCode: 0},
 	}},
 	{ID: "TC2-03", Name: "正常持续交互", System: "system2", Steps: []ScenarioStep{
@@ -106,7 +106,7 @@ var Storylines = []Scenario{
 		{Path: "/api/mission/create", Body: missionMainline(), ExpectCode: 0},
 		{Path: "/api/mission/submit", Body: map[string]any{"mission_id": "MISSION-2026-001", "operator": "Operator-A"}, ExpectCode: 0, Capture: map[string]string{"tc3_app": "data.application.application_id"}},
 		{Path: "/api/review/submit", Body: reviewApproved("${tc3_app}", "同意执行"), ExpectCode: 0},
-		{Path: "/api/pass/issue", Body: map[string]any{"pass_id": "PASS-2026-001", "mission_id": "MISSION-2026-001", "issuer": "FISCO-ADMIN", "valid_from": "${now-1h}", "valid_to": "${now+1h}"}, ExpectCode: 0},
+		{Path: "/api/pass/issue", Body: map[string]any{"pass_id": "PASS-2026-001", "mission_id": "MISSION-2026-001", "issuer": "REGISTRY-ADMIN", "valid_from": "${now-1h}", "valid_to": "${now+1h}"}, ExpectCode: 0},
 		{Path: "/api/alert/raise", Body: map[string]any{"alert_id": "ALERT-2026-001", "mission_id": "MISSION-2026-001", "uav_pseudonym": "PSEUDO-UAV-83921", "event_type": "ROUTE_DEVIATION", "risk_level": "HIGH", "source_system": "MANUAL", "operator": "REG-01"}, ExpectCode: 0},
 		{Path: "/api/alert/list", Body: map[string]any{}, ExpectCode: 0},
 	}},

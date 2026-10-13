@@ -13,8 +13,8 @@ const (
 	MsgUAVRegisterProof    = "UAV_REGISTER_PROOF"    // 运营→监管
 	MsgMissionApplication  = "MISSION_APPLICATION"   // 运营→监管→管理
 	MsgMissionReviewResult = "MISSION_REVIEW_RESULT" // 管理→监管→运营
-	MsgFlightPass          = "FLIGHT_PASS"           // 管理→监管→运营
-	MsgPassRevoke          = "PASS_REVOKE"           // 管理→监管→运营
+	MsgFlightPass          = "FLIGHT_PASS"           // 证照→监管→运营（2026-10-13 迁移 irita）
+	MsgPassRevoke          = "PASS_REVOKE"           // 证照→监管→运营（2026-10-13 迁移 irita）
 )
 
 // RegChainName 监管链恒为 ChainMaker（强制原则 1）。

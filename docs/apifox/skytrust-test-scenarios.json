@@ -327,13 +327,13 @@
     },
     {
       "id": "TC1-07",
-      "name": "许可签发与验证",
+      "name": "许可签发与验证（证照链）",
       "system": "system1",
       "steps": [
         {
           "path": "/api/pass/issue",
           "body": {
-            "issuer": "FISCO-ADMIN",
+            "issuer": "REGISTRY-ADMIN",
             "mission_id": "MISSION-2026-001",
             "pass_id": "PASS-2026-001",
             "valid_from": "${now-1h}",
@@ -395,7 +395,7 @@
         {
           "path": "/api/pass/revoke",
           "body": {
-            "operator": "FISCO-ADMIN",
+            "operator": "REGISTRY-ADMIN",
             "pass_id": "PASS-2026-001",
             "reason": "任务结束"
           },
@@ -681,7 +681,7 @@
         {
           "path": "/api/pass/issue",
           "body": {
-            "issuer": "FISCO-ADMIN",
+            "issuer": "REGISTRY-ADMIN",
             "mission_id": "MISSION-2026-001",
             "pass_id": "PASS-2026-001",
             "valid_from": "${now-1h}",

@@ -192,11 +192,11 @@ func TestTC1_07PassIssuance(t *testing.T) {
 	if tx["status"] != "SUCCESS" || tx["message_type"] != "FLIGHT_PASS" {
 		t.Fatalf("tx = %v", tx)
 	}
-	if !strings.HasPrefix(tx["source_chain_tx_id"].(string), "FISCO-BCOS-") ||
+	if !strings.HasPrefix(tx["source_chain_tx_id"].(string), "IRITA-") ||
 		!strings.HasPrefix(tx["reg_receive_tx_id"].(string), "CHAINMAKER-") ||
 		!strings.HasPrefix(tx["reg_relay_tx_id"].(string), "CHAINMAKER-") ||
 		!strings.HasPrefix(tx["target_chain_tx_id"].(string), "FABRIC-") {
-		t.Fatalf("FLIGHT_PASS 管理→监管→运营 = %v", tx)
+		t.Fatalf("FLIGHT_PASS 证照→监管→运营 = %v", tx)
 	}
 	ver := must0(t, "pass/verify", call(t, srv, "/api/pass/verify", map[string]any{"pass_id": "PASS-2026-001"})) // 演示数据冻结裁定：issuePassA 显式冻结 ID
 	if ver["valid"] != true {

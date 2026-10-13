@@ -90,8 +90,8 @@ var routeOf = map[string][2]string{
 	MsgUAVRegisterProof:    {"fabric", RegChainName},
 	MsgMissionApplication:  {"fabric", "fisco-bcos"},
 	MsgMissionReviewResult: {"fisco-bcos", "fabric"},
-	MsgFlightPass:          {"fisco-bcos", "fabric"},
-	MsgPassRevoke:          {"fisco-bcos", "fabric"},
+	MsgFlightPass:          {"irita", "fabric"},
+	MsgPassRevoke:          {"irita", "fabric"},
 }
 
 // ---------- 测试 ----------
@@ -288,7 +288,7 @@ func TestSendRetryRejectsPayloadMismatch(t *testing.T) {
 	uid := crypto.SM9IdentityOf("Operator-A")
 	req := &SendRequest{
 		MessageType: MsgFlightPass, BusinessID: "PASS-C16-1",
-		SourceChain: "fisco-bcos", FinalTargetChain: "fabric",
+		SourceChain: "irita", FinalTargetChain: "fabric",
 		Payload: validPayload(MsgFlightPass),
 	}
 	signReq(t, cs, req, uid)
@@ -303,7 +303,7 @@ func TestSendRetryRejectsPayloadMismatch(t *testing.T) {
 	// 篡改载荷标识后重签：新体自身 SM9/SM3 全部自洽，仅与原记录不一致
 	bad := &SendRequest{
 		MessageType: MsgFlightPass, BusinessID: "PASS-C16-1",
-		SourceChain: "fisco-bcos", FinalTargetChain: "fabric",
+		SourceChain: "irita", FinalTargetChain: "fabric",
 		Payload: validPayload(MsgFlightPass),
 	}
 	bad.Payload["pass_id"] = "PASS-TEST-999"
