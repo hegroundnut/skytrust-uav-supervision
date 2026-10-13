@@ -588,3 +588,84 @@ body[data-theme="dark"] { --d-chain-irita: #4ade80; }
   content: "⇄ 监管中继段"; margin-left: 6px;
   font-size: 11px; font-weight: 600; color: var(--p-chain-chainmaker);
 }
+
+/* ---------- Task 9 追加块（仅追加）：WTOPO 虫洞攻击抽象拓扑 ----------
+   节点色 = 节点类型语义（紫 MANAGEMENT / 蓝 EDGE / 青 UAV / 红 ATTACKER，与地理层
+   GEO.NODE_STYLE 同色系同语义），一律经本块 --d-wtopo-* / --d-critical 令牌——与三链
+   链色（--p-chain-* / --d-chain-irita）零关联：链色语义不挪用（链是另一根轴，图例注明）。
+   状态永为 icon+文字（⚠ ATTACKER 标签 / ⛔ ISOLATED / ○ OFFLINE / 中点 ⚠），绝不仅靠颜色。
+   两动画：d-wormhole-flow（虫洞边 dashoffset 流动，叠加在 product.css .p-topo-wormhole
+   红虚线之上，经 d- 修饰类施加——不改写 p- 结构规则）+ d-pulse-hit（ISOLATED 检测命中脉冲环）。
+   未知节点类型不加类型类 → 中性默认色（不猜测语义）。 */
+.d-wtopo-svg {
+  --d-wtopo-mgmt: #7c3aed;
+  --d-wtopo-edge: #2563eb;
+  --d-wtopo-uav: #0891b2;
+}
+.d-wtopo-svg .d-wtopo-dot { fill: var(--d-ink-3); stroke: var(--d-line-strong); stroke-width: 2; }
+.d-wtopo-svg .d-wtopo-t-mgmt { fill: var(--d-wtopo-mgmt); stroke: var(--d-wtopo-mgmt); }
+.d-wtopo-svg .d-wtopo-t-edge { fill: var(--d-wtopo-edge); stroke: var(--d-wtopo-edge); }
+.d-wtopo-svg .d-wtopo-t-uav  { fill: var(--d-wtopo-uav);  stroke: var(--d-wtopo-uav); }
+.d-wtopo-svg .d-wtopo-t-atk  { fill: var(--d-critical);   stroke: var(--d-critical); }
+/* OFFLINE 空心（描边保留类型色——与 map.js drawNodes 地理层同语义）；源序在类型类后 → 覆盖 fill */
+.d-wtopo-svg .d-wtopo-offline { fill: transparent; }
+/* ISOLATED 红虚线描边（fill 保留类型色）；源序最后 → 描边属性覆盖类型类 */
+.d-wtopo-svg .d-wtopo-isolated { stroke: var(--d-critical); stroke-dasharray: 4 3; stroke-width: 3; }
+/* 虫洞伪造边：dashoffset 流动（dasharray 6 4 来自 p-topo-wormhole，周期 10 → -20 无缝） */
+.d-wtopo-svg .d-wtopo-flow { animation: d-wormhole-flow 1.1s linear infinite; }
+@keyframes d-wormhole-flow {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -20; }
+}
+/* 虫洞边同时承载当前会话路径 → 保持红虚线流动、仅加粗（被诱入隧道的路径必须仍然显眼是攻击边） */
+.d-wtopo-svg .d-wtopo-onpath { stroke-width: 4; }
+/* 检测命中脉冲环（ISOLATED = risk/evaluate 检出落地）：身后圆环扩散淡出 */
+.d-wtopo-svg .d-wtopo-hit {
+  fill: none; stroke: var(--d-critical); stroke-width: 2; pointer-events: none;
+  transform-box: fill-box; transform-origin: center;
+  animation: d-pulse-hit 1.6s ease-out infinite;
+}
+@keyframes d-pulse-hit {
+  0%   { transform: scale(.7);  opacity: .75; }
+  70%  { transform: scale(1.55); opacity: 0; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+.d-wtopo-svg .d-wtopo-atk-tag {
+  fill: var(--d-critical); font-size: 10px; font-weight: 700; text-anchor: middle;
+  font-family: var(--d-font); pointer-events: none;
+}
+.d-wtopo-svg .d-wtopo-wh-mid {
+  fill: var(--d-critical); font-size: 13px; text-anchor: middle; font-family: var(--d-font);
+  stroke: var(--d-panel); stroke-width: 3px; paint-order: stroke; pointer-events: none;
+}
+.d-wtopo-svg .d-wtopo-label-hit { fill: var(--d-critical); font-weight: 600; }
+/* 区块骨架：元信息行 / 图例 / 未布点清单 / 红线小字 */
+.d-wtopo { display: flex; flex-direction: column; gap: 8px; }
+.d-wtopo-meta {
+  display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center;
+  font-size: 12px; color: var(--d-ink-2);
+}
+.d-wtopo-meta b { color: var(--d-critical); font-weight: 700; }
+.d-wtopo-meta .d-wtopo-meta-hl { color: var(--d-ink-3); font-family: var(--d-mono); font-size: 11px; }
+.d-wtopo-legend {
+  display: flex; gap: 8px 18px; flex-wrap: wrap; align-items: center;
+  padding: 8px 10px; font-size: 12px; color: var(--d-ink-2);
+  background: var(--d-panel-2); border: 1px solid var(--d-line); border-radius: var(--d-radius-sm);
+}
+.d-wtopo-lg-item { display: inline-flex; align-items: center; gap: 6px; }
+.d-wtopo-swatch { width: 16px; height: 16px; flex: 0 0 auto; }
+.d-wtopo-swatch-line { width: 26px; height: 10px; flex: 0 0 auto; }
+.d-wtopo-unplaced {
+  padding: 8px 10px; font-size: 12px;
+  background: var(--d-warning-soft); border: 1px solid var(--d-warning);
+  border-left: 4px solid var(--d-warning); border-radius: var(--d-radius-sm);
+  color: var(--d-ink-2);
+}
+.d-wtopo-unplaced-chips { margin-top: 4px; }
+.d-wtopo-chip {
+  display: inline-block; margin: 2px 6px 2px 0; padding: 1px 8px;
+  font-family: var(--d-mono); font-size: 11px; color: var(--d-ink-2);
+  border: 1px solid var(--d-line-strong); border-radius: 999px; background: var(--d-panel);
+}
+.d-wtopo-unplaced-edges { margin-top: 4px; color: var(--d-ink-3); }
+.d-wtopo-note { margin: 0; font-size: 11px; line-height: 1.6; color: var(--d-ink-3); }

@@ -54,11 +54,18 @@
   function tabTopo(box) {
     var statsBox = h('div', {}, P.empty('⏳ topology/get 加载中…'));
     var mapEl = h('div', { class: 'd-map d-map-xl' });
+    var wtopoBox = h('div', {}, P.empty('⏳ 抽象拓扑（WTOPO）等待 topology/get…'));   /* Task 9 追加 */
     var tblNd = null;
 
     box.append(statsBox);
     box.append(h('div', { class: 'd-col' }, mapEl,
       h('div', { class: 'd-map-hint' }, '节点着色：紫=MANAGEMENT · 蓝=EDGE · 青=UAV · 红=ATTACKER（空心=OFFLINE、红虚线⛔=ISOLATED）；红虚线边=虫洞伪造边。无经纬度的节点不上图（红线：不猜测坐标）。')));
+    /* ---- Task 9 追加：抽象拓扑（含攻击节点）区块 —— Leaflet 容器正下方；双层分工如标题 ----
+       Leaflet 地理层保留不动（只落有经纬度的节点）；WTOPO 落全部有拓扑坐标的节点（含攻击者），
+       只消费服务端抽象 position{x,y}，绝不读写经纬度（红线）；无 position 节点列「未布点」清单。 */
+    box.append(card('抽象拓扑（含攻击节点）WTOPO · topology/get 全节点 —— 上图：地理分布（未设坐标节点不落图）；下图：抽象拓扑（全节点含攻击者）',
+      P.actionBar([{ label: '⟳ 刷新拓扑（双层联动重绘）', run: loadTopo }]),
+      wtopoBox));
 
     mx = MAPX.create(mapEl, { view: GEO.DEFAULT_VIEW });
     loadTopo();
@@ -134,7 +141,25 @@
       rpNd.root));
     box.append(card('节点台账 node/list（种子 position 小写 x/y 与 API 注册回显大写 X/Y 并存——展示层双兼容）', tblNd));
 
-    /* 拓扑加载：统计卡 + 真地图（虫洞伪造边入 marks 层，节点入 nodes 层） */
+    /* hlPath = 当前会话路径（Task 9：STORE SESSION 槽 → session/list 200 条窗内客户端匹配
+       ——服务端 SessionQuery 无 session_id 过滤键（session.go:168-174），不猜测；无槽/未匹配/
+       路径退化 → null 不高亮。current_path 双形态兼容（JSON 字符串/数组，pathText 同律）。 */
+    async function loadHlPath() {
+      var slot = STORE.get('SESSION');
+      if (!slot || !slot.id) return null;
+      var rs = await API.call('/api/session/list', { page: 1, page_size: 200 });
+      if (!rs.ok) return null;
+      var hit = (rs.data.records || []).filter(function (s) { return s.session_id === slot.id; })[0];
+      if (!hit) return null;
+      var p = PORTAL.jp(hit.current_path, null);
+      return (Array.isArray(p) && p.length > 1) ? p : null;
+    }
+
+    /* 拓扑加载：统计卡 + 真地图（虫洞伪造边入 marks 层，节点入 nodes 层）+ WTOPO 抽象拓扑。
+       Task 9 联动刷新三路：① node/register onOk 直调本函数（既有钩子，WTOPO 随绘）；② 区块
+       ⟳ 按钮直调；③ drill 页签 wormhole/toggle、path/switch、risk/evaluate 操作后切回本页签
+       ——tab 切换即 hashchange → route() 整页重渲染 → 本函数重拉最新拓扑，双层重绘，
+       hlPath 取当前会话最新 current_path（风险 5 维评分沿用 drill 页签既有 P.scoreBars，不动）。 */
     async function loadTopo() {
       var r = await API.call('/api/topology/get', {});
       if (statsBox.isConnected) {
@@ -151,6 +176,22 @@
             { label: '虫洞攻击', value: t.wormhole_enabled ? '⚠ 开启中' : '未开启',
               tone: t.wormhole_enabled ? 'critical' : 'good' }
           ]));
+        }
+      }
+      /* ---- Task 9 追加：抽象拓扑区块（全节点含攻击者；svg 为 (topo,opts) 纯函数，
+         攻击节点在此层必然可见——信息边界：管理端安全运营视角全量渲染） ---- */
+      if (wtopoBox.isConnected) {
+        var hl = r.ok ? await loadHlPath() : null;
+        if (wtopoBox.isConnected) {   /* await 后复查：导航离开即弃填充（Task 8 守卫同律） */
+          wtopoBox.innerHTML = '';
+          if (!r.ok) wtopoBox.append(P.errCard(r));
+          else wtopoBox.append(WTOPO.block(r.data, {
+            hlPath: hl || undefined,
+            onPickNode: function (n) {
+              UI.toast('抽象拓扑 ' + n.node_id + ' · ' + n.node_type + ' · ' + n.status +
+                (n.risk_score != null ? ' · 风险分 ' + Number(n.risk_score).toFixed(2) : ''), 'ok', 4200);
+            }
+          }));
         }
       }
       if (!mx || !r.ok) return;
