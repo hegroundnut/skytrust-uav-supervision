@@ -344,3 +344,7 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"`
 - Task 8：CXV 浏览器前端按 2005 渲染「该链 RPC 不支持…」如实降级文案。
 - Task 11：验收脚本断言能力降级码 = 2005（非 5003）。
 - Task 15：README/错误码表核对 2005 行；「73 个端点」残留清点含 gen-endpoints.sh 注释与 frontend/README。
+
+### Task 9 校准实录（NODE-X/Y 经纬度前提已过时，Task 11/15 必须以此为准）
+
+Review Focus 4 与 Task 9 Step 3 的前提「NODE-X/Y lat/lon=0（Leaflet 缺席）」已失效——commit 0c4d461（早于 Task 9）为种子攻击节点回填了真实模拟经纬度（NODE-X 30.556/114.356、NODE-Y 30.640/114.440，seed.go:120-121），二者合法地同时出现在地理层与 WTOPO。机制断言不变：lat/lon 双零节点经 GEO.nodeCoord 判 null 永不落 Leaflet；有可解析 position 必入 WTOPO；无 position 入「未布点」清单。Task 11 verify 不得断言 NODE-X/Y ∉ Leaflet 输入；改为断言 (a) topology/get 含 NODE-X/Y 且 position 非空（Step 1 原文仍成立），(b) 注册一个仅含 position（无 lat/lon）的 probe 节点后其 ∉ Leaflet 输入且 ∈ WTOPO 布点集，(c) 未布点节点入清单不画。Task 15 验收/演示口播改按「抽象层全量可见（含攻击者），地理层按经纬度红线落点」措辞。
