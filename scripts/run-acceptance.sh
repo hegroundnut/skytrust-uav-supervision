@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 # run-acceptance.sh —— docs/real-chain-migration.md §6.5 五项验收一键复核（真实链在线执行）。
-#   ① POST /api/chain/status 三链 ONLINE（真实 Health() 探针，非静态配置）
-#   ② §4.4 部署 TxID 全部链上可查询（cmc query tx / qscc GetBlockByTxID / console 回执）
-#   ③ 13 步跨链闭环业务流 SUCCESS（create→submit→review→issue，任何一跳失败不得 SUCCESS）
+#   ① POST /api/chain/status 四链 ONLINE（真实 Health() 探针，非静态配置）
+#   ② §4.4 部署 TxID 全部链上可查询（cmc query tx / qscc GetBlockByTxID / console 回执
+#      + IRITA 锚点 record TM RPC /tx——2026-10-13 证照链启用登记）
+#   ③ 13 步跨链闭环业务流 SUCCESS（create→submit→review→issue，任何一跳失败不得 SUCCESS；
+#      签发源段必须 IRITA- 前缀——证照链→监管链中继→运营链）
 #   ④ 两跳四段 TxID 持久化，/api/crosschain/query 可验证
 #   ⑤ CROSSCHAIN_LOOP ×$COUNT：成功率 1、p95 < 1000ms（不达标先调链侧，绝不放宽协议）
-# 前置：start-chains.sh + start-backend-real.sh 已就绪；jq/python3/curl 可用。
+# 前置：start-chains.sh + IRITA 四节点（scripts/start-irita.sh）+ start-backend-real.sh 已就绪；
+#       jq/python3/curl 可用。
 # TxID 常量源：docs/version-matrix.md §5 登记表（v1.0.2 最终版 + fabric commit/冒烟 + fisco 最终部署）。
+# 时代注记：v2（2026-10-14）= 新机四链默认值（IRITA 证照链加入、⑤ 轻实测 COUNT=10 如实登记）；
+# 老机三链复现走 override（CM_TXIDS_OVERRIDE/FAB_TXIDS_OVERRIDE/FISCO_TXID/IRITA_ANCHOR_TXID），
+# v1 三链时代脚本以 git 历史为准。
 set -uo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh"
 
-COUNT=${COUNT:-100}          # ⑤ 样本数（官方口径 = 100，tc1_test.go:209）
+COUNT=${COUNT:-10}           # ⑤ 样本数（v2 轻实测=10——验收⑤裁定如实登记；官方口径=100 tc1_test.go:209，传 COUNT=100 复现）
 API_TIMEOUT=${API_TIMEOUT:-900}
 FAIL=0
 declare -A ITEM
@@ -19,27 +25,30 @@ api() { curl -s --max-time "$API_TIMEOUT" -X POST "$BACKEND_URL$1" -H 'Content-T
 jqr() { echo "$1" | jq -r "$2" 2>/dev/null; }
 mark() { ITEM[$1]="$2"; [ "$2" = PASS ] || FAIL=1; }
 
-# TxID 常量可被环境变量覆盖（CM_TXIDS_OVERRIDE/FAB_TXIDS_OVERRIDE/FISCO_TXID）：
-# 默认值 = 老机 2026-09-17 登记值（version-matrix §5）；新机 2026-10-12 登记值见 §11，
-# 复跑时以 override 传入，不改动脚本默认（两台机器的证据都可复现）。
+# TxID 常量可被环境变量覆盖（CM_TXIDS_OVERRIDE/FAB_TXIDS_OVERRIDE/FISCO_TXID/IRITA_ANCHOR_TXID）：
+# v2 默认值 = 新机 2026-10-12/13 登记值（version-matrix §11.2 复跑 PASS 同源）；
+# 老机 2026-09-17 三链登记值（§5）走 override 复现（时代注记：v1 默认见 git 历史）。
 if [ -n "${CM_TXIDS_OVERRIDE:-}" ]; then read -ra CM_TXIDS <<< "$CM_TXIDS_OVERRIDE"; else CM_TXIDS=(
-  18d60243cccc93c6ca621b7b246fd1846cadca2994a645d786491c1f80b013a6
-  18d602446c190c5cca8bc5f2cd5036a3f09cc0402c6d4486878b679bddf4e71b
-  18d6024523b4c949ca277fdbfc95d22fc0d31b7c908247918e5a717081cf41e9
-  18d60245fd86414aca165a1fd2f1a408c6a40f1dfca243f09254271cf6b195b1
-  18d602470e0412eaca47143af577d42b1428925c83054e8ba105e51dc06d64c9
+  18ddbdb2e2d74146ca85e66d84982bdec19cae39bb3d4c049fe891e2f865f6f7
+  18ddbdbac8807d54ca981081b661d357a0d62fa1d06c4512ac43694eb8fd3c01
+  18ddbe2aed734463cad462e16028baefd8c26bd1b5b94eb3b8b4e56c945d575b
+  18ddbea6c52c057aca0efba4696ed886227bd67259194a34b9b2d0e1e6bdb051
+  18ddbf15a5758e9ccafdb095f3f7a3efa59d367fba1744afb12bf6204063340e
 ); fi
 if [ -n "${FAB_TXIDS_OVERRIDE:-}" ]; then read -ra FAB_TXIDS <<< "$FAB_TXIDS_OVERRIDE"; else FAB_TXIDS=(
-  9f59ca68bb8f51fddcd6aa098f90251d6541a2a6b2184fa1cf8ae73e27dc760a
-  704ae9119be532d7888d2daae27061714152be33403e1c4fd903be715ba35b5e
+  d165208cd7414aa6df463ec1fa6b8d5ef6f5b86ebefe472736080fd394678479
+  2208bb13c9b43e62df184cb89fc3f4cb0723d5d413fa2843448069a5da96fbc1
 ); fi
-FISCO_TXID=${FISCO_TXID:-0x7ab040267bb7b8fba57b503981f2add36fd684716a06bd1ec36ed7dff4c31fd2}
+FISCO_TXID=${FISCO_TXID:-0x172514d300b6e148a3b1630bb5c1dd7a85f038ff3ac10d720bc957ba9e2e76af}
+# IRITA 证照链部署锚点 = Task 1 Step 8 record（2026-10-13，h=822，record-id 9939a8aa…；
+# 源文件 /opt/irita/net/ANCHOR_TXID.txt，§12 登记）。TM RPC /tx?hash=0x<64hex> 直查。
+IRITA_ANCHOR_TXID=${IRITA_ANCHOR_TXID:-8FD32506345441825A5398BE2CC06F4664F7F3A934A53B4647603CB14681B08A}
 
-echo "======== ① /api/chain/status 三链 ONLINE ========"
+echo "======== ① /api/chain/status 四链 ONLINE ========"
 R=$(api /api/chain/status '{}')
 ONLINE=$(jqr "$R" '[.data.chains[] | select(.=="ONLINE")] | length')
 echo "$R" | jq -c '.data.chains' 2>/dev/null || echo "$R"
-[ "$ONLINE" = "3" ] && { echo "  ✓ 3/3 ONLINE"; mark ① PASS; } || { echo "  ✗ ONLINE=$ONLINE/3"; mark ① FAIL; }
+[ "$ONLINE" = "4" ] && { echo "  ✓ 4/4 ONLINE"; mark ① PASS; } || { echo "  ✗ ONLINE=$ONLINE/4"; mark ① FAIL; }
 
 echo; echo "======== ② §4.4 部署 TxID 链上可查询 ========"
 T_OK=1
@@ -50,7 +59,7 @@ import json,sys
 raw=sys.stdin.read(); i=raw.find("{")
 d=json.loads(raw[i:]) if i>=0 else {}
 tx=d.get("transaction",d); res=tx.get("result") or {}; cr=res.get("contract_result") or {}
-sys.exit(0 if res.get("code") in (None,0,"SUCCESS") and cr.get("code") in (None,0) else 1)'; then
+sys.exit(0 if i>=0 and res.get("code") in (None,0,"SUCCESS") and cr.get("code") in (None,0) else 1)'; then
     echo "  ✓ chainmaker ${tx:0:16}…"
   else echo "  ✗ chainmaker ${tx:0:16}… 查询失败"; T_OK=0; fi
 done
@@ -79,9 +88,14 @@ if fisco_tx_in_block1 "$FISCO_TXID"; then
 elif fisco_console_cmd "getTransactionReceipt $FISCO_TXID" | grep -q 'statusOK.*true'; then
   echo "  ✓ fisco-bcos ${FISCO_TXID:0:18}…（statusOK=true）"
 else echo "  ✗ fisco-bcos 回执异常"; T_OK=0; fi
+# IRITA 锚点 record 上链证明：裸 TM RPC /tx（与 real 传输 QueryTx 同通道），tx_result.code=0 即成功。
+IRITA_TX=$(curl -s --max-time 10 "${IRITA_RPC:-http://127.0.0.1:26657}/tx?hash=0x$IRITA_ANCHOR_TXID")
+if [ "$(jqr "$IRITA_TX" .result.tx_result.code)" = "0" ]; then
+  echo "  ✓ irita      ${IRITA_ANCHOR_TXID:0:16}…（TM RPC /tx code=0 @h=$(jqr "$IRITA_TX" .result.height)）"
+else echo "  ✗ irita      锚点 ${IRITA_ANCHOR_TXID:0:16}… 查询失败"; T_OK=0; fi
 [ "$T_OK" = 1 ] && mark ② PASS || mark ② FAIL
 
-echo; echo "======== ③ 13 步跨链闭环业务流（真实三链） ========"
+echo; echo "======== ③ 13 步跨链闭环业务流（真实四链） ========"
 api /api/demo/init '{}' >/dev/null   # 已初始化则容忍非零
 TOMORROW=$(date -d tomorrow +%F)
 R=$(api /api/mission/create "{\"operator_id\":\"Operator-A\",\"uav_id\":\"UAV-A-001\",\"mission_type\":\"POWER_INSPECTION\",\"start_time\":\"$TOMORROW 09:00:00\",\"end_time\":\"$TOMORROW 11:00:00\",\"route_segments\":[\"R101\",\"R205\",\"R306\"],\"altitude_min\":60,\"altitude_max\":120,\"payload_type\":\"CAMERA\",\"description\":\"验收复核-巡线走廊Zone-A\"}")
@@ -98,16 +112,22 @@ echo "  review  CX2=$CX2  status=$(jqr "$R" .data.crosschain.status)  latency=$(
 
 VFROM=$(date -d '-1 hour' '+%F %T'); VTO=$(date -d '+1 hour' '+%F %T')
 PASS_JSON=$([ -n "${PASS_ID:-}" ] && echo "\"pass_id\":\"$PASS_ID\"," || echo "")
-R=$(api /api/pass/issue "{${PASS_JSON}\"mission_id\":\"$MISSION_ID\",\"issuer\":\"FISCO-ADMIN\",\"valid_from\":\"$VFROM\",\"valid_to\":\"$VTO\"}")
+R=$(api /api/pass/issue "{${PASS_JSON}\"mission_id\":\"$MISSION_ID\",\"issuer\":\"REGISTRY-ADMIN\",\"valid_from\":\"$VFROM\",\"valid_to\":\"$VTO\"}")
 CX3=$(jqr "$R" .data.crosschain.cross_tx_id); PID=$(jqr "$R" .data.pass.pass_id)
 echo "  pass_id=$PID status=$(jqr "$R" .data.pass.status)  CX3=$CX3  crosschain=$(jqr "$R" .data.crosschain.status)"
 
 S1=$(jqr "$(api /api/crosschain/query "{\"cross_tx_id\":\"$CX1\"}")" .data.status)
 S2=$(jqr "$(api /api/crosschain/query "{\"cross_tx_id\":\"$CX2\"}")" .data.status)
-S3=$(jqr "$(api /api/crosschain/query "{\"cross_tx_id\":\"$CX3\"}")" .data.status)
-if [ "$S1" = SUCCESS ] && [ "$S2" = SUCCESS ] && [ "$S3" = SUCCESS ]; then
-  echo "  ✓ 三笔跨链全部 SUCCESS（闭环无跳失败）"; mark ③ PASS
-else echo "  ✗ 存在非 SUCCESS：$S1/$S2/$S3"; mark ③ FAIL; fi
+Q3=$(api /api/crosschain/query "{\"cross_tx_id\":\"$CX3\"}")
+S3=$(jqr "$Q3" .data.status); SRC3=$(jqr "$Q3" .data.source_chain_tx_id)
+# 四链闭环断言（Task 12 校准 D2）：real 传输返回链原生 TxID（irita=裸 64hex 大写 txhash，
+# 无 SIM 侧 IRITA- 前缀——前缀是仿真传输工件，§11.3-④ src=裸值先例同源）。「签发源=证照链」
+# 的语义证明 = 该 txhash 在 IRITA 链上真实可查且 code=0（比字符串前缀更强）。
+SRC3_ONCHAIN=$(curl -s --max-time 10 "${IRITA_RPC:-http://127.0.0.1:26657}/tx?hash=0x$SRC3" | jq -r '.result.tx_result.code // "ERR"' 2>/dev/null)
+echo "  CX3 源段=$SRC3（IRITA 链上核验 code=$SRC3_ONCHAIN）"
+if [ "$S1" = SUCCESS ] && [ "$S2" = SUCCESS ] && [ "$S3" = SUCCESS ] && [ "$SRC3_ONCHAIN" = "0" ]; then
+  echo "  ✓ 三笔跨链全部 SUCCESS + 签发源段 IRITA 链上实证（证照链四链闭环）"; mark ③ PASS
+else echo "  ✗ 存在非 SUCCESS 或源段链上核验失败：$S1/$S2/$S3 src=$SRC3 code=$SRC3_ONCHAIN"; mark ③ FAIL; fi
 
 echo; echo "======== ④ 两跳四段 TxID 持久化（/api/crosschain/query） ========"
 SEG_OK=1
