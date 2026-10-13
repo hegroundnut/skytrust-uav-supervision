@@ -13,7 +13,8 @@
       { key: 'records',    label: '审核留痕',      ico: 'doc' },
       { key: 'registry',   label: '登记与资质',    ico: 'id' },
       { key: 'masterdata', label: '主数据维护',    ico: 'db' },
-      { key: 'netsec',     label: '链网安全运营',  ico: 'net' }
+      { key: 'netsec',     label: '链网安全运营',  ico: 'net' },
+      { key: 'chainview',  label: '链上浏览器',    ico: 'db' }
     ]
   });
 })();

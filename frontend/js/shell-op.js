@@ -15,7 +15,8 @@
       { key: 'flight',   label: '飞行活动申请',    ico: 'map' },
       { key: 'license',  label: '电子飞行许可',    ico: 'cert' },
       { key: 'ops',      label: '运行识别·飞行动态', ico: 'radar' },
-      { key: 'airspace', label: '空域查询',        ico: 'globe' }
+      { key: 'airspace', label: '空域查询',        ico: 'globe' },
+      { key: 'chainview', label: '链上浏览器',     ico: 'db' }
     ]
   });
 })();

@@ -517,3 +517,74 @@ body[data-theme="dark"] { --d-chain-irita: #4ade80; }
    irita 缺失 → 此处按 Task 6 裁决镜像补一条：左边框 3px 链色（--d-chain-irita，
    浅色 #15803d / 暗色 #4ade80），不改冻结文件、不换链色语义。 */
 .p-chain-tag[data-chain="irita"] { border-left: 3px solid var(--d-chain-irita); }
+
+/* ---------- Task 8 追加块（仅追加）：四端区块链浏览器 CXV ----------
+   链色一律经 var 引用（--p-chain-* product.css / --d-chain-irita 上方 Task 6 块），
+   JS 侧以 --cxv-chain 注入（chainview.js CHAIN_VAR），本块零硬编码 hex；
+   状态/模式永为图标+文字（PUI.badge / modeBadge），绝不单靠颜色。
+   index.html 不加载 drone.css → 该端 .d-cxv-* 缺席，结构类 p-*（product.css）保证
+   内容完整可读（如实降级，见 js/pages/chainview.js 头注）。 */
+.d-cxv-chains {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px; margin-bottom: 14px;
+}
+.d-cxv-chain-card {
+  display: block; width: 100%; text-align: left; font: inherit; cursor: pointer;
+  background: var(--d-panel); border: 1px solid var(--d-line);
+  border-left: 4px solid var(--cxv-chain, var(--d-line-strong));
+  border-radius: var(--d-radius); padding: 10px 12px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.d-cxv-chain-card:hover { border-color: var(--cxv-chain, var(--d-line-strong)); box-shadow: var(--d-shadow); }
+.d-cxv-chain-card.sel { outline: 2px solid var(--cxv-chain, var(--d-line-strong)); outline-offset: 1px; }
+.d-cxv-chain-name { font-size: 14px; font-weight: 700; color: var(--d-ink); }
+.d-cxv-chain-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.d-cxv-chain-stats { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--d-ink-2); }
+.d-cxv-chain-stats b { font-family: var(--d-mono); color: var(--d-ink); font-variant-numeric: tabular-nums; }
+.d-cxv-chain-consensus { margin-top: 4px; font-size: 11px; color: var(--d-ink-3); }
+.d-cxv-zone-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.d-cxv-degrade {
+  margin-top: 10px; padding: 10px 12px;
+  background: var(--d-warning-soft); border: 1px solid var(--d-warning);
+  border-left: 4px solid var(--d-warning); border-radius: var(--d-radius-sm);
+  color: var(--d-ink-2); font-size: 12px;
+}
+.d-cxv-degrade b { color: var(--d-warning); }
+.d-cxv-smallprint { margin: 8px 0 0; font-size: 11px; line-height: 1.5; color: var(--d-ink-3); }
+.d-cxv-filterbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.d-cxv-filterbar select, .d-cxv-filterbar input {
+  height: 28px; padding: 0 8px; font-size: 12px;
+  border: 1px solid var(--d-line-strong); border-radius: var(--d-radius-sm);
+  background: var(--d-panel); color: var(--d-ink);
+}
+.d-cxv-filterbar input { flex: 1; min-width: 200px; }
+.d-cxv-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.d-cxv-chip {
+  padding: 3px 9px; font-size: 12px; font-family: var(--d-mono); cursor: pointer;
+  border: 1px solid var(--d-line-strong); border-radius: 999px;
+  background: var(--d-panel); color: var(--d-ink-3);
+}
+.d-cxv-chip.on { border-color: var(--d-brand); background: var(--d-brand-soft); color: var(--d-brand); font-weight: 600; }
+.d-cxv-pager { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 12px; color: var(--d-ink-2); }
+.d-cxv-route { display: inline-flex; align-items: center; gap: 4px; }
+.d-cxv-txrow {
+  display: flex; width: 100%; justify-content: space-between; gap: 8px;
+  margin-top: 6px; padding: 6px 10px; text-align: left; font: inherit; cursor: pointer;
+  font-family: var(--d-mono); font-size: 12px;
+  background: var(--d-panel); border: 1px solid var(--d-line);
+  border-radius: var(--d-radius-sm); color: var(--d-ink-2);
+}
+.d-cxv-txrow:hover { border-color: var(--d-brand); color: var(--d-brand); }
+.d-cxv-txresult { margin-top: 10px; }
+.d-cxv-merkle {
+  margin-top: 10px; padding: 8px 10px; font-size: 12px;
+  background: var(--d-good-soft); border: 1px solid var(--d-good);
+  border-radius: var(--d-radius-sm); color: var(--d-good);
+}
+/* rg 端监管中继段高亮（裁决 E：pui.js 零改动，CXV 渲染后 DOM 遍历加类）——
+   轮廓 + ::after 文字标注「⇄ 监管中继段」，永不仅靠颜色。 */
+.p-cx-seg.d-cxv-reg-hl { outline: 2px solid var(--p-chain-chainmaker); outline-offset: 1px; }
+.p-cx-seg.d-cxv-reg-hl .p-cx-role::after {
+  content: "⇄ 监管中继段"; margin-left: 6px;
+  font-size: 11px; font-weight: 600; color: var(--p-chain-chainmaker);
+}

@@ -14,7 +14,8 @@
       { key: 'authz',   label: '授权中心',    ico: 'key' },
       { key: 'inspect', label: '密文核验',    ico: 'shield' },
       { key: 'audit',   label: '监管审计',    ico: 'audit' },
-      { key: 'crypto',  label: '密码工具箱',  ico: 'lock' }
+      { key: 'crypto',  label: '密码工具箱',  ico: 'lock' },
+      { key: 'chainview', label: '链上浏览器', ico: 'db' }
     ]
   });
 })();
