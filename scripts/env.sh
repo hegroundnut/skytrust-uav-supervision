@@ -40,6 +40,16 @@ FISCO_NODE=/opt/fisco/nodes/127.0.0.1/node0
 FISCO_CONSOLE=/opt/fisco/console
 FISCO_GROUP=group0
 
+# ---- IRITA 证照链（2026-10-13 C-1：4 验证人 Tendermint BFT，chain-id skytrust-license，
+#      SM2 双层；节点数据 /opt/irita/net/node0..3 —— 账本不可毁（含启用锚点 record），
+#      只可优雅停机，绝不 network-down / 删数据目录（与 P6-R6 同源红线）----
+IRITA_BIN=/opt/irita/bin/irita             # v4.0.0（/opt 自持源码构建，sha256 已登记 version-matrix §12）
+IRITA_NET=/opt/irita/net                   # node0..3/irita 家目录 + node{i}.pid/log + ANCHOR_TXID.txt
+IRITA_CLI_HOME=/opt/irita/cli-home         # keyring-test（node0 + skytrust-biz 密钥）
+IRITA_CHAIN_ID=skytrust-license
+IRITA_RPC=http://127.0.0.1:26657           # node0 rpc；其余节点 26667/26677/26687（仅 127.0.0.1）
+IRITA_KEY_NAME=skytrust-biz                # 业务写链账户（已注资 1000 IRITA）
+
 # ---- 后端 ----
 BACKEND=$REPO/services/skytrust-backend
 BACKEND_BIN=$BACKEND/bin/server-realchains

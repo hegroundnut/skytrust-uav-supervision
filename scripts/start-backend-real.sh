@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # start-backend-real.sh —— 真实链模式后端启动 + /api/chain/status 自检。
-# 前置：build-backend-real.sh 已产出 $BACKEND_BIN；三链已启动（start-chains.sh）。
+# 前置：build-backend-real.sh 已产出 $BACKEND_BIN；各链已启动（start-chains.sh，
+# 含 IRITA 证照链 rpc 26657）。
 # .env 含证书/密钥路径（gitignored，安全红线 §5-④）；本脚本经 set -a source 注入。
 set -uo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh"
@@ -18,8 +19,9 @@ if [ -n "${OLD_PID:-}" ]; then
   for _ in $(seq 1 10); do port_up 8080 || break; sleep 1; done
 fi
 
-# 三链端口预检（不在则仍尝试启动——real 工厂 fail-fast 会在日志报具体链）
-for p in 12301 7051 20200; do
+# 链端口预检（不在则仍尝试启动——real 工厂 fail-fast 会在日志报具体链）
+# 26657 = IRITA 证照链 node0 rpc（2026-10-13 C-1 新增；Task 13 切换前的旧二进制不读它）
+for p in 12301 7051 20200 26657; do
   port_up "$p" && echo "  ✓ 链端口 $p 监听" || echo "  ⚠ 链端口 $p 未监听（先运行 start-chains.sh？）"
 done
 
@@ -36,7 +38,7 @@ echo "== /api/chain/status 自检 =="
 STATUS=$(curl -s --max-time 30 -X POST "$BACKEND_URL/api/chain/status" -H 'Content-Type: application/json' -d '{}')
 echo "$STATUS" | python3 -m json.tool 2>/dev/null || echo "$STATUS"
 if echo "$STATUS" | grep -q '"chains"' && ! echo "$STATUS" | grep -q 'OFFLINE'; then
-  echo "  ✓ 三链 ONLINE（pid=$NEW_PID）"
+  echo "  ✓ 全部链 ONLINE（pid=$NEW_PID）"
   exit 0
 else
   echo "  ✗ 存在 OFFLINE 链（fail-fast 诚实上报，绝无静默仿真）；排查 $LOG"

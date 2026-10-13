@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# start-chains.sh —— 三链一键启动 + 健康检查（幂等：已运行则跳过启动）。
-# 顺序遵循 docs/real-chain-migration.md §3.1：FISCO → ChainMaker → Fabric。
+# start-chains.sh —— 四链一键启动 + 健康检查（幂等：已运行则跳过启动）。
+# 顺序遵循 docs/real-chain-migration.md §3.1：FISCO → ChainMaker → Fabric；
+# IRITA 证照链（2026-10-13 C-1 新增）最后启动，委托 scripts/start-irita.sh。
 # ⚠ 安全红线：本脚本只「启动」，绝不做破坏性清理（fabric network.sh down /
 #   删链删目录）——账本上载有 §4.4 部署 TxID 登记，毁账即毁验收依据。
 set -uo pipefail
@@ -8,7 +9,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh"
 
 FAIL=0
 
-echo "== [1/3] FISCO BCOS 管理链（RPC 20200 / p2p 30300）=="
+echo "== [1/4] FISCO BCOS 管理链（RPC 20200 / p2p 30300）=="
 if port_up 20200; then
   echo "  已在运行，跳过"
 else
@@ -17,7 +18,7 @@ else
 fi
 if port_up 20200; then echo "  ✓ 端口 20200 监听"; else echo "  ✗ FISCO 启动失败（查 $FISCO_NODE/log/）"; FAIL=1; fi
 
-echo "== [2/3] ChainMaker 监管链（RPC 12301 / p2p 11301，solo wx-org / chain1）=="
+echo "== [2/4] ChainMaker 监管链（RPC 12301 / p2p 11301，solo wx-org / chain1）=="
 # 2a. docker-go 合约 VM 引擎容器（节点执行合约依赖它；容器由节点首次启动时创建，
 #     此后独立存续，节点重启不会自动拉起 → 先确保容器在）
 if docker ps --format '{{.Names}}' | grep -qx "$CM_VM_CONTAINER"; then
@@ -44,7 +45,7 @@ else
 fi
 if port_up 12301; then echo "  ✓ 端口 12301 监听"; else echo "  ✗ ChainMaker 启动失败（查 $CM_NODE_LOG）"; FAIL=1; fi
 
-echo "== [3/3] Fabric 运营链（orderer 7050 / peer0.org1 7051 / peer0.org2 9051）=="
+echo "== [3/4] Fabric 运营链（orderer 7050 / peer0.org1 7051 / peer0.org2 9051）=="
 if port_up 7050 && port_up 7051; then
   echo "  已在运行，跳过"
 else
@@ -61,6 +62,9 @@ else
   fi
 fi
 if port_up 7050 && port_up 7051; then echo "  ✓ 端口 7050/7051 监听"; else echo "  ✗ Fabric 启动失败"; FAIL=1; fi
+
+echo "== [4/4] IRITA 证照链（4 验证人，rpc 127.0.0.1:26657/26667/26677/26687）=="
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/start-irita.sh" start || FAIL=1
 
 echo "== 深度健康检查（真实 RPC，非仅端口）=="
 # ChainMaker：cmc 取最新块（不设 height 即 last block）
@@ -84,6 +88,16 @@ if [ -n "${FISCO_H:-}" ]; then
   echo "  ✓ fisco-bcos  RPC OK（console getBlockNumber = $FISCO_H）"
 else
   echo "  ✗ fisco-bcos  RPC FAIL（console 输出异常）"; FAIL=1
+fi
+# IRITA：TM /status 取最新高度 + catching_up=false（node0 rpc 26657）
+# 注意：catching_up 是布尔 false，jq 的 //empty 会把它当 falsy 吞掉 → 必须裸取
+IRITA_S=$(curl -s -m 5 "$IRITA_RPC/status")
+IRITA_H=$(echo "$IRITA_S" | jq -r '.result.sync_info.latest_block_height // empty')
+IRITA_CATCH=$(echo "$IRITA_S" | jq -r '.result.sync_info.catching_up')
+if [ -n "${IRITA_H:-}" ] && [ "$IRITA_CATCH" = "false" ]; then
+  echo "  ✓ irita       RPC OK（/status height = $IRITA_H，catching_up=false）"
+else
+  echo "  ✗ irita       RPC FAIL（height=${IRITA_H:-无} catching_up=${IRITA_CATCH:-无}）"; FAIL=1
 fi
 
 [ "$FAIL" -eq 0 ] && echo "ALL_CHAINS_UP" || echo "SOME_CHAINS_FAILED（逐项排查上方 ✗）"
