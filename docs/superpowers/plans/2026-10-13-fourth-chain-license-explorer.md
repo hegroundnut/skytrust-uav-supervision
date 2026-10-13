@@ -332,3 +332,15 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"`
 3. **QueryState 读路径**：必须 JSON-RPC POST `/` `{"method":"abci_query","params":{"path":"/store/record/key","data":"01<recordIDhex>","prove":true,"height":"<字符串形态 int64，0=latest>"}}`。GET 形态的 data 参数不做 hex 解码（按 ASCII 透传）不可用；int64 参数必须 JSON 字符串；height=1+prove 被 SDK guard 拒绝（code=18），height=0 会被 baseapp 归一化为 latest 后正常。**响应字段名为 camelCase `proofOps`**（非 proof_ops）；prove=true 返回完整 ics23 双段证明（ics23:iavl 记录包含证明 + ics23:simple 多 store 提交证明）——设计承诺的 Merkle 证明 bonus 真实可用。value = base64(protobuf Record{tx_hash, contents[]{digest,digest_algo,uri,meta}, creator})。
 4. **业务键无法直接反查**（record 模块无二级索引；QueryState(contract,业务key) 无法经链上查询实现）——但 **QueryState 在全代码库零业务调用点**（grep 证据：仅接口定义+各 adapter 透传，gateway/uavbusiness/regulatory 均不调用）。Task 5 的 irita QueryState 实现：key 接受 record-id(64-hex) 或 txhash（后者经 /tx?hash 提取 create_record 事件再查）；业务键形态 → 明示错误「irita record 模块不支持业务键反查」，绝不静默。§12 登记偏差。
 5. **bank send 收件人必须 bech32 地址**（key 名会报 `decoding bech32 failed`）；创世账户余额 5000 IRITA/户 → skytrust-biz 实注资 1000 IRITA（txhash 73E80A03910352B3CAE48CEED28EABF8C35B33F2CA55BC37882D1D6BCBCF2FDC）。
+
+### Task 4 校准实录（能力降级错误码 5003→2005，Task 5/8/11/15 必须以此为准）
+
+计划钉死的 `ErrChainUnsupportedFeature = 5003` **不可实施**：5003 已被 `errcode.AuthScope`（System 3 授权范围越界）占用且在线使用（regulatory_handler.go:118 sealed 透传、inspection.go:68），前端 `js/data/explain.js:31` 将 5003 全局映射为「授权范围越界」——复用会令同一码承载两种语义，违反全局码表语义唯一（=造假解释，触数据红线）。计划该处 gate「先核对 5003 未占用」即为让路指令。
+
+**已落位（commit b51181c）**：`errcode.ChainUnsupportedFeature = 2005`（2xxx 链基础设施段，与 2004 幂等重复同段；已核验 2005 全仓未占用）。explorer 5 端点、apidoc 摘要、README 错误码表均已用 2005；errcode.go:21 注释记录改号缘由。
+
+**下游传播（brief 文本仍写 5003 处一律以本节为准）**：
+- Task 5：real/irita 传输能力缺失路径返回 2005（含 abci_query/证明能力如实降级）。
+- Task 8：CXV 浏览器前端按 2005 渲染「该链 RPC 不支持…」如实降级文案。
+- Task 11：验收脚本断言能力降级码 = 2005（非 5003）。
+- Task 15：README/错误码表核对 2005 行；「73 个端点」残留清点含 gen-endpoints.sh 注释与 frontend/README。
