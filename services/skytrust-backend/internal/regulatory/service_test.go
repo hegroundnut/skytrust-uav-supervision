@@ -15,7 +15,7 @@ import (
 	"skytrust-backend/internal/model"
 )
 
-// newTestSvc 监管域公共 fixture：:memory: DB + 三模拟链（零延迟）+ 网关 + 审计。
+// newTestSvc 监管域公共 fixture：:memory: DB + 四模拟链（零延迟）+ 网关 + 审计。
 // Task 2-7 测试全部复用；chains 供故障注入（WithFailNext），db 供直插跨域行。
 func newTestSvc(t *testing.T) (*Service, map[string]*sim.Chain, *gorm.DB, *crypto.Service) {
 	t.Helper()
@@ -36,7 +36,7 @@ func newTestSvc(t *testing.T) (*Service, map[string]*sim.Chain, *gorm.DB, *crypt
 		t.Fatal(err)
 	}
 	chains := map[string]*sim.Chain{
-		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
+		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"), "irita": sim.New("irita"),
 	}
 	adapters := make(map[string]chainadapter.ChainAdapter, len(chains))
 	for name, c := range chains {

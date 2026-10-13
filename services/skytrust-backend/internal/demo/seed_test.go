@@ -14,7 +14,7 @@ func TestInitCreatesDemoObjects(t *testing.T) {
 	model.Migrate(db)
 	cs, _ := crypto.NewService(t.TempDir())
 	chains := map[string]*sim.Chain{
-		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
+		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"), "irita": sim.New("irita"),
 	}
 	resets := make(map[string]chainadapter.Resettable, len(chains))
 	for name, c := range chains {

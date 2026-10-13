@@ -16,7 +16,7 @@ func TestBuildChainsSimDefault(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sim build: %v", err)
 	}
-	for _, name := range []string{"fabric", "chainmaker", "fisco-bcos"} {
+	for _, name := range []string{"fabric", "chainmaker", "fisco-bcos", "irita"} {
 		a, ok := adapters[name]
 		if !ok || a.ChainName() != name {
 			t.Fatalf("adapter %s missing or wrong name", name)
@@ -28,7 +28,7 @@ func TestBuildChainsSimDefault(t *testing.T) {
 			t.Errorf("sim transport %s must be Resettable", name)
 		}
 		// 白名单内合约可提交，TxID 前缀契约保持（大写链名）
-		contract := map[string]string{"fabric": "operator_business", "chainmaker": "regulatory_record", "fisco-bcos": "uav_management"}[name]
+		contract := map[string]string{"fabric": "operator_business", "chainmaker": "regulatory_record", "fisco-bcos": "uav_management", "irita": "license_registry"}[name]
 		rc, err := a.SubmitTx(context.Background(), contract, "M", map[string]any{"k": "v"})
 		if err != nil || rc.Status != 0 {
 			t.Fatalf("submit %s: %v %+v", name, err, rc)

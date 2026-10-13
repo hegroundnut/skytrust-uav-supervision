@@ -19,7 +19,7 @@ import (
 	"skytrust-backend/internal/uavbusiness"
 )
 
-// newTestSvc 全接线夹具（与 tests/bootServerS1 同构：:memory: + 零延迟三模拟链 +
+// newTestSvc 全接线夹具（与 tests/bootServerS1 同构：:memory: + 零延迟四模拟链 +
 // 网关 + 三业务服务 + seeder；不起 HTTP）。
 func newTestSvc(t *testing.T) *Service {
 	t.Helper()
@@ -35,7 +35,7 @@ func newTestSvc(t *testing.T) *Service {
 		t.Fatal(err)
 	}
 	chains := map[string]*sim.Chain{
-		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
+		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"), "irita": sim.New("irita"),
 	}
 	adapters := make(map[string]chainadapter.ChainAdapter, len(chains))
 	for name, c := range chains {

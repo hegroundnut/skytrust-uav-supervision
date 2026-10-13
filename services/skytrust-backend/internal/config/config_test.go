@@ -39,7 +39,7 @@ func TestChainModeForOverrides(t *testing.T) {
 	if cfg.ChainMode != "sim" {
 		t.Fatalf("global mode: %s", cfg.ChainMode)
 	}
-	if cfg.FabricMode != "real" || cfg.ChainmakerMode != "" || cfg.FiscoMode != "" {
+	if cfg.FabricMode != "real" || cfg.ChainmakerMode != "" || cfg.FiscoMode != "" || cfg.IritaMode != "" {
 		t.Fatalf("per-chain fields: %+v", cfg)
 	}
 	if got := cfg.ChainModeFor("fabric"); got != "real" {
@@ -50,6 +50,24 @@ func TestChainModeForOverrides(t *testing.T) {
 	}
 	if got := cfg.ChainModeFor("fisco-bcos"); got != "sim" {
 		t.Errorf("fisco must follow global: %s", got)
+	}
+	if got := cfg.ChainModeFor("irita"); got != "sim" {
+		t.Errorf("irita must follow global: %s", got)
+	}
+}
+
+func TestChainModeForIritaOverride(t *testing.T) {
+	t.Setenv("CHAIN_MODE", "sim")
+	t.Setenv("IRITA_MODE", "real")
+	cfg := Load()
+	if cfg.IritaMode != "real" {
+		t.Fatalf("IritaMode = %q, want real", cfg.IritaMode)
+	}
+	if got := cfg.ChainModeFor("irita"); got != "real" {
+		t.Errorf("irita override: %s", got)
+	}
+	if got := cfg.ChainModeFor("fabric"); got != "sim" {
+		t.Errorf("other chains must be unaffected: %s", got)
 	}
 }
 

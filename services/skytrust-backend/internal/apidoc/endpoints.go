@@ -37,7 +37,7 @@ func reviewApproved(appRef, comment string) map[string]any {
 var Endpoints = []Endpoint{
 	{Path: "/api/health/ping", Group: "基础", Summary: "探活（恒 0）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 0},
 	{Path: "/api/health/check", Group: "基础", Summary: "健康自检（DB/密码服务/链适配器）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 0},
-	{Path: "/api/chain/status", Group: "基础", Summary: "三链状态（fabric/chainmaker/fisco-bcos 全 ONLINE）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 0},
+	{Path: "/api/chain/status", Group: "基础", Summary: "四链状态（fabric/chainmaker/fisco-bcos/irita 全 ONLINE）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 0},
 	{Path: "/api/crypto/sm3", Group: "密码学", Summary: "SM3 规范化摘要", Sample: map[string]any{"payload": map[string]any{"mission_id": "MISSION-2026-001", "operator_id": "Operator-A", "altitude_max": 120}}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/crypto/sm9/keygen", Group: "密码学", Summary: "SM9 身份密钥生成", Sample: map[string]any{"entity_id": "UAV-A-001"}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/crypto/sm9/sign", Group: "密码学", Summary: "SM9 签名（先 SM3 摘要再签）", Sample: map[string]any{"sm9_identity": "SM9-ID-UAV-A-001", "payload": map[string]any{"mission_id": "MISSION-2026-001", "operator_id": "Operator-A", "altitude_max": 120}}, ExpectCode: 0, ProbeExpect: 6002},

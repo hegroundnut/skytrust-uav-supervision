@@ -14,6 +14,7 @@ import (
 	adpchainmaker "skytrust-backend/internal/chainadapter/chainmaker"
 	adpfabric "skytrust-backend/internal/chainadapter/fabric"
 	adpfisco "skytrust-backend/internal/chainadapter/fisco"
+	adirita "skytrust-backend/internal/chainadapter/irita"
 	"skytrust-backend/internal/chainadapter/sim"
 	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/crypto"
@@ -33,7 +34,7 @@ func seqID(prefix string, n int) string {
 	return fmt.Sprintf("%s-%d-%03d", prefix, timex.Now().Year(), n)
 }
 
-// bootServerS1 系统一 E2E 引导：:memory: DB（避免 Windows 文件锁）+ 三模拟链
+// bootServerS1 系统一 E2E 引导：:memory: DB（避免 Windows 文件锁）+ 四模拟链
 // （零延迟，保障亚秒断言）+ 网关 + 业务服务全接线。
 func bootServerS1(t *testing.T) *httptest.Server {
 	t.Helper()
@@ -50,12 +51,13 @@ func bootServerS1(t *testing.T) *httptest.Server {
 		t.Fatal(err)
 	}
 	chains := map[string]*sim.Chain{
-		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
+		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"), "irita": sim.New("irita"),
 	}
 	adapters := map[string]chainadapter.ChainAdapter{
 		"fabric":     adpfabric.New(chains["fabric"]),
 		"chainmaker": adpchainmaker.New(chains["chainmaker"]),
 		"fisco-bcos": adpfisco.New(chains["fisco-bcos"]),
+		"irita":      adirita.New(chains["irita"]),
 	}
 	resets := make(map[string]chainadapter.Resettable, len(chains))
 	for name, c := range chains {

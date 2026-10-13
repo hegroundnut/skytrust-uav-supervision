@@ -23,6 +23,7 @@ func defaultTestSims() map[string]*sim.Chain {
 		"fabric":     sim.New("fabric", sim.WithLatency(time.Millisecond)),
 		"chainmaker": sim.New("chainmaker", sim.WithLatency(time.Millisecond)),
 		"fisco-bcos": sim.New("fisco-bcos", sim.WithLatency(time.Millisecond)),
+		"irita":      sim.New("irita", sim.WithLatency(time.Millisecond)),
 	}
 }
 

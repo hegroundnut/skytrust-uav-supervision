@@ -5,16 +5,16 @@ import (
 	"testing"
 )
 
-// TestTC1_01ThreeChainsOnline TC1-01 三链在线：chain/status code 0 + 三链全 ONLINE
+// TestTC1_01FourChainsOnline TC1-01 四链在线：chain/status code 0 + 四链全 ONLINE
 // （P5-R6：模拟链判定；真实链判定属 Plan 6/WP-K）。
-func TestTC1_01ThreeChainsOnline(t *testing.T) {
+func TestTC1_01FourChainsOnline(t *testing.T) {
 	srv := bootTC(t)
 	st := must0(t, "chain/status", call(t, srv, "/api/chain/status", map[string]any{}))
-	if st["count"].(float64) != 3 {
-		t.Fatalf("count = %v, want 3", st["count"])
+	if st["count"].(float64) != 4 {
+		t.Fatalf("count = %v, want 4", st["count"])
 	}
 	chains := st["chains"].(map[string]any)
-	for _, name := range []string{"fabric", "chainmaker", "fisco-bcos"} {
+	for _, name := range []string{"fabric", "chainmaker", "fisco-bcos", "irita"} {
 		if chains[name] != "ONLINE" {
 			t.Fatalf("%s = %v, want ONLINE", name, chains[name])
 		}

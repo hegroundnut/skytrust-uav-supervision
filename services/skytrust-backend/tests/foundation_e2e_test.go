@@ -15,6 +15,7 @@ import (
 	adpchainmaker "skytrust-backend/internal/chainadapter/chainmaker"
 	adpfabric "skytrust-backend/internal/chainadapter/fabric"
 	adpfisco "skytrust-backend/internal/chainadapter/fisco"
+	adirita "skytrust-backend/internal/chainadapter/irita"
 	"skytrust-backend/internal/chainadapter/sim"
 	"skytrust-backend/internal/crosschain"
 	"skytrust-backend/internal/crypto"
@@ -46,12 +47,13 @@ func bootServer(t *testing.T) *httptest.Server {
 	}
 	cs, _ := crypto.NewService(t.TempDir())
 	chains := map[string]*sim.Chain{
-		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"),
+		"fabric": sim.New("fabric"), "chainmaker": sim.New("chainmaker"), "fisco-bcos": sim.New("fisco-bcos"), "irita": sim.New("irita"),
 	}
 	adapters := map[string]chainadapter.ChainAdapter{
 		"fabric":     adpfabric.New(chains["fabric"]),
 		"chainmaker": adpchainmaker.New(chains["chainmaker"]),
 		"fisco-bcos": adpfisco.New(chains["fisco-bcos"]),
+		"irita":      adirita.New(chains["irita"]),
 	}
 	resets := make(map[string]chainadapter.Resettable, len(chains))
 	for name, c := range chains {
@@ -99,7 +101,7 @@ func TestFoundationE2E(t *testing.T) {
 	srv := bootServer(t)
 	defer srv.Close()
 
-	// 1. 三链在线（TC1-01 基础形态）
+	// 1. 四链在线（TC1-01 基础形态）
 	st := call(t, srv, "/api/chain/status", map[string]any{})
 	if st["code"].(float64) != 0 {
 		t.Fatalf("chain status: %v", st)

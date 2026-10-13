@@ -16,6 +16,7 @@ type Config struct {
 	ChainmakerMode string // CHAINMAKER_MODE：覆盖 ChainMode（空=跟随全局，spec §3.2）
 	FabricMode     string // FABRIC_MODE：覆盖 ChainMode（空=跟随全局）
 	FiscoMode      string // FISCO_MODE：覆盖 ChainMode（空=跟随全局）
+	IritaMode      string // IRITA_MODE：覆盖 ChainMode（空=跟随全局）
 
 	OffchainAutopilotMs int // OFFCHAIN_AUTOPILOT_MS：后台 HEARTBEAT 间隔(ms)，默认 0=关闭，非法值→0
 
@@ -42,6 +43,7 @@ func Load() *Config {
 		ChainmakerMode: getEnv("CHAINMAKER_MODE", ""),
 		FabricMode:     getEnv("FABRIC_MODE", ""),
 		FiscoMode:      getEnv("FISCO_MODE", ""),
+		IritaMode:      getEnv("IRITA_MODE", ""),
 
 		OffchainAutopilotMs: autopilotMs,
 
@@ -70,6 +72,10 @@ func (c *Config) ChainModeFor(chain string) string {
 	case "fisco-bcos":
 		if c.FiscoMode != "" {
 			return c.FiscoMode
+		}
+	case "irita":
+		if c.IritaMode != "" {
+			return c.IritaMode
 		}
 	}
 	return c.ChainMode

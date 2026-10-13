@@ -44,7 +44,7 @@ func TestChainStatusWithChains(t *testing.T) {
 		t.Fatal(resp.Message)
 	}
 	chains := dataMap(resp)["chains"].(map[string]any)
-	for _, name := range []string{"fabric", "chainmaker", "fisco-bcos"} {
+	for _, name := range []string{"fabric", "chainmaker", "fisco-bcos", "irita"} {
 		if chains[name] != "ONLINE" {
 			t.Errorf("%s = %v", name, chains[name])
 		}
