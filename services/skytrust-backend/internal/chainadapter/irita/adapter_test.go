@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"skytrust-backend/internal/chainadapter"
+	"skytrust-backend/internal/crosschain"
 )
 
 type recTransport struct {
@@ -64,9 +65,10 @@ func TestAdapterRejectsUnregisteredContract(t *testing.T) {
 }
 
 func TestRegisteredContractsMatchCodifiedConstants(t *testing.T) {
-	// TODO(Task 3): 改引 crosschain.ContractLicenseRegistry——常量 Task 3 才固化，
-	// 本任务先以设计固化字面量断言（controller ruling）。
-	for _, c := range []string{"license_registry"} {
+	// Task 5 收编（原 TODO(Task 3)）：常量已固化——改引 crosschain.ContractLicenseRegistry。
+	// 导入方向合规：internal/crosschain 只导入 internal/chainadapter（父包），不导入本
+	// 子包——无环（chainadapter/irita → crosschain → chainadapter）。
+	for _, c := range []string{crosschain.ContractLicenseRegistry} {
 		if !RegisteredContracts[c] {
 			t.Errorf("missing registered contract %q", c)
 		}

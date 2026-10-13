@@ -17,9 +17,12 @@ package realfabric
 import (
 	"context"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hyperledger/fabric-gateway/pkg/client"
@@ -30,6 +33,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"skytrust-backend/internal/chainadapter"
+	"skytrust-backend/internal/timex"
 )
 
 // contractName 与后端固化常量逐字一致（internal/crosschain/policy.go:69
@@ -38,11 +42,12 @@ const contractName = "operator_business"
 
 // Transport 以 fabric-gateway 实现 chainadapter.ChainTransport。
 type Transport struct {
-	conn      *grpc.ClientConn
-	gateway   *client.Gateway
-	network   *client.Network
-	contract  *client.Contract
-	channelID string
+	conn         *grpc.ClientConn
+	gateway      *client.Gateway
+	network      *client.Network
+	contract     *client.Contract
+	channelID    string
+	peerEndpoint string // FABRIC_PEER_ENDPOINT（ListNodes 未配置节点清单时的唯一已知节点）
 }
 
 // NewFactory 即 chainadapter.TransportFactory（transport.go:25：func() (ChainTransport, error)）。
@@ -101,11 +106,12 @@ func NewFactory() (chainadapter.ChainTransport, error) {
 	channel := os.Getenv("FABRIC_CHANNEL_NAME")
 	network := gw.GetNetwork(channel)
 	return &Transport{
-		conn:      conn,
-		gateway:   gw,
-		network:   network,
-		contract:  network.GetContract(contractName),
-		channelID: channel,
+		conn:         conn,
+		gateway:      gw,
+		network:      network,
+		contract:     network.GetContract(contractName),
+		channelID:    channel,
+		peerEndpoint: endpoint,
 	}, nil
 }
 
@@ -216,3 +222,105 @@ func (t *Transport) Close() {
 }
 
 var _ chainadapter.ChainTransport = (*Transport)(nil)
+
+// ---- BlockQuerier（explorer 数据源，Task 5）：数据源 = 系统链码 qscc
+// （GetChainInfo / GetBlockByNumber），链上真实区块，绝不拼造。Fabric 块头无
+// proposer 字段（SMARTBFT orderer 签名集在 BlockMetadata SIGNATURES 内，qscc 不
+// 直接暴露）→ Proposer 如实留空；块头亦无时间戳字段 → Time 取块内首个交易的
+// channel header 时间（链上原样），空块无交易则如实留空。 ----
+
+var _ chainadapter.BlockQuerier = (*Transport)(nil)
+
+// GetBlockHeight 最新块号（qscc GetChainInfo.Height = 下一块号 → 最新块 = Height-1）。
+func (t *Transport) GetBlockHeight(ctx context.Context) (uint64, error) {
+	qscc := t.network.GetContract("qscc")
+	infoBytes, err := qscc.EvaluateWithContext(ctx, "GetChainInfo", client.WithArguments(t.channelID))
+	if err != nil {
+		return 0, fmt.Errorf("fabric: qscc GetChainInfo: %w", err)
+	}
+	bci := &common.BlockchainInfo{}
+	if err := proto.Unmarshal(infoBytes, bci); err != nil {
+		return 0, fmt.Errorf("fabric: decode blockchain info: %w", err)
+	}
+	if bci.GetHeight() == 0 {
+		return 0, nil // 空链（仅创世前）如实报 0，绝不猜测
+	}
+	return bci.GetHeight() - 1, nil
+}
+
+// GetBlockByHeight 按块号取块（qscc GetBlockByNumber，参数为块号十进制字符串）。
+// Hash = 块头 data_hash 的 hex（Fabric 块以 data_hash 作链上标识，qscc/浏览器同源）。
+func (t *Transport) GetBlockByHeight(ctx context.Context, height uint64) (*chainadapter.BlockInfo, error) {
+	qscc := t.network.GetContract("qscc")
+	blockBytes, err := qscc.EvaluateWithContext(ctx, "GetBlockByNumber",
+		client.WithArguments(t.channelID, strconv.FormatUint(height, 10)))
+	if err != nil {
+		return nil, fmt.Errorf("fabric: qscc GetBlockByNumber %d: %w", height, err)
+	}
+	block := &common.Block{}
+	if err := proto.Unmarshal(blockBytes, block); err != nil {
+		return nil, fmt.Errorf("fabric: decode block %d: %w", height, err)
+	}
+	data := block.GetData().GetData()
+	info := &chainadapter.BlockInfo{
+		Height:  block.GetHeader().GetNumber(),
+		Hash:    hex.EncodeToString(block.GetHeader().GetDataHash()),
+		TxCount: len(data),
+		TxIDs:   make([]string, 0, len(data)),
+	}
+	for _, raw := range data {
+		envelope := &common.Envelope{}
+		if err := proto.Unmarshal(raw, envelope); err != nil {
+			continue
+		}
+		payload := &common.Payload{}
+		if err := proto.Unmarshal(envelope.GetPayload(), payload); err != nil {
+			continue
+		}
+		ch := &common.ChannelHeader{}
+		if err := proto.Unmarshal(payload.GetHeader().GetChannelHeader(), ch); err != nil {
+			continue
+		}
+		if ch.GetTxId() != "" {
+			info.TxIDs = append(info.TxIDs, ch.GetTxId())
+		}
+		if info.Time == "" && ch.GetTimestamp() != nil {
+			info.Time = timex.FormatTime(ch.GetTimestamp().AsTime()) // 块内首笔交易时间（链上原样归一）
+		}
+	}
+	return info, nil
+}
+
+// ListRecentBlocks 最近块，新→旧（逐块号 qscc GetBlockByNumber；limit 由调用方钳制）。
+func (t *Transport) ListRecentBlocks(ctx context.Context, limit int) ([]chainadapter.BlockInfo, error) {
+	out := make([]chainadapter.BlockInfo, 0)
+	if limit <= 0 {
+		return out, nil
+	}
+	latest, err := t.GetBlockHeight(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for h := latest; len(out) < limit; h-- {
+		b, err := t.GetBlockByHeight(ctx, h)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *b)
+		if h == 0 {
+			break // 块号 0（创世块）已取，防 uint64 下溢
+		}
+	}
+	return out, nil
+}
+
+// ListNodes 可选 env FABRIC_NODE_LIST="name=addr,name2=addr2"（静态清单 + 逐地址
+// TCP 探活，source=static+probe 如实标注——peer/gateway 无全网节点枚举 RPC）；
+// 未配置 → 只返回当前已知节点（FABRIC_PEER_ENDPOINT），绝不拼造全网拓扑。
+func (t *Transport) ListNodes(ctx context.Context) ([]chainadapter.NodeInfo, error) {
+	spec := strings.TrimSpace(os.Getenv("FABRIC_NODE_LIST"))
+	if spec == "" {
+		spec = "peer-endpoint=" + t.peerEndpoint
+	}
+	return chainadapter.ProbeNodeList(spec, 3*time.Second, "node"), nil
+}

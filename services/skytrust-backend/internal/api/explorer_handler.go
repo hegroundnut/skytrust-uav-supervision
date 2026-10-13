@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 
@@ -9,6 +10,18 @@ import (
 	"skytrust-backend/internal/chainadapter"
 	"skytrust-backend/internal/timex"
 )
+
+// explorerBQFail BlockQuerier 调用失败的统一映射（Task 4 校准裁决）：包裹
+// chainadapter.ErrUnsupportedFeature 的错误 = 该链 RPC 能力部分缺失（如 FISCO v3.16
+// getBlockByNumber 怪癖，docs/version-matrix.md §11.4-①）→ 2005 如实降级；
+// 其余为查询故障 → ErrInternal。绝不把能力缺失谎报为内部错误，也绝不拼造数据。
+func explorerBQFail(c *gin.Context, err error, what string) {
+	if errors.Is(err, chainadapter.ErrUnsupportedFeature) {
+		Fail(c, ErrChainUnsupportedFeature, "该链 RPC 不支持"+what+": "+err.Error())
+		return
+	}
+	Fail(c, ErrInternal, what+"失败: "+err.Error())
+}
 
 // 固定显示值（设计钉死——四端浏览器逐字断言，禁止转述；未知链不猜测显示名）。
 var explorerChainNames = map[string]string{
@@ -119,7 +132,7 @@ func explorerNodesHandler(deps *Deps) gin.HandlerFunc {
 		}
 		nodes, err := bq.ListNodes(c.Request.Context())
 		if err != nil {
-			Fail(c, ErrInternal, "节点查询失败: "+err.Error())
+			explorerBQFail(c, err, "节点查询")
 			return
 		}
 		if nodes == nil {
@@ -161,12 +174,12 @@ func explorerBlocksHandler(deps *Deps) gin.HandlerFunc {
 		}
 		height, err := bq.GetBlockHeight(c.Request.Context())
 		if err != nil {
-			Fail(c, ErrInternal, "区块高度查询失败: "+err.Error())
+			explorerBQFail(c, err, "区块高度查询")
 			return
 		}
 		blocks, err := bq.ListRecentBlocks(c.Request.Context(), limit)
 		if err != nil {
-			Fail(c, ErrInternal, "区块列表查询失败: "+err.Error())
+			explorerBQFail(c, err, "区块列表查询")
 			return
 		}
 		if blocks == nil {
@@ -201,7 +214,7 @@ func explorerBlockHandler(deps *Deps) gin.HandlerFunc {
 		}
 		height, err := bq.GetBlockHeight(c.Request.Context())
 		if err != nil {
-			Fail(c, ErrInternal, "区块高度查询失败: "+err.Error())
+			explorerBQFail(c, err, "区块高度查询")
 			return
 		}
 		if req.Height > height {
@@ -210,7 +223,7 @@ func explorerBlockHandler(deps *Deps) gin.HandlerFunc {
 		}
 		blk, err := bq.GetBlockByHeight(c.Request.Context(), req.Height)
 		if err != nil {
-			Fail(c, ErrInternal, "块详情查询失败: "+err.Error())
+			explorerBQFail(c, err, "块详情查询")
 			return
 		}
 		OK(c, gin.H{"chain": req.Chain, "block": blk})

@@ -1,4 +1,4 @@
-# 合约交付索引（三链）
+# 合约交付索引（三链 + IRITA 证照链）
 
 > ⚠️ **hermetic 构建不编译本目录任何合约。**
 > 本仓库的 hermetic 构建/测试环境不含任何链 SDK、`solc`、Docker 或 cgo 工具链，因此
@@ -19,6 +19,12 @@
   （mission application submit）、审核/通过/撤销留痕（review/pass/pass-revoke record）。
 - **管理链 = FISCO BCOS**：承担管理方职能——任务申请的目标侧记录（mission-application target recording），
   以及源链侧的跨链代提交/回执（source-side cross-chain submit/ack）。
+- **证照链 = IRITA**（2026-10-13 pass 迁移新增第 4 链）：承载飞行通行证签发/吊销登记
+  （FLIGHT_PASS / PASS_REVOKE 的源链）。**无合约工件**——IRITA 无「合约部署」概念，逻辑合约
+  `license_registry` 由链内置 **`record` 模块**承载：业务键 → `Content.URI`
+  （`skytrust://license_registry/<METHOD>/<key>`）、contents JSON → `Content.Meta`、
+  digest = SM3(contents)；record-id 链上派生（不可指定）。映射说明与 record-id 规则的
+  权威文档 = [`contracts/irita/README.md`](irita/README.md)。
 
 ---
 
@@ -48,6 +54,12 @@
 | 合约 | 方法清单（+ 事件） | 后端固化常量出处 | 状态 |
 |---|---|---|---|
 | `uav_management` | `SubmitApplication`, `CrosschainSubmit`, `CrosschainAck`（事件 `SUBMITAPPLICATION` / `CROSSCHAINSUBMIT` / `CROSSCHAINACK`） | `internal/crosschain/policy.go:70` (`ContractFiscoManage`) | 部署期校验 |
+
+### 证照链 · IRITA（内置 `record` 模块——**无合约工件、无部署交易**，说明文档 `contracts/irita/README.md`）
+
+| 合约 | 承载形态 | 后端固化常量出处 | 状态 |
+|---|---|---|---|
+| `license_registry` | 内置 record 模块（irismod）：`CrosschainSubmit` / `CrosschainAck` → `MsgCreateRecord`（业务键→`Content.URI`、contents JSON→`Content.Meta`、digest=SM3；record-id 链上派生） | `internal/crosschain/policy.go:71` (`ContractLicenseRegistry`) | 已启用（锚点 record 上链，version-matrix §12） |
 
 ---
 

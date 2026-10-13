@@ -287,3 +287,75 @@ func (t *Transport) packArgs(method string, params map[string]any) ([]interface{
 }
 
 var _ chainadapter.ChainTransport = (*Transport)(nil)
+
+// ---- BlockQuerier（explorer 数据源，Task 5）：块高与节点走链原生 RPC（source=rpc）；
+// 块详情受 v3.16 JSON-RPC 怪癖限制**能力如实降级**（chainadapter.ErrUnsupportedFeature
+// → API 层 errcode.ChainUnsupportedFeature=2005，Task 4 校准裁决：5003 已被 AuthScope
+// 占用）——绝不拼凑块数据。 ----
+
+var _ chainadapter.BlockQuerier = (*Transport)(nil)
+
+// GetBlockHeight 当前块号（SDK GetBlockNumber；v3.16 下正常可用，§11.4-① 怪癖
+// 仅影响 getBlockByNumber/getTransactionReceipt）。
+func (t *Transport) GetBlockHeight(ctx context.Context) (uint64, error) {
+	n, err := t.c.GetBlockNumber(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("fisco-bcos: get block number: %w", err)
+	}
+	if n < 0 {
+		return 0, fmt.Errorf("fisco-bcos: negative block number %d", n)
+	}
+	return uint64(n), nil
+}
+
+// GetBlockByHeight 能力如实降级（2005，绝不拼凑）：FISCO v3.16 JSON-RPC 怪癖
+// （docs/version-matrix.md §11.4-①，部署实测）——getBlockByNumber 在
+// (onlyHeader=true, onlyTxHash=false) 下**忽略 blockNumber 恒返块 1**；
+// (false,…) 组合交易列表恒空。块详情在现链版本上不可靠 → 不返回任何拼造数据。
+func (t *Transport) GetBlockByHeight(ctx context.Context, height uint64) (*chainadapter.BlockInfo, error) {
+	return nil, fmt.Errorf("fisco-bcos: block detail unavailable — getBlockByNumber v3.16 quirk (docs/version-matrix.md §11.4-①: ignores blockNumber / empty tx list): %w", chainadapter.ErrUnsupportedFeature)
+}
+
+// ListRecentBlocks 能力如实降级（2005）：块列表依赖 getBlockByNumber 块详情，
+// 与 GetBlockByHeight 同因（version-matrix §11.4-①）——绝不以块号序列拼造块。
+func (t *Transport) ListRecentBlocks(ctx context.Context, limit int) ([]chainadapter.BlockInfo, error) {
+	return nil, fmt.Errorf("fisco-bcos: recent blocks unavailable — getBlockByNumber v3.16 quirk (docs/version-matrix.md §11.4-①): %w", chainadapter.ErrUnsupportedFeature)
+}
+
+// ListNodes 共识节点列表（source=rpc）：getSealerList（v3.16 正常可用，§11.4-①
+// 怪癖清单外）+ getSyncStatus（self nodeId + 已连接 peers）判定在线。v3 RPC 仅报
+// nodeID（无 ip:port）——Address 如实承载 nodeID，绝不拼造地址。
+func (t *Transport) ListNodes(ctx context.Context) ([]chainadapter.NodeInfo, error) {
+	sealers, err := t.c.GetSealerList(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("fisco-bcos: getSealerList: %w", err)
+	}
+	sync, err := t.c.GetSyncStatus(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("fisco-bcos: getSyncStatus: %w", err)
+	}
+	connected := map[string]bool{}
+	if sync != nil {
+		if sync.NodeId != "" {
+			connected[sync.NodeId] = true // self（应答本 RPC 的节点必然在线）
+		}
+		for _, p := range sync.Peers {
+			connected[p.NodeId] = true
+		}
+	}
+	out := make([]chainadapter.NodeInfo, 0, len(sealers))
+	for i, s := range sealers {
+		name := s.ID
+		if len(name) > 12 {
+			name = name[:12]
+		}
+		out = append(out, chainadapter.NodeInfo{
+			Name:    fmt.Sprintf("sealer-%d-%s", i, name),
+			Role:    "sealer",
+			Address: s.ID,
+			Online:  connected[s.ID],
+			Source:  "rpc",
+		})
+	}
+	return out, nil
+}

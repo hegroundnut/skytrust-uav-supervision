@@ -17,6 +17,7 @@ import (
 	realchainmaker "skytrust-backend/internal/chainadapter/real/chainmaker"
 	realfabric "skytrust-backend/internal/chainadapter/real/fabric"
 	realfisco "skytrust-backend/internal/chainadapter/real/fisco"
+	realirita "skytrust-backend/internal/chainadapter/real/irita"
 )
 
 // TestRealHopLatency 逐跳计时：每跳 iters 次（唯一 ID 避幂等/重复冲突），报告每次毫秒数。
@@ -35,6 +36,12 @@ func TestRealHopLatency(t *testing.T) {
 	fisT, err := realfisco.NewFactory()
 	if err != nil {
 		t.Fatalf("fisco factory: %v", err)
+	}
+	// irita 跳（Task 5 追加，证照链源链步 3 同形）：探针为运维工具——irita 未配置
+	// 时记录并跳过该跳，不阻断三链既有 7 跳的度量。
+	irT, irErr := realirita.NewFactory()
+	if irErr != nil {
+		t.Logf("irita transport not configured, skipping license-chain hop: %v", irErr)
 	}
 
 	stamp := time.Now().UnixNano()
@@ -97,6 +104,14 @@ func TestRealHopLatency(t *testing.T) {
 			return err
 		}},
 	}
+	if irErr == nil {
+		hops = append(hops, hop{"irita.CrosschainSubmit(证照链源步3, record 模块)", func(i int) error {
+			_, err := irT.SubmitTx(ctx, "license_registry", "CrosschainSubmit", map[string]any{
+				"cross_tx_id": uid(700 + i), "message_type": "FLIGHT_PASS", "business_id": uid(700 + i),
+			})
+			return err
+		}})
+	}
 
 	var total time.Duration
 	for _, h := range hops {
@@ -114,7 +129,7 @@ func TestRealHopLatency(t *testing.T) {
 		total += avg
 		t.Logf(">>> %s avg = %dms", h.name, avg.Milliseconds())
 	}
-	t.Logf(">>> 7 跳 avg 合计 = %dms（≈ 单次 Send 期望时延）", total.Milliseconds())
+	t.Logf(">>> %d 跳 avg 合计 = %dms（≈ 单次 Send 期望时延）", len(hops), total.Milliseconds())
 }
 
 // TestRealNegativePaths 语义契约负例（transport.go:12）：链上业务失败必须表现为

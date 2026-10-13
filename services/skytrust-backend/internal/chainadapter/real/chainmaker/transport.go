@@ -8,15 +8,18 @@ package realchainmaker
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"chainmaker.org/chainmaker/pb-go/v2/common"
 	sdk "chainmaker.org/chainmaker/sdk-go/v2"
 
 	"skytrust-backend/internal/chainadapter"
+	"skytrust-backend/internal/timex"
 )
 
 // registeredContracts 监管链合约白名单，与 internal/chainadapter/chainmaker/adapter.go:17
@@ -37,7 +40,8 @@ const (
 // Transport 以 chainmaker-sdk-go/v2 ChainClient 实现 chainadapter.ChainTransport。
 // 真实传输不实现 Resettable——Seeder 绝不重置真实链（P6-R6）。
 type Transport struct {
-	cc *sdk.ChainClient
+	cc     *sdk.ChainClient
+	rpcURL string // CHAINMAKER_RPC_URL（ListNodes 未配置节点清单时的唯一已知节点）
 }
 
 // NewFactory 即 chainadapter.TransportFactory（transport.go:25）。
@@ -112,7 +116,7 @@ func NewFactory() (chainadapter.ChainTransport, error) {
 	if err != nil {
 		return nil, fmt.Errorf("chainmaker: new chain client (%s, chain %s): %w", rpcURL, chainID, err)
 	}
-	return &Transport{cc: cc}, nil
+	return &Transport{cc: cc, rpcURL: rpcURL}, nil
 }
 
 // SubmitTx 提交交易（指南 §5-②：GetTxRequest 构造 + SendTxRequest 同步提交；
@@ -271,3 +275,90 @@ func toKVs(params map[string]any) ([]*common.KeyValuePair, error) {
 }
 
 var _ chainadapter.ChainTransport = (*Transport)(nil)
+
+// ---- BlockQuerier（explorer 数据源，Task 5）：数据源 = SDK 系统合约查询
+// （GetCurrentBlockHeight / GetBlockByHeight），链上真实区块，绝不拼造。 ----
+
+var _ chainadapter.BlockQuerier = (*Transport)(nil)
+
+// GetBlockHeight 当前块高（SDK GetCurrentBlockHeight，与 Health 同源）。
+func (t *Transport) GetBlockHeight(ctx context.Context) (uint64, error) {
+	h, err := t.cc.GetCurrentBlockHeight()
+	if err != nil {
+		return 0, fmt.Errorf("chainmaker: get block height: %w", err)
+	}
+	return h, nil
+}
+
+// GetBlockByHeight 按高度取块（SDK GetBlockByHeight，withRWSet=false——浏览器
+// 只需块头与交易清单）。Hash = 块头 block_hash 的 hex（链上原样，小写）；
+// Proposer = 块头 proposer 组织 ID；TxIDs = 各交易 Payload.TxId。
+func (t *Transport) GetBlockByHeight(ctx context.Context, height uint64) (*chainadapter.BlockInfo, error) {
+	bi, err := t.cc.GetBlockByHeight(height, false)
+	if err != nil {
+		return nil, fmt.Errorf("chainmaker: get block %d: %w", height, err)
+	}
+	b := bi.GetBlock()
+	if b.GetHeader() == nil {
+		return nil, fmt.Errorf("chainmaker: block %d: empty header in response", height)
+	}
+	h := b.GetHeader()
+	info := &chainadapter.BlockInfo{
+		Height:   h.GetBlockHeight(),
+		Hash:     hex.EncodeToString(h.GetBlockHash()),
+		Time:     cmBlockTime(h.GetBlockTimestamp()),
+		TxCount:  int(h.GetTxCount()),
+		Proposer: h.GetProposer().GetOrgId(),
+		TxIDs:    make([]string, 0, len(b.GetTxs())),
+	}
+	for _, tx := range b.GetTxs() {
+		if id := tx.GetPayload().GetTxId(); id != "" {
+			info.TxIDs = append(info.TxIDs, id)
+		}
+	}
+	return info, nil
+}
+
+// ListRecentBlocks 最近块，新→旧（逐高 GetBlockByHeight；limit 由调用方钳制）。
+func (t *Transport) ListRecentBlocks(ctx context.Context, limit int) ([]chainadapter.BlockInfo, error) {
+	out := make([]chainadapter.BlockInfo, 0)
+	if limit <= 0 {
+		return out, nil
+	}
+	cur, err := t.GetBlockHeight(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for h := cur; h >= 1 && uint64(len(out)) < uint64(limit); h-- {
+		b, err := t.GetBlockByHeight(ctx, h)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *b)
+	}
+	return out, nil
+}
+
+// ListNodes 可选 env CHAINMAKER_NODE_LIST="name=addr,name2=addr2"（静态清单 +
+// 逐地址 TCP 探活，source=static+probe 如实标注——SDK 无全网节点枚举 RPC）；
+// 未配置 → 只返回当前已知节点（配置的 RPC 端点），绝不拼造全网拓扑。
+func (t *Transport) ListNodes(ctx context.Context) ([]chainadapter.NodeInfo, error) {
+	spec := strings.TrimSpace(os.Getenv("CHAINMAKER_NODE_LIST"))
+	if spec == "" {
+		spec = "rpc-endpoint=" + t.rpcURL
+	}
+	return chainadapter.ProbeNodeList(spec, 3*time.Second, "node"), nil
+}
+
+// cmBlockTime 块头时间戳归一（与 QueryTx 同一约定：>1e12 毫秒、否则秒；
+// 0 → 如实留空，绝不猜测）。
+func cmBlockTime(bt int64) string {
+	switch {
+	case bt <= 0:
+		return ""
+	case bt > 1e12:
+		return timex.FormatTime(time.UnixMilli(bt))
+	default:
+		return timex.FormatTime(time.Unix(bt, 0))
+	}
+}
