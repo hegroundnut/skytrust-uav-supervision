@@ -510,3 +510,10 @@ button { font-family: inherit; }
 :root { --d-chain-irita: #15803d; }
 body[data-theme="dark"] { --d-chain-irita: #4ade80; }
 .d-chain-tag[data-chain="irita"] { border-left: 3px solid var(--d-chain-irita); }
+
+/* ---------- Task 7 追加块（仅追加）：p-chain-tag 第四链 irita 补齐 ----------
+   PUI.chainTag（pui.js，冻结）对 irita 输出 .p-chain-tag[data-chain="irita"]（cxTrail
+   四段存证等处），product.css（冻结）只有 chainmaker/fabric/fisco-bcos 三条链色规则，
+   irita 缺失 → 此处按 Task 6 裁决镜像补一条：左边框 3px 链色（--d-chain-irita，
+   浅色 #15803d / 暗色 #4ade80），不改冻结文件、不换链色语义。 */
+.p-chain-tag[data-chain="irita"] { border-left: 3px solid var(--d-chain-irita); }
