@@ -324,3 +324,11 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"`
 ## 实施偏差记录（执行中如实追加）
 
 （空——Task 1 Step 7 record CLI 形态校准结果、Task 5 QueryState 路径取舍、Task 13 切换时间线等落地后补记于此）
+
+### Task 1 Step 7 校准实录（record 模块真实接口形态，Task 5 实现必须以此为准）
+
+1. **CLI 写路径**：`irita tx record create <SM3hex(contentsJSON)> SM3 --uri "skytrust://<contract>/<method>/<business-key>" --meta '<contentsJSON>' --from <key> --chain-id <id> --node tcp://127.0.0.1:26657 --keyring-backend test -y --output json`。子命令是 `create`（非 create-record）；位置参数 = digest + digest-algo；验证仅要求 digest/digest_algo 非空（无算法白名单、uri/meta 无模块级长度限制）。零 fee 可上链（fee 事件属性为 null 实证）。默认 gas 200000 够用。
+2. **record-id 链上派生，客户端不可指定**：`recordID = hash(record字节 || intraTxCounter)`，hex 形态经 `create_record` 事件属性 `record_id` 返回（RPC events：type 明文、attribute key/value 均 base64；record_id 的 value 解码后是 64-hex 字符串）。设计中的"业务键 record-id"改由 `Content.URI` 承载（`skytrust://license_registry/<METHOD>/<key>`），contents JSON 由 `Content.Meta` 承载，digest=SM3(contents JSON)。
+3. **QueryState 读路径**：必须 JSON-RPC POST `/` `{"method":"abci_query","params":{"path":"/store/record/key","data":"01<recordIDhex>","prove":true,"height":"<字符串形态 int64，0=latest>"}}`。GET 形态的 data 参数不做 hex 解码（按 ASCII 透传）不可用；int64 参数必须 JSON 字符串；height=1+prove 被 SDK guard 拒绝（code=18），height=0 会被 baseapp 归一化为 latest 后正常。**响应字段名为 camelCase `proofOps`**（非 proof_ops）；prove=true 返回完整 ics23 双段证明（ics23:iavl 记录包含证明 + ics23:simple 多 store 提交证明）——设计承诺的 Merkle 证明 bonus 真实可用。value = base64(protobuf Record{tx_hash, contents[]{digest,digest_algo,uri,meta}, creator})。
+4. **业务键无法直接反查**（record 模块无二级索引；QueryState(contract,业务key) 无法经链上查询实现）——但 **QueryState 在全代码库零业务调用点**（grep 证据：仅接口定义+各 adapter 透传，gateway/uavbusiness/regulatory 均不调用）。Task 5 的 irita QueryState 实现：key 接受 record-id(64-hex) 或 txhash（后者经 /tx?hash 提取 create_record 事件再查）；业务键形态 → 明示错误「irita record 模块不支持业务键反查」，绝不静默。§12 登记偏差。
+5. **bank send 收件人必须 bech32 地址**（key 名会报 `decoding bech32 failed`）；创世账户余额 5000 IRITA/户 → skytrust-biz 实注资 1000 IRITA（txhash 73E80A03910352B3CAE48CEED28EABF8C35B33F2CA55BC37882D1D6BCBCF2FDC）。
