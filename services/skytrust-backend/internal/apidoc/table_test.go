@@ -26,15 +26,15 @@ func bodyRefs(t *testing.T, body any) []string {
 
 // TestEndpointTableComplete 端点表完整性 + 占位符先行定义校验。
 func TestEndpointTableComplete(t *testing.T) {
-	if len(Endpoints) != 73 {
-		t.Fatalf("endpoints = %d, want 73", len(Endpoints))
+	if len(Endpoints) != 78 {
+		t.Fatalf("endpoints = %d, want 78", len(Endpoints))
 	}
 	seen := map[string]bool{}
 	defined := map[string]bool{"now-1h": true, "now+1h": true}
 	ignoreBody := map[string]bool{
 		"/api/health/ping": true, "/api/health/check": true, "/api/chain/status": true,
 		"/api/demo/init": true, "/api/demo/reset": true, "/api/topology/get": true,
-		"/api/dashboard/summary": true,
+		"/api/dashboard/summary": true, "/api/explorer/overview": true,
 	}
 	probe0 := 0
 	for i, ep := range Endpoints {
@@ -76,8 +76,8 @@ func TestEndpointTableComplete(t *testing.T) {
 			}
 		}
 	}
-	if probe0 != 7 {
-		t.Fatalf("ProbeExpect=0 rows = %d, want 7 (body-ignoring handlers)", probe0)
+	if probe0 != 8 {
+		t.Fatalf("ProbeExpect=0 rows = %d, want 8 (body-ignoring handlers)", probe0)
 	}
 	if last := Endpoints[len(Endpoints)-1].Path; last != "/api/demo/reset" {
 		t.Fatalf("last row = %s, want /api/demo/reset (story cleanup)", last)

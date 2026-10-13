@@ -64,7 +64,7 @@ cd services/skytrust-backend && go run ./cmd/server
   }
   ```
 
-**共 73 个端点**（分组：health×2 / chain×1 / crypto×4 / demo×2 / audit×2 / crosschain×3 / masterdata×6 / uom×6 / uav×5 / mission×4 / review×2 / conflict×2 / pass×5 / offchain×12 / telemetry×3 / regulatory×10 / experiment×4）：
+**共 78 个端点**（分组：health×2 / chain×1 / crypto×4 / demo×2 / audit×2 / crosschain×3 / explorer×5 / masterdata×6 / uom×6 / uav×5 / mission×4 / review×2 / conflict×2 / pass×5 / offchain×12 / telemetry×3 / regulatory×10 / experiment×4）：
 
 | 分组 | 端点 | 说明 |
 | --- | --- | --- |
@@ -82,6 +82,11 @@ cd services/skytrust-backend && go run ./cmd/server
 | crosschain | `POST /api/crosschain/send` | 跨链发送（13 步协议；signature 空则按 sm9_identity 平台代签） |
 | crosschain | `POST /api/crosschain/query` | 按 cross_tx_id 查跨链留痕（四段 TxID / 验证结果 / 错误码） |
 | crosschain | `POST /api/crosschain/list` | 跨链记录分页列表（status / message_type 过滤） |
+| explorer | `POST /api/explorer/overview` | 四链总览（chain/name/mode/status/consensus/node_count/block_height；mode 按 Resettable 判定 sim/real；能力缺失链如实 0 值） |
+| explorer | `POST /api/explorer/nodes` | 节点列表（source 如实标注 rpc/static+probe/sim；能力缺失→2005） |
+| explorer | `POST /api/explorer/blocks` | 最近块列表（新→旧；limit≤0→20、>200→200；能力缺失→2005） |
+| explorer | `POST /api/explorer/block` | 按高度查块详情（越界→6002；能力缺失→2005） |
+| explorer | `POST /api/explorer/tx` | 按 TxID 链上直查（走既有 QueryTx，不依赖 BlockQuerier；查无→6002） |
 | masterdata | `POST /api/manufacturer/register` | 注册厂商 |
 | masterdata | `POST /api/manufacturer/list` | 厂商列表 |
 | masterdata | `POST /api/operator/register` | 注册运营方 |
@@ -155,6 +160,7 @@ cd services/skytrust-backend && go run ./cmd/server
 | 2002 | TargetChain | 目标链写入失败 |
 | 2003 | RegVerify | 监管校验失败（声明路由与固定路由不一致） |
 | 2004 | IdempotentDup | 幂等命中（重复提交；`data` 返回已有记录） |
+| 2005 | ChainUnsupportedFeature | 链 RPC 能力缺失（explorer 块/节点查询不支持——如实降级「该链 RPC 不支持…」，绝不拼造数据） |
 | 3001 | RouteConflict | 航路不存在 / 走廊状态不可规划 |
 | 3002 | PassInvalid | 许可状态非法（吊销 / 重复签发等） |
 | 3003 | ReviewRule | 审核规则 / 申请状态非法 |
@@ -439,8 +445,8 @@ services/skytrust-backend/
 ├── cmd/
 │   └── server/            # 服务入口 main.go（go run ./cmd/server）
 ├── internal/
-│   ├── api/               # 路由、中间件、统一响应/错误码别名、73 端点 handler、api.Deps
-│   ├── apidoc/            # Apifox 文档渲染：Schema 推断 / OpenAPI 3.0.3 构建 / 场景文档 / 确定性渲染 + 端点表（73 行）/ 场景表（24 个）
+│   ├── api/               # 路由、中间件、统一响应/错误码别名、78 端点 handler、api.Deps
+│   ├── apidoc/            # Apifox 文档渲染：Schema 推断 / OpenAPI 3.0.3 构建 / 场景文档 / 确定性渲染 + 端点表（78 行）/ 场景表（24 个）
 │   ├── audit/             # 审计服务（query / export CSV）
 │   ├── chainadapter/      # 链适配接口（ChainAdapter / ChainStatusProvider）+ ChainTransport 迁移缝
 │   │   ├── chainmaker/    # ChainMaker 真实链适配器（合约/方法白名单）
@@ -475,7 +481,7 @@ services/skytrust-backend/
 
 ## Apifox 文档
 
-- `docs/apifox/skytrust-backend.openapi.json`（仓库根）：OpenAPI 3.0.3，73 个全 POST 端点，含录制请求样例与 success/business_error 双响应样例（`x-sample-source: recorded|static` 标注来源）——Apifox「导入数据 → OpenAPI/Swagger」直接导入。
+- `docs/apifox/skytrust-backend.openapi.json`（仓库根）：OpenAPI 3.0.3，78 个全 POST 端点，含录制请求样例与 success/business_error 双响应样例（`x-sample-source: recorded|static` 标注来源）——Apifox「导入数据 → OpenAPI/Swagger」直接导入。
 - `docs/apifox/skytrust-test-scenarios.json`：24 个验收/演示场景（TC1-01..TC3-08），每步含 body 与预期 code；`${ref}` 为运行时捕获引用（前序步骤 capture），`${now-1h}`/`${now+1h}` 为动态时间占位符（timex 格式）。
 - 重新生成（在 `services/skytrust-backend` 下执行；产物含时间戳/trace_id，重生成字节变化属正常快照语义）：
 
@@ -483,7 +489,7 @@ services/skytrust-backend/
   APIFOX_GEN=1 go test ./tests/ -run 'TestApifox' -count=1
   ```
 
-- 回放即文档测试：`TestApifoxReplayScenarios`（24 场景单服务器顺序回放）与 `TestApifoxEndpointSamples`（73 端点故事序样例 + `[]` 探针）断言每步信封 code——文档样例与真实行为永久同步。
+- 回放即文档测试：`TestApifoxReplayScenarios`（24 场景单服务器顺序回放）与 `TestApifoxEndpointSamples`（78 端点故事序样例 + `[]` 探针）断言每步信封 code——文档样例与真实行为永久同步。
 
 ## UOM 登记与运行识别域
 

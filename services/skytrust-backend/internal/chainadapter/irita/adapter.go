@@ -40,4 +40,9 @@ func (a *Adapter) QueryState(ctx context.Context, contract, key string) ([]byte,
 	return a.t.QueryState(ctx, contract, key)
 }
 
+// UnwrapTransport 暴露底层真实传输（TransportUnwrapper 能力探测缝）：
+// BlockQuerier / Resettable 断言作用于真实后端，薄委托壳不吞掉也不冒充能力。
+func (a *Adapter) UnwrapTransport() chainadapter.ChainTransport { return a.t }
+
 var _ chainadapter.ChainAdapter = (*Adapter)(nil)
+var _ chainadapter.TransportUnwrapper = (*Adapter)(nil)

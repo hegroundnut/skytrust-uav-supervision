@@ -15,6 +15,8 @@ const (
 	ErrTargetChain    = errcode.TargetChain
 	ErrRegVerify      = errcode.RegVerify
 	ErrIdempotentDup  = errcode.IdempotentDup
+	// ErrChainUnsupportedFeature 链 RPC 能力缺失（explorer 如实降级 2005；计划原定 5003 与 AuthScope 冲突）。
+	ErrChainUnsupportedFeature = errcode.ChainUnsupportedFeature
 
 	ErrRouteConflict = errcode.RouteConflict
 	ErrPassInvalid   = errcode.PassInvalid

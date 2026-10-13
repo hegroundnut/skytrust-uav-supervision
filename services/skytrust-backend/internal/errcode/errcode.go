@@ -17,6 +17,9 @@ const (
 	TargetChain    = 2002
 	RegVerify      = 2003
 	IdempotentDup  = 2004
+	// ChainUnsupportedFeature 链 RPC 能力缺失（explorer 块/节点查询不支持——如实降级，绝不拼造数据）。
+	// 计划原定 5003 与既有 AuthScope 冲突（前端 explain.js 全局码表要求语义唯一）→ 落位 2xxx 链基础设施段。
+	ChainUnsupportedFeature = 2005
 
 	RouteConflict = 3001
 	PassInvalid   = 3002
