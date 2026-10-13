@@ -502,3 +502,11 @@ button { font-family: inherit; }
 .d-cap-mini-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .d-cap-mini-txt b { font-size: 13px; color: var(--d-ink); }
 .d-cap-mini-txt i { font-style: normal; font-size: 11px; color: var(--d-ink-3); }
+
+/* ---------- Task 6 追加块（仅追加）：第四链 irita 证照链 ----------
+   链色语义固定永不互换：ChainMaker 紫 / Fabric 蓝 / FISCO BCOS 青 / IRITA 证照链绿。
+   浅色底 #15803d，暗色底提亮 #4ade80（theme-ct.css 深色段同值兜底）。
+   tag 规则仿 product.css .p-chain-tag[data-chain] 形态（左边框 3px 链色），d- 类名。 */
+:root { --d-chain-irita: #15803d; }
+body[data-theme="dark"] { --d-chain-irita: #4ade80; }
+.d-chain-tag[data-chain="irita"] { border-left: 3px solid var(--d-chain-irita); }

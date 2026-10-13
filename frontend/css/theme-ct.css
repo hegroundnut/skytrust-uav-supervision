@@ -1,0 +1,54 @@
+/* theme-ct.css — 证照中心端令牌：深绿黑证照驾驶舱（Task 6，第四链 irita 证照链主题）。
+   license-center.html 的 <body data-theme="dark"> 为固定属性（无切换）。
+   --p-* 深色覆盖必须挂在 body[data-theme="dark"] 选择器上：
+   product.css 的暗色块即此选择器（同特异性、本文件后加载 → 覆盖生效）；
+   --d-* 无竞争者，:root 即可。告警红/黄语义与 theme-rg 一致、不用霓虹青；
+   链色语义固定永不互换（紫/蓝/青照抄 theme-rg 提亮值，irita 绿见 --d-chain-irita）。 */
+:root {
+  --d-bg: #08120e;
+  --d-panel: #0f1f18;
+  --d-panel-2: #0b1812;
+  --d-line: #1d3a2b;
+  --d-line-strong: #2a5540;
+  --d-ink: #ddf0e5;
+  --d-ink-2: #a2c2ae;
+  --d-ink-3: #71917f;
+  --d-brand: #34d399;
+  --d-brand-ink: #06281c;
+  --d-brand-soft: #123527;
+  --d-good: #3f9e5f;     --d-good-soft: #12291c;
+  --d-warning: #d99a2b;  --d-warning-soft: #2c2113;
+  --d-critical: #e5484d; --d-critical-soft: #31161a;
+  --d-serious: #d97a3c;  --d-serious-soft: #2e1c11;
+  --d-info: #5b8def;     --d-info-soft: #13233f;
+  --d-hero-grad: linear-gradient(135deg, #103524, #1a6b46);
+  --d-side-bg: #060e0a;
+  --d-side-ink: #93b3a0;
+  --d-side-line: rgba(255, 255, 255, .1);
+  --d-map-grid: #10241a;
+  --d-map-grid-line: rgba(221, 240, 229, .06);
+  --d-seal-ink: #e07a6a;
+  --d-shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 4px 14px rgba(0, 0, 0, .3);
+}
+body[data-theme="dark"] {
+  /* pui 组件深绿黑化（覆盖 product.css 暗色块的靛蓝系） */
+  --p-bg: #08120e;
+  --p-panel: #0f1f18;
+  --p-panel-2: #0b1812;
+  --p-line: #1d3a2b;
+  --p-line-strong: #2a5540;
+  --p-ink: #ddf0e5;
+  --p-ink-2: #a2c2ae;
+  --p-ink-3: #71917f;
+  --p-brand: #34d399;
+  --p-brand-ink: #06281c;
+  --p-brand-soft: #123527;
+  --p-info: #5b8def;
+  --p-info-soft: #13233f;
+  /* 链色暗底提亮一档（保持紫/蓝/青语义，不用霓虹青；值照抄 theme-rg.css） */
+  --p-chain-chainmaker: #9d7bef;
+  --p-chain-fabric: #5b8def;
+  --p-chain-fisco: #2ba3c2;
+  /* 第四链 irita 证照链：浅色 #15803d（drone.css :root）→ 暗底提亮 #4ade80 */
+  --d-chain-irita: #4ade80;
+}

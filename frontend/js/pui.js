@@ -30,7 +30,7 @@
     const m = STATUS_MAP[s] || ['', '·'];
     return h('span', { class: 'p-badge p-tone-' + (m[0] || 'neutral'), title: s }, m[1] + ' ' + s);
   }
-  const CHAIN_NAME = { chainmaker: 'ChainMaker 监管链', fabric: 'Fabric 运营链', 'fisco-bcos': 'FISCO BCOS 管理链' };
+  const CHAIN_NAME = { chainmaker: 'ChainMaker 监管链', fabric: 'Fabric 运营链', 'fisco-bcos': 'FISCO BCOS 管理链', irita: 'IRITA 证照链' };
   function chainTag(chain) {
     const c = String(chain || '').toLowerCase();
     const key = c === 'fisco' ? 'fisco-bcos' : c;

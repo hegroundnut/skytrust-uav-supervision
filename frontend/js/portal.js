@@ -8,11 +8,13 @@
   'use strict';
   var h = window.PUI.h;
 
-  /* 三链固定次序与 app.js / CLAUDE.md 一致：ChainMaker 监管 / Fabric 运营 / FISCO BCOS 管理 */
+  /* 链固定次序与 app.js / CLAUDE.md 一致：ChainMaker 监管 / Fabric 运营 / FISCO BCOS 管理；
+     末位 irita 证照链为 Task 6 追加（四门户壳心跳灯 4 盏；index.html 旧壳仍 3 盏，app.js 冻结不动） */
   var CHAINS = [
     { key: 'chainmaker', label: '监管链' },
     { key: 'fabric', label: '运营链' },
-    { key: 'fisco-bcos', label: '管理链' }
+    { key: 'fisco-bcos', label: '管理链' },
+    { key: 'irita', label: 'IRITA 证照链' }
   ];
   var KEYGUIDE_FLAG = 'skytrust-keyguide-shown';   /* sessionStorage：引导每会话只弹一次 */
 
