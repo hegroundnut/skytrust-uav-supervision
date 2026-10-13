@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
-# verify-three-portals-story.sh —— 三端验收故事 API 层一键实跑（计划 B Task 15）
+# verify-three-portals-story.sh —— 四端验收故事 API 层一键实跑（原名保留；计划 B Task 15
+# 三端版 → 四链计划 Task 11 四端化：+证照中心端 license-center.html / 四链链灯 / CXV 浏览器 / WTOPO）
 #
 # 干什么：在**隔离仿真环境**里起一个专属后端（:18080，DB/SM9 密钥全在 /tmp）+ 前端代理
 # （:18090），按 docs/demo-script.md 第 0-8 章的 API 等价操作逐章 curl 断言（含全部
-# 设计内拒绝回归：3004/4001/5001/5002/4002/1004），附带前端产物存在性门 + 全量
-# node --check 语法门 + 三端 HTML 经代理可达性检查，最后打印 DEFERRED-HUMAN 人工清单。
+# 设计内拒绝回归：3004/4001/5001/5002/4002/1004/3002），外加四链计划新增三章：
+#   · 第 3b 章 证照中心端签发（issuer=REGISTRY-ADMIN + 源链 TxID 前缀 IRITA- + 3002 防重发）
+#   · 第 5b 章 虫洞拓扑数据面（WTOPO 坐标红线 a/b/c——以计划「Task 9 校准实录」为准：
+#     种子 NODE-X/Y 已回填真实模拟经纬度，两层皆现属红线正确行为；分裂机制以 probe 实证）
+#   · 第 9 章 四端区块链浏览器数据面（explorer 四链总览/块浏览/链上直查 + 可构造负路径 6002；
+#     能力降级码 = 2005，sim 四链全实现 BlockQuerier 不可构造——实弹属真链验收窗 Task 14）
+# 附带前端产物存在性门（四端 + CXV/WTOPO 件）+ 全量 node --check 语法门 + 四端 HTML 经代理
+# 可达性检查，最后打印 DEFERRED-HUMAN 人工清单（含【证照中心端】【四端浏览器】【虫洞拓扑】）。
 #
 # 生产红线（Global Constraints #11）：本脚本硬编码拒绝 :8080/:8090；绝不读写
 # services/skytrust-backend/data/ 生产 DB 与密钥；绝不向生产实例发任何请求。
@@ -94,13 +101,16 @@ PORT="$FRONT_PORT" BACKEND="$BACKEND" python3 "$ROOT/scripts/serve-frontend.py" 
 FRONT_PID=$!
 sleep 2
 
-chapter "前端产物门：文件存在性 + node --check + 三端 HTML 经代理可达"
+chapter "前端产物门：文件存在性 + node --check + 四端 HTML 经代理可达 + CXV/WTOPO 挂载"
 MISS=0
 for f in \
-  frontend/operator.html frontend/authority.html frontend/regulator.html frontend/index.html \
+  frontend/operator.html frontend/authority.html frontend/regulator.html \
+  frontend/license-center.html frontend/index.html \
   frontend/css/drone.css frontend/css/theme-op.css frontend/css/theme-au.css frontend/css/theme-rg.css \
+  frontend/css/theme-ct.css \
   frontend/js/api.js frontend/js/store.js frontend/js/portal.js frontend/js/map.js \
-  frontend/js/shell-op.js frontend/js/shell-au.js frontend/js/shell-rg.js \
+  frontend/js/shell-op.js frontend/js/shell-au.js frontend/js/shell-rg.js frontend/js/shell-ct.js \
+  frontend/js/chainview.js frontend/js/wormhole-topo.js \
   frontend/js/data/geo.js frontend/js/data/explain.js frontend/js/data/endpoints.js \
   frontend/vendor/leaflet/leaflet.js frontend/vendor/leaflet/leaflet.css frontend/vendor/qrcode/qrcode.js \
   frontend/js/pages/op/home.js frontend/js/pages/op/realname.js frontend/js/pages/op/aircraft.js \
@@ -111,30 +121,44 @@ for f in \
   frontend/js/pages/rg/cockpit.js frontend/js/pages/rg/alerts.js frontend/js/pages/rg/trace.js \
   frontend/js/pages/rg/authz.js frontend/js/pages/rg/inspect.js frontend/js/pages/rg/audit.js \
   frontend/js/pages/rg/crypto.js \
+  frontend/js/pages/ct/home.js frontend/js/pages/ct/issue.js frontend/js/pages/ct/ledger.js \
+  frontend/js/pages/ct/verify.js frontend/js/pages/ct/revoke.js \
+  frontend/js/pages/op/chainview.js frontend/js/pages/au/chainview.js \
+  frontend/js/pages/rg/chainview.js frontend/js/pages/ct/chainview.js \
+  frontend/js/pages/chainview.js \
   docs/demo-script.md ; do
   [ -f "$ROOT/$f" ] || { bad "缺文件 $f"; MISS=1; }
 done
-[ "$MISS" = "0" ] && ok "三端全部产物文件存在（4 HTML + 4 CSS + 共享底座 + vendor + 20 页 + demo-script）"
+[ "$MISS" = "0" ] && ok "四端全部产物文件存在（5 HTML + 5 CSS + 共享底座含 shell-ct/CXV/WTOPO + vendor + 25 业务页 + 5 浏览器挂载页 + demo-script）"
 JSFAIL=0
 while IFS= read -r f; do
   node --check "$f" >/dev/null 2>&1 || { bad "node --check $f"; JSFAIL=1; }
 done < <(find "$ROOT/frontend/js" -name '*.js' -type f | sort)
 [ "$JSFAIL" = "0" ] && ok "frontend/js 全部 JS node --check 通过"
-for p in operator authority regulator index; do
+for p in operator authority regulator license-center index; do
   hc=$(curl -sS -m 5 -o "$SIM_DIR/$p.html" -w '%{http_code}' "$FRONTEND/$p.html" 2>/dev/null)
   assert_eq "$hc" "200" "GET :$FRONT_PORT/$p.html"
 done
 grep -q 'shell-op.js' "$SIM_DIR/operator.html" && ok "operator.html 引用 shell-op.js" || bad "operator.html 未引用 shell-op.js"
 grep -q 'shell-au.js' "$SIM_DIR/authority.html" && ok "authority.html 引用 shell-au.js" || bad "authority.html 未引用 shell-au.js"
 grep -q 'shell-rg.js' "$SIM_DIR/regulator.html" && ok "regulator.html 引用 shell-rg.js" || bad "regulator.html 未引用 shell-rg.js"
+grep -q 'shell-ct.js' "$SIM_DIR/license-center.html" && ok "license-center.html 引用 shell-ct.js" || bad "license-center.html 未引用 shell-ct.js"
+for p in operator authority regulator license-center index; do
+  grep -q 'js/chainview.js' "$SIM_DIR/$p.html" && ok "$p.html 挂载 CXV 浏览器共享模块（js/chainview.js）" || bad "$p.html 未挂载 js/chainview.js"
+done
+grep -q 'wormhole-topo.js' "$SIM_DIR/authority.html" && ok "authority.html 挂载 WTOPO（js/wormhole-topo.js）" || bad "authority.html 未挂载 wormhole-topo.js"
+grep -q '服务端仅支持状态/类型过滤，其余为最近 200 条内客户端筛选' "$ROOT/frontend/js/chainview.js" \
+  && ok "CXV 固定小字逐字存在「…最近 200 条内客户端筛选」（Review Focus 5——chainview.js SMALL_PRINT）" \
+  || bad "chainview.js 未找到 CXV 固定小字「最近 200 条」"
 api_via_proxy=$(curl -sS -m 5 -X POST "$FRONTEND/api/health/ping" -H 'Content-Type: application/json' -d '{}' 2>/dev/null | jq -r '.code // "ERR"')
 assert_eq "$api_via_proxy" "0" "代理链路 :$FRONT_PORT/api/* → :$BACK_PORT"
 
-chapter "第 0 章 · 开场整备（demo/reset + demo/init + 三链 + 种子计数）"
+chapter "第 0 章 · 开场整备（demo/reset + demo/init + 四链 + 种子计数）"
 api demo/reset '{}'; expect_code 0 "demo/reset"
 api demo/init '{}';  expect_code 0 "demo/init"
 api chain/status '{}'; expect_code 0 "chain/status"
-for k in chainmaker fabric fisco-bcos; do
+assert_eq "$(jqr '.data.count')" "4" "接入链数（四链形态：监管 ChainMaker + 运营 Fabric + 管理 FISCO BCOS + 证照 IRITA）"
+for k in chainmaker fabric fisco-bcos irita; do
   assert_eq "$(jqr ".data.chains[\"$k\"]")" "ONLINE" "链 $k 状态"
 done
 api manufacturer/list '{"page":1,"page_size":200}'; assert_eq "$(jqr '.data.total')" "3" "种子厂商数"
@@ -225,6 +249,38 @@ api pass/verify "{\"pass_id\":\"$PASS_MED\"}"
 expect_code 0 "pass/verify（铁律：存在的许可恒 code=0）"
 assert_eq "$(jqr '.data.valid')" "true" "签发后验证绿灯"
 
+chapter "第 3b 章 · 证照中心端签发（四链剧情扩展——REGISTRY-ADMIN 现行身份 + IRITA 源链 + 3002 防重发）"
+# 证照中心端（license-center.html，Tasks 6/7/10）现行签发流。B 任务本章已 APPROVED（种子主数据
+# Operator-B/UAV-B-001=VERIFIED），ct 端签发方硬编码 REGISTRY-ADMIN（只读展示，Task 7 先例）；
+# SM9 签名权威 = passSignerUID() 恒 SM9-ID-REGISTRY-ADMIN（pass.go:24——FlightPass 无 issuer 字段，
+# issuer 仅记审计/payload 归因；FISCO-ADMIN 双身份仅用于存量许可回退验签）。PASS-2026-002 为
+# 脚本本地值（demo-script 四端版速查表属 Task 15，尚无该固定值）。
+PASS_CT=PASS-2026-002
+api pass/issue "{\"mission_id\":\"$BMIS\",\"issuer\":\"REGISTRY-ADMIN\",\"pass_id\":\"$PASS_CT\",\"valid_from\":\"$TM1\",\"valid_to\":\"$T4\"}"
+expect_code 0 "pass/issue 证照中心端签发（issuer=REGISTRY-ADMIN，B 任务 APPROVED）"
+assert_eq "$(jqr '.data.pass.status')" "VALID" "CT 许可状态 VALID"
+assert_eq "$(jqr '.data.crosschain.status')" "SUCCESS" "FLIGHT_PASS 跨链（证照链→监管链中继→运营链）"
+assert_eq "$(jqr '.data.crosschain.source_chain')" "irita" "源链 = irita（Task 3 迁移后签发源链，不再 fisco-bcos）"
+assert_eq "$(jqr '.data.crosschain.final_target_chain')" "fabric" "最终目标链 = fabric"
+CTSRC=$(jqr '.data.crosschain.source_chain_tx_id // empty')
+case "$CTSRC" in IRITA-*) ok "签发回执源链 TxID 前缀 IRITA-（$CTSRC）";; *) bad "签发回执源链 TxID 前缀异常：[$CTSRC]（期望 IRITA-）";; esac
+CTTGT=$(jqr '.data.crosschain.target_chain_tx_id // empty')
+assert_ne "$CTTGT" "" "目标链 TxID 非空（第 9 章 explorer/tx 链上直查素材）"
+assert_eq "$(jqr '.data.crosschain.sm9_identity')" "SM9-ID-REGISTRY-ADMIN" "跨链 SM9 签名身份 = 现行签发方"
+api pass/issue "{\"mission_id\":\"$BMIS\",\"issuer\":\"REGISTRY-ADMIN\",\"pass_id\":\"$PASS_CT\",\"valid_from\":\"$TM1\",\"valid_to\":\"$T4\"}"
+expect_code 3002 "同 pass_id 重复签发（设计内拒绝·VALID 不可重复签发，pass.go:135）"
+api pass/verify "{\"pass_id\":\"$PASS_CT\"}"
+expect_code 0 "pass/verify CT 许可（铁律：存在的许可恒 code=0）"
+assert_eq "$(jqr '.data.valid')" "true" "CT 许可验证绿灯 valid=true"
+api pass/list '{"status":"VALID","page":1,"page_size":200}'
+expect_code 0 "pass/list VALID（ct 台账数据源）"
+assert_eq "$(jqr '.data.total')" "2" "台账 VALID 总数（PASS-2026-001 医疗 + PASS-2026-002 CT）"
+api crosschain/list '{"message_type":"FLIGHT_PASS","page":1,"page_size":200}'
+expect_code 0 "crosschain/list FLIGHT_PASS"
+assert_eq "$(jqr "[.data.records[] | select(.business_id==\"$PASS_CT\")] | length")" "1" "跨链台账命中 CT 许可留痕（business_id=$PASS_CT）"
+CTL=$(jqr "[.data.records[] | select(.business_id==\"$PASS_CT\") | .source_chain_tx_id] | first")
+case "$CTL" in IRITA-*) ok "crosschain/list CT 留痕 source_chain_tx_id 前缀 IRITA-（$CTL）";; *) bad "crosschain/list CT 留痕源链 TxID 前缀异常：[$CTL]（期望 IRITA-）";; esac
+
 chapter "第 4 章 · 起飞（接入点注册 + 起飞报备 + SIM 遥测自动驾驶）"
 api node/register "{\"node_id\":\"$UAV_MED-NODE\",\"node_type\":\"UAV\",\"position\":{\"X\":0,\"Y\":0},\"neighbors\":[\"N1\"],\"lat\":30.510,\"lon\":114.310}"
 expect_code 0 "node/register $UAV_MED-NODE（session/open 前置）"
@@ -289,6 +345,42 @@ done
 assert_eq "$TL2" "1" "ACTIVE 回归后遥测恢复增长（无人机复飞）"
 api wormhole/toggle '{"enabled":true,"operator":"SecOps"}'
 expect_code 4001 "隔离后重开虫洞（设计内拒绝·附录 B）"
+
+chapter "第 5b 章 · 虫洞拓扑数据面（WTOPO 坐标红线——按 plan「Task 9 校准实录」a/b/c 三断言）"
+# Task 9 校准实录（plan commit 3c3bccc，BINDING）：种子 NODE-X/Y 已回填真实模拟经纬度
+# （seed.go:120-121——X 30.556/114.356、Y 30.640/114.440）→ 合法同时出现在地理层（Leaflet）
+# 与 WTOPO 抽象层。本脚本**不断言** NODE-X/Y ∉ Leaflet 输入（旧前提已过时）；分裂机制改以
+# probe 实证：有 position、无 lat/lon → ∈WTOPO 布点集 ∧ ∉Leaflet 可绘集（lat/lon 双零 = 未设
+# 语义，GEO.nodeCoord 判 null——js/data/geo.js 唯一裁决）。无 position 节点被 API 数据面门拒绝
+# （binding:"required" → 6002），在 sim 不可合法构造 →「未布点」侧清单属防御性诚实规则（Task 9
+# 合成 fixture 单测已覆盖 posOf→null→unplaced），其 DOM 目检归 DEFERRED-HUMAN【虫洞拓扑】。
+api topology/get '{}'
+expect_code 0 "topology/get（隔离态下仍全量如实——攻击者在数据面可见）"
+NXP=$(jqr '.data.nodes[] | select(.node_id=="NODE-X") | .position // empty')
+assert_ne "$NXP" "" "(a) NODE-X ∈ topology 且 position 非空（有 position 必入 WTOPO 布点集）"
+NYP=$(jqr '.data.nodes[] | select(.node_id=="NODE-Y") | .position // empty')
+assert_ne "$NYP" "" "(a) NODE-Y ∈ topology 且 position 非空"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-X") | .lat')" "30.556" "(a) NODE-X lat=30.556（Task 9 校准后前提：真实模拟坐标——两层皆现属红线正确行为）"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-X") | .lon')" "114.356" "(a) NODE-X lon=114.356"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-Y") | .lat')" "30.64" "(a) NODE-Y lat=30.64（种子值 30.640 之 JSON 最短形态）"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-Y") | .lon')" "114.44" "(a) NODE-Y lon=114.44（种子值 114.440）"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-X") | .status')" "ISOLATED" "(a) NODE-X 隔离后状态如实（第 5 章 ISOLATE 落地——WTOPO 红虚线描边+⛔ 数据源）"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-Y") | .status')" "ISOLATED" "(a) NODE-Y 隔离后状态如实"
+api node/register '{"node_id":"NODE-PROBE-T11","node_type":"EDGE","position":{"X":62,"Y":8},"neighbors":[]}'
+expect_code 0 "(b) node/register 探针（仅 position、无 lat/lon——Task 9 L3 分裂机制先例；sm9_identity 留空自动派生）"
+api topology/get '{}'
+expect_code 0 "topology/get（探针注册后）"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-PROBE-T11") | .position // empty')" '{"X":62,"Y":8}' "(b) 探针 position 回显（API 注册大写键——WTOPO posOf x/X 双兼容）"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-PROBE-T11") | .lat')" "0" "(b) 探针 lat=0（未设语义——GEO.nodeCoord 判 null，永不落 Leaflet）"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-PROBE-T11") | .lon')" "0" "(b) 探针 lon=0（∈WTOPO ∧ ∉Leaflet——分裂实证数据面）"
+assert_eq "$(jqr '.data.edges | length')" "6" "(b) 探针 neighbors=[] → 边仍 6（隔离后 X/Y 退出 ONLINE 边集 9→6；探针零扰动）"
+api node/register '{"node_id":"NODE-NOPOS-T11","node_type":"EDGE","neighbors":[]}'
+expect_code 6002 "(c) node/register 缺 position → 6002（binding:\"required\" 数据面门——无 position 节点进不了系统）"
+api topology/get '{}'
+assert_eq "$(jqr '[.data.nodes[] | select(.node_id=="NODE-NOPOS-T11")] | length')" "0" "(c) 被拒节点未入拓扑（诚实缺席——绝不编造默认布点）"
+assert_eq "$(jqr '[.data.nodes[] | select((.position // "")=="")] | length')" "0" "(c) 拓扑内零无-position 节点（本场 sim 数据面「未布点」清单恒空——DOM 侧清单目检 = DEFERRED-HUMAN）"
+api node/list '{"page":1,"page_size":200}'
+assert_eq "$(jqr '.data.total')" "10" "节点台账总数（种子 8 + 第 4 章接入点 + 探针 = 10；被拒注册不计入）"
 
 chapter "第 6 章 · 追踪（告警登记 + 全链可溯 + 5001 断链红线 + 状态机推进）"
 api event/list '{"action":"DETECT","page":1,"page_size":10}'
@@ -388,11 +480,62 @@ assert_ge "$(jqr '.data.wormhole_events.detect')" "1" "驾驶舱·虫洞检出"
 assert_ge "$(jqr '.data.sessions.closed')" "1" "驾驶舱·关闭会话"
 assert_ge "$(jqr '.data.authorizations.authorized')" "1" "驾驶舱·已授权"
 
-chapter "DEFERRED-HUMAN 汇总清单（Tasks 5-14 浏览器目检——API 断言不覆盖，人工按项核对）"
+chapter "第 9 章 · 四端区块链浏览器数据面（CXV/explorer——四链总览 + 块浏览 + 链上直查 + 负路径）"
+# 能力降级码 = 2005 ChainUnsupportedFeature（Task 4 校准裁决：5003 已被 AuthScope 占用，全局
+# 码表语义唯一，绝不复用）。隔离 sim 四链全部实现 BlockQuerier（sim/blockquery.go——数据全来自
+# SubmitTx 落下的真实块记录）→ 2005 对 sim **不可构造，绝不伪造触发**；实弹（FISCO v3.16
+# getBlockByNumber 怪癖等）归真链验收窗（Task 14）。本章负路径 = 可构造者：未知链 → 6002、
+# height=0/越界 → 6002、不存在 TxID → 6002（一律如实拒绝，绝不拼造块/交易/显示名）。
+api explorer/overview '{}'
+expect_code 0 "explorer/overview"
+assert_eq "$(jqr '.data.count')" "4" "四链总览 count=4"
+assert_eq "$(jqr '[.data.chains[] | select(.status=="ONLINE")] | length')" "4" "四链 ONLINE（overview 与 chain/status 链灯同源）"
+assert_eq "$(jqr '[.data.chains[] | select(.mode=="sim")] | length')" "4" "四链 mode=sim（隔离环境如实标注——real 只属真链部署）"
+assert_eq "$(jqr '[.data.chains[] | select(.node_count==1)] | length')" "4" "sim 单节点如实计数（绝不冒充 4 节点集群）"
+assert_eq "$(jqr '[.data.chains[] | select(.block_height>=1)] | length')" "4" "四链块高 ≥1（本场剧情真实写入——sim 一笔交易一个块）"
+# 固定显示值逐字断言（explorer_handler.go:27-39 设计钉死——白名单链逐字，未知链不猜测显示名）
+assert_eq "$(jqr '.data.chains[] | select(.chain=="chainmaker") | .name')" "ChainMaker 监管链" "chainmaker 显示名逐字"
+assert_eq "$(jqr '.data.chains[] | select(.chain=="chainmaker") | .consensus')" "TBFT（4 节点）" "chainmaker 共识串逐字"
+assert_eq "$(jqr '.data.chains[] | select(.chain=="fabric") | .name')" "Fabric 运营链" "fabric 显示名逐字"
+assert_eq "$(jqr '.data.chains[] | select(.chain=="fabric") | .consensus')" "SMARTBFT（4 orderer）" "fabric 共识串逐字"
+assert_eq "$(jqr '.data.chains[] | select(.chain=="fisco-bcos") | .name')" "FISCO BCOS 管理链" "fisco-bcos 显示名逐字"
+assert_eq "$(jqr '.data.chains[] | select(.chain=="fisco-bcos") | .consensus')" "PBFT（4 sealer）" "fisco-bcos 共识串逐字"
+assert_eq "$(jqr '.data.chains[] | select(.chain=="irita") | .name')" "IRITA 证照链" "irita 显示名逐字"
+assert_eq "$(jqr '.data.chains[] | select(.chain=="irita") | .consensus')" "Tendermint BFT（4 验证人）" "irita 共识串逐字"
+api explorer/nodes '{"chain":"irita"}'
+expect_code 0 "explorer/nodes irita"
+assert_eq "$(jqr '.data.nodes | length')" "1" "irita 节点列表（sim 单节点）"
+assert_eq "$(jqr '.data.nodes[0].source')" "sim" "节点 source=sim 如实标注（绝不冒充链原生 RPC 结果）"
+api explorer/blocks '{"chain":"chainmaker","limit":5}'
+expect_code 0 "explorer/blocks chainmaker（limit=5）"
+assert_ge "$(jqr '.data.height')" "1" "监管链当前块高"
+assert_eq "$(jqr '.data.blocks | length')" "5" "最近块列表按 limit=5 截断"
+assert_eq "$(jqr '.data.blocks[0].height')" "$(jqr '.data.height')" "块列表新→旧（首条 = 当前高度）"
+CMH=$(jqr '.data.height')
+api explorer/block "{\"chain\":\"chainmaker\",\"height\":$CMH}"
+expect_code 0 "explorer/block chainmaker@$CMH（按高度取块详情）"
+assert_eq "$(jqr '.data.block.height')" "$CMH" "块高回显"
+assert_ne "$(jqr '.data.block.hash // empty')" "" "块 hash 非空"
+assert_ge "$(jqr '.data.block.tx_count')" "1" "块内交易数"
+api explorer/tx "{\"chain\":\"fabric\",\"tx_id\":\"$CTTGT\"}"
+expect_code 0 "explorer/tx fabric（CT 许可目标链留痕链上直查——业务 TxID 可回查）"
+assert_eq "$(jqr '.data.tx.tx_id')" "$CTTGT" "链上直查 TxID 回显"
+api explorer/nodes '{"chain":"hyperledger-fake"}'
+expect_code 6002 "未知链 → 6002（可构造负路径——不猜测、不拼造显示名）"
+api explorer/block '{"chain":"chainmaker","height":0}'
+expect_code 6002 "height=0 → 6002（binding:\"required\" 怪癖，Task 8 交接——0 亦非合法块高，sim 块从 1 起）"
+api explorer/block '{"chain":"chainmaker","height":99999999}'
+expect_code 6002 "块高越界 → 6002（如实拒绝——绝不拼造区块）"
+api explorer/tx '{"chain":"fabric","tx_id":"FABRIC-NOT-EXIST-T11"}'
+expect_code 6002 "不存在 TxID → 6002（链上直查诚实报缺）"
+
+chapter "DEFERRED-HUMAN 汇总清单（浏览器目检——API 断言不覆盖，人工按项核对）"
 cat <<'HUMAN'
-【三端通用】
-- 各端主题/侧边栏/顶栏 chip：op 政务蓝白 7 页、au 深蓝权威 6 页、rg 深藏青 7 页；六类 chip 跨端预填
-- 天地图 key 引导弹窗 + 退化徽章 + 矢量层恒自绘；三链心跳灯；hash 路由兜底「页面未注册」卡（非白屏）
+【四端通用】
+- 各端主题/侧边栏/顶栏 chip：op 政务蓝白业务 7 页、au 深蓝权威业务 6 页、rg 深藏青业务 7 页、
+  ct 证照暗色业务 5 页；每端另挂「链上浏览器」1 页；六类 chip 跨端预填
+- 天地图 key 引导弹窗 + 退化徽章 + 矢量层恒自绘；四链心跳灯（含 irita 证照链）；hash 路由兜底
+  「页面未注册」卡（非白屏）
 【运营商端 operator.html】
 - home：hero 地图、节点层无红色 ATTACKER/无虫洞边（信息边界）、六入口卡、态势条计数（网络节点=过滤后 6）
 - realname：回执卡+身份条+「选为当前身份」、执照凭证卡、?subject_id= 深链、缺必填 toast 拦截
@@ -403,11 +546,15 @@ cat <<'HUMAN'
 - airspace：图例三色、节点层开关、zone/走廊过滤、航线详情卡、「坐标未设」文案
 【管理当局端 authority.html】
 - queue：审核状态列、工作台四段存证+历史+裁决表单、mini-map 高亮任务航段
-- passes：许可卡、3002 重复签发解说、抽屉验证/吊销、吊销后 valid=false「许可已吊销」
+- passes：只读台账 + 顶部通告条「通行证签发/吊销已移交证照中心端」+ license-center.html 入口链接
+  （Task 10 降级——签发/吊销操作件已移除）；行抽屉 pass/query 详情 + pass/verify 验证绿/红灯；
+  吊销后 valid=false「许可已吊销」
 - records：rules_hit 解析列表、空键 toast、MISSION_REVIEW_RESULT 流水抽屉
 - registry：类型/类别过滤、七键验签材料 JSON 块、「模拟证件号」免责声明
 - masterdata：两击蓝点+坐标回填（6 位小数）、第三击清空、半套坐标拦截、台账行高亮联动
-- netsec：topo 统计卡+NODE-X/Y 红色可见（全量视角）、drill 红虚线隧道边+中点 ⚠、风险 5 维评分条+阈值线、逐跳时延条、experiment 成功率红绿+CSV BOM
+- netsec：topo 统计卡+NODE-X/Y 红色可见（全量地理视角）、WTOPO 抽象拓扑区块（地理层下方——
+  详见【虫洞拓扑】）、drill 红虚线隧道边+中点 ⚠、风险 5 维评分条+阈值线、逐跳时延条、
+  experiment 成功率红绿+CSV BOM
 【监管当局端 regulator.html】
 - cockpit：5 统计卡 tone、地图 C 位全量节点+走廊多边形、✈️ 5s 刷新、告警红色落点、转追踪跳转预填
 - alerts：9 字段表单、回执+推进预填、跨级 6002 中性错误卡（无「◈ 预期」徽章）
@@ -416,15 +563,54 @@ cat <<'HUMAN'
 - inspect：5002 封缄卡五键无明文、开箱 3 统计卡+明文卡+12 行 kv、scope 无 MISSION → 明文空文案
 - audit：四维/三维过滤、抽屉 JSON 原文、CSV 导出 BOM 头 Excel 可开
 - crypto：canonical 键排序串、keygen 确定性同身份、篡改 valid=false 红卡、1002 非法签名解说
+【证照中心端 license-center.html】
+- home：证照总览 + 三大核心能力卡（CAPX）+ 四入口导航；ct 暗色主题对比度/表格密度
+- issue：待签发表格（APPROVED ⋈ 无 pass）、issuer=REGISTRY-ADMIN 只读展示（非表单字段）、
+  ±1h 默认窗 +「两键清空=回退任务窗」hint、进行中态 spinner（跨链约 3-6s 预期管理）、
+  成功卡 QR + 四段 TxID 点开存证抽屉、失败 errCard + 解说 +「同 pass_id 可重试」提示
+- ledger：状态过滤、行抽屉 11 键全量 + SM9 签名身份区（REGISTRY-ADMIN 现行 / FISCO-ADMIN 历史
+  双身份过渡说明）、「最近 N 条」窗口注记、无留痕诚实空态「无法链上溯源，绝不按日期猜测」
+- verify：绿/红灯证面（envelope 恒 code 0——valid/reasons 数据化渲染，红灯绝不错误卡样式）、
+  6002 不存在解说卡、深链 #/verify?pass_id= 预填
+- revoke：确认弹窗三条后果文案（本地先行 REVOKED 不可逆 / 跨链 best-effort / 仅 VALID 可吊销）、
+  跨链失败黄条如实展示 + 补发 busy 态（sim 跨链恒成功无法自然构造——真链验收时看一眼）、
+  3002 FailData 状态如实补展
+【四端浏览器（CXV · Task 8）】
+- 四端 + index 五处挂载 #/chainview JS 渲染后视觉（布局/间距/链卡边条色 = 链色语义：
+  紫 ChainMaker / 蓝 Fabric / 青 FISCO BCOS / 绿 IRITA——icon+文字，绝不仅靠颜色）
+- 节点情况：四链卡（高度/节点数/共识/mode 徽章/状态）+ 选中链节点表 source 列
+  （rpc / static+probe / sim 如实展示）
+- 块浏览：最近 20 块新→旧、行点击块抽屉（hash/time/tx_count/proposer/tx 列表）、tx 点击详情、
+  irita「Merkle 证明可用」标注（real 模式实际出现）
+- 链上数据追踪：message_type 五类 chip + 状态过滤、分页表、行点击 openCxDetail；直查表单
+  （链选 + TxID）；固定小字「服务端仅支持状态/类型过滤，其余为最近 200 条内客户端筛选」
+  （本脚本已 grep 逐字）
+- rg 暗色 .d-cxv-reg-hl outline +「⇄ 监管中继段」对比度；chip ☑/☐ 字形各主题可读性；
+  index 端无 drone.css 的降级观感（内容完整、装饰缺席）
+- 能力降级 2005「该链 RPC 不支持…」实弹触发（如 FISCO v3.16 块详情怪癖）= 真链验收窗
+  （Task 14）——sim 四链全实现 BlockQuerier，2005 不可构造；本脚本仅断言可构造负路径
+  （未知链 / height=0 / 越界 / 不存在 TxID → 6002）
+【虫洞拓扑（WTOPO · Task 9）】
+- au/netsec 拓扑页签 SVG 实render：position min-max 归一化布点、类型着色（紫 MANAGEMENT /
+  蓝 EDGE / 青 UAV / 红 ATTACKER + ⚠ 标签）、虫洞边红虚线 d-wormhole-flow 流动动画 + 中点 ⚠、
+  ISOLATED 红虚线描边 + ⛔ + d-pulse-hit 脉冲环、OFFLINE 空心、会话路径加粗（虫洞优先级最高）
+- 「未布点」侧清单 DOM：无 position 节点不画不猜逐节点列出 +「涉及未布点/未知端点的边 N 条
+  同步不画」如实计数（sim 数据面无法构造无-position 节点——本脚本已断言 API 6002 门；
+  合成 fixture 下的侧清单目检归此项）
+- 坐标红线口播（Task 9 校准措辞）：「抽象层全量可见（含攻击者），地理层按经纬度红线落点」——
+  probe 分裂（有 position 无 lat/lon → ∈WTOPO ∧ ∉Leaflet）两层对照目检
+- 三态联动实操：drill toggle/evaluate/switch 后切回拓扑页签双层重绘时序；hover tip（边/节点）
+  排版与跟随；图例 9 项 + 红线小字窄屏换行
 【验收故事全流程】
 - 按 docs/demo-script.md 第 0-8 章完成约 30 分钟三标签页实演（附录 A 检查清单逐项勾选、
-  附录 B 七行设计内拒绝现场复现、附录 C 时长核对）——正式验收以人工实演为准，本脚本仅 API 层
+  附录 B 设计内拒绝现场复现、附录 C 时长核对），另加证照中心端签发/台账/查验/吊销四页实演
+  （demo-script 四端版属 Task 15）——正式验收以人工实演为准，本脚本仅 API 层
 HUMAN
 
 printf '\n════════════════ 验证汇总 ════════════════\n'
 printf 'PASS=%d  FAIL=%d\n' "$PASS_N" "$FAIL_N"
 if [ "$FAIL_N" -eq 0 ]; then
-  echo "ALL_GREEN —— 三端验收故事 API 层断言全部通过（浏览器目检见上方 DEFERRED-HUMAN 清单）"
+  echo "ALL_GREEN —— 四端验收故事 API 层断言全部通过（浏览器目检见上方 DEFERRED-HUMAN 清单）"
   exit 0
 else
   echo "HAS_FAILURES —— 排查上方 ✗ 项；现场日志已保留：$SIM_DIR/backend.log"
