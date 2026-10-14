@@ -2,6 +2,10 @@
 # start-irita.sh —— IRITA 证照链 4 节点启停/状态（2026-10-13 C-1 部署，chain-id skytrust-license）。
 # 拓扑：node i → p2p 127.0.0.1:26656+10i / rpc 127.0.0.1:26657+10i / grpc 127.0.0.1:9090+10i；
 #       timeout_commit=1s（出块实测 ~1.5s），GOMEMLIMIT=280MiB/节点（内存红线，Gate-1 实测 RSS ~126-145MB）。
+# ⚠ CPU 硬限（2026-10-14 事故整改，用户裁定）：IRITA 无 CPU 限制时曾占满整机 CPU 并拖死生产后端
+#   （01:46 静默死亡；当晚 ⑤ 负载风暴 load 峰 16→40→93 同源）。节点一律经 systemd-run 瞬态单元
+#   启动，CPUQuota=30%/节点（4 节点舰队硬上限 1.2 核，物理共 2 核）+ MemoryHigh=280M；
+#   配额可经 IRITA_CPUQUOTA 覆盖，但**绝不允许无限制启动**。
 # ⚠ 安全红线：只做 start/stop（SIGTERM 优雅停机，数据在 /opt/irita/net 持久）；
 #   绝不删除节点数据目录——账本载有启用锚点 record（net/ANCHOR_TXID.txt，version-matrix §12
 #   登记依据），毁账即毁验收依据（与 P6-R6 同源）。
@@ -9,6 +13,10 @@ set -uo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh"
 
 IRITA_GOMEMLIMIT=${IRITA_GOMEMLIMIT:-280MiB}
+IRITA_CPUQUOTA=${IRITA_CPUQUOTA:-30%}
+IRITA_RUN_USER=${SUDO_USER:-$(id -un)}
+# systemd-run 需要 root 建瞬态单元（system 实例：不随登录会话消亡，生产链要求）
+SUDO=""; [ "$(id -u)" -ne 0 ] && SUDO="sudo"
 
 # setsid 包裹进程会立即退出，$! 是包装 PID——真实节点 PID 一律 pgrep -f 重抓（PoC 坑 #7）
 node_pid() { pgrep -f "irita start --home $IRITA_NET/node$1/irita" | head -1; }
@@ -18,13 +26,22 @@ start_one() {
   # 幂等双保险：端口探测 + 进程指纹。ss 高负载偶发漏报（2026-10-13 14:42 实况：port_up 26687
   # 瞬态 false → 重复进程拉起后撞 goleveldb 锁即刻自灭，原节点无恙）——pgrep 进程真源兜底。
   if port_up "$rpc" || [ -n "$(node_pid "$i")" ]; then echo "  node$i 已在运行（rpc $rpc），跳过"; return 0; fi
-  GOMEMLIMIT=$IRITA_GOMEMLIMIT setsid nohup "$IRITA_BIN" start \
-    --home "$IRITA_NET/node$i/irita" >> "$IRITA_NET/node$i.log" 2>&1 </dev/null &
+  # 残留同名失败单元会导致 systemd-run 拒启——防御性清理（--collect 正常已自动回收）
+  [ -n "$SUDO" ] && $SUDO systemctl reset-failed "irita-node$i.service" 2>/dev/null || true
+  if ! $SUDO systemd-run --quiet --unit "irita-node$i" --collect \
+      -p User="$IRITA_RUN_USER" \
+      -p CPUQuota="$IRITA_CPUQUOTA" -p CPUWeight=80 -p MemoryHigh=280M \
+      -p Environment=GOMEMLIMIT=$IRITA_GOMEMLIMIT \
+      -p StandardOutput=append:"$IRITA_NET/node$i.log" \
+      -p StandardError=append:"$IRITA_NET/node$i.log" \
+      "$IRITA_BIN" start --home "$IRITA_NET/node$i/irita"; then
+    echo "  ✗ node$i systemd-run 单元创建失败（需 sudo；绝不回退无限制启动）"; return 1
+  fi
   for _ in $(seq 1 30); do port_up "$rpc" && break; sleep 1; done
   local pid; pid=$(node_pid "$i")
   if [ -n "$pid" ]; then
     echo "$pid" > "$IRITA_NET/node$i.pid"
-    echo "  ✓ node$i 启动（pid $pid，rpc 127.0.0.1:$rpc）"
+    echo "  ✓ node$i 启动（pid $pid，rpc 127.0.0.1:$rpc，CPUQuota=$IRITA_CPUQUOTA）"
   else
     echo "  ✗ node$i 启动失败（查 $IRITA_NET/node$i.log）"; return 1
   fi
