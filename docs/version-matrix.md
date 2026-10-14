@@ -397,6 +397,15 @@ code=0 可验（Task 14 实弹）——账本永不复位（P6-R6 同源），�
 - 切换窗口**零业务写 = 零断代**：生产 DB 业务表本为空（仅 2026-10-12 种子 7 架 UAV）。验收产物 PASS-2026-001/002 存在于隔离 /tmp DB（证据留档，见 §12.6）——生产演示数据由前端 `demo/init` 灌注；`verify-three-portals-story.sh` 剧情固定值 PASS-2026-002 系隔离 sim 复跑自动生成，与生产 DB 无关。
 - 旧三链二进制保留 `bin/server-realchains.bak-task5`（如实命名：Task 5 时点备份）；回退路径未动用。
 
+### 12.11 FISCO 块浏览可用性复核与实装（§11.4-①/§12.8/§12.9-5 怪癖复核 —— 2026-10-14，用户裁定「需要变成可用」）
+
+- **再诊断**：§11.4-① 登记的块查询怪癖**仅存在于 JSON-RPC curl 面**——该面复核另见 `getTransactionByHash` 方法缺失（-32601）、`getBlockHashByNumber` 恒回创世哈希、`getBlockByNumber` 忽略块号、收据查询恒 3008；四节点（:20200-20203）行为一致，系软件面行为而非单节点故障。
+- **SDK 通道完全可用**：go-sdk v3.0.2（后端 QueryTx/SubmitTx 一直在用的 websocket 通道）实测——`GetBlockByNumber(100/1/181)` 按号回真实数据（唯一哈希/毫秒时间戳/sealer 索引）；`(onlyHeader=false, onlyTxHash=true)` 回交易哈希列表（块 1 永含部署 Tx `0x172514d3…`，账本不可变）；`GetBlockHashByNumber(100)` 与块哈希互证一致；`TransactionReceipt(部署Tx)` → blockNumber=1 status=0（§11.4-① 的 3008 亦仅 curl 面）。
+- **实装**：`real/fisco/transport.go` `GetBlockByHeight`/`ListRecentBlocks` 由 2005 桩改为 SDK 实查（Time=链上毫秒时间戳归一 timex；Proposer=sealerList[sealer] nodeID 原样；字段缺失如实留空绝不猜测）。TDD：`real/fisco_smoke_test.go`（realchains 标签、**只读**零链上写入）五项断言 RED→GREEN——高度回显（钉死「恒返块 1」不复存在）、块 1 含部署 Tx、块 0 拒绝、新→旧严格降序、limit≤0 防御。fisco `explorer/blocks`/`explorer/block` 自此 code=0 真实块；§12.8 的 2005 实弹记录随之成为历史（2005 哨兵保留为通用能力缺口，现四链无触发者）。
+- **块 0 边界（无假数据红线）**：节点对 0 号返回**合成应答**（hash `0xdc19ce48…` ≠ 块 1 parentInfo 链上承诺的父哈希 `0x14acbcd6…`）——非账本数据；`GetBlockByHeight(0)` 显式拒绝、`ListRecentBlocks` 永不入列 0 号（与 irita 惯例一致；API 面 `binding:"required"` 本就挡 0）。
+- **冻结面处置**：§11.4-① 原文一字不动，本节复核其适用范围（仅 curl 面）；`run-acceptance.sh` ② 的 `fisco_tx_in_block1` 包含证明仍走 JSON-RPC 面（怪癖在该面依旧成立、证明依旧有效），逻辑零改动仅注释加注。前端同步：chainview.js 降级卡移除 fisco 怪癖注记、explain.js 2005/explorer/block 词条、demo-script 第 9 章步骤 4 改「管理链实弹」。
+- **生产切换**：:8080 四链二进制重启待用户确认窗口（生产进程红线），执行后本节追记。
+
 
 ---
 

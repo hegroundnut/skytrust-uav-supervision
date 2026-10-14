@@ -76,6 +76,9 @@ done
 # blockNumber 恒返回块 1 的**完整交易体**；getTransactionReceipt 对链上有效交易恒报 3008
 # （偏差记录 version-matrix §8）。部署交易恰在块 1 → 以“块 1 完整交易体含该 hash”为上链
 # 证明（交易体+hash 自证）；老机路径（console statusOK）保留为回退。
+# §12.11 复核注记：两处怪癖**仅在 JSON-RPC curl 面**（该面甚至缺 getTransactionByHash
+# 方法）；后端 go-sdk websocket 通道块/收据查询完全可用——浏览器块数据已改走 SDK 真实
+# 块。本证明沿用 JSON-RPC 面（怪癖在该面依旧成立，包含证明依然有效），逻辑不变。
 fisco_tx_in_block1() {
   curl -sk -m 10 "${FISCO_RPC_HTTPS:-https://127.0.0.1:20200}" \
     --cacert "$FISCO_CONSOLE/conf/ca.crt" --cert "$FISCO_CONSOLE/conf/sdk.crt" --key "$FISCO_CONSOLE/conf/sdk.key" \

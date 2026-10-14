@@ -483,8 +483,9 @@ assert_ge "$(jqr '.data.authorizations.authorized')" "1" "驾驶舱·已授权"
 chapter "第 9 章 · 四端区块链浏览器数据面（CXV/explorer——四链总览 + 块浏览 + 链上直查 + 负路径）"
 # 能力降级码 = 2005 ChainUnsupportedFeature（Task 4 校准裁决：5003 已被 AuthScope 占用，全局
 # 码表语义唯一，绝不复用）。隔离 sim 四链全部实现 BlockQuerier（sim/blockquery.go——数据全来自
-# SubmitTx 落下的真实块记录）→ 2005 对 sim **不可构造，绝不伪造触发**；实弹（FISCO v3.16
-# getBlockByNumber 怪癖等）归真链验收窗（Task 14）。本章负路径 = 可构造者：未知链 → 6002、
+# SubmitTx 落下的真实块记录）→ 2005 对 sim **不可构造，绝不伪造触发**；实弹（链 RPC 能力
+# 缺口）归真链验收窗（Task 14；注：FISCO 块查询自 §12.11 起走 SDK 通道已可用，2005 现为
+# 通用哨兵无常态触发者）。本章负路径 = 可构造者：未知链 → 6002、
 # height=0/越界 → 6002、不存在 TxID → 6002（一律如实拒绝，绝不拼造块/交易/显示名）。
 api explorer/overview '{}'
 expect_code 0 "explorer/overview"
@@ -587,7 +588,7 @@ cat <<'HUMAN'
   （本脚本已 grep 逐字）
 - rg 暗色 .d-cxv-reg-hl outline +「⇄ 监管中继段」对比度；chip ☑/☐ 字形各主题可读性；
   index 端无 drone.css 的降级观感（内容完整、装饰缺席）
-- 能力降级 2005「该链 RPC 不支持…」实弹触发（如 FISCO v3.16 块详情怪癖）= 真链验收窗
+- 能力降级 2005「该链 RPC 不支持…」实弹触发（通用能力哨兵；FISCO 块查询已可用 §12.11）= 真链验收窗
   （Task 14）——sim 四链全实现 BlockQuerier，2005 不可构造；本脚本仅断言可构造负路径
   （未知链 / height=0 / 越界 / 不存在 TxID → 6002）
 【虫洞拓扑（WTOPO · Task 9）】

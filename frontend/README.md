@@ -91,8 +91,8 @@ FLIGHT_PASS / PASS_REVOKE 跨链源链为证照链（irita→chainmaker→fabric
 四端裁剪（`opts.portal`）：op 默认聚焦 MISSION_APPLICATION/FLIGHT_PASS 芯片；ct 默认链 irita；
 rg 监管中继段高亮（CHAINMAKER 链标段加 `.d-cxv-reg-hl`，pui.js 零改动）；au/index 全量。
 **诚实红线**：一切数据来自实时响应且 `code===0` 门控；链 RPC 能力缺失 → **2005 降级卡直出后端
-message**（fisco-bcos 块类查询附 v3.16 怪癖注记——见 version-matrix §12.8/§12.9）；空态如实；
-绝不硬编码块高/TxID/哈希。证照链块高含空块（create_empty_blocks=true，~40-50k 块/日）——
+message**（通用能力哨兵——fisco-bcos 块查询自 version-matrix §12.11 复核后走 go-sdk 通道回真实
+块数据，v3.16 JSON-RPC curl 面怪癖不再触发降级）；空态如实；绝不硬编码块高/TxID/哈希。证照链块高含空块（create_empty_blocks=true，~40-50k 块/日）——
 数值大且增长快属预期，账本连续（§12.5）。
 
 ## 虫洞攻击拓扑图（WTOPO——验收直观展示项）

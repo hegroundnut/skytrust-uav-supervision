@@ -9,8 +9,9 @@ import (
 )
 
 // ErrUnsupportedFeature 能力部分缺失哨兵：传输实现了 BlockQuerier，但其中某项查询
-// 在该链 RPC 上不可靠/不受支持（如 FISCO v3.16 getBlockByNumber 怪癖——
-// docs/version-matrix.md §11.4-①）。实现以 %w 包裹本哨兵返回；API 层经 errors.Is
+// 在该链 RPC 上不可靠/不受支持（历史例：FISCO JSON-RPC curl 面 getBlockByNumber 怪癖
+// §11.4-①——经 §12.11 复核为仅 curl 面缺陷，go-sdk 通道正常，fisco 块查询已实装；
+// 哨兵保留供未来任何链能力缺口如实降级）。实现以 %w 包裹本哨兵返回；API 层经 errors.Is
 // 识别 → errcode.ChainUnsupportedFeature(2005) 如实降级（Task 4 校准裁决：5003 已被
 // AuthScope 占用，能力降级码唯一 = 2005），绝不拼造缺失数据。
 var ErrUnsupportedFeature = errors.New("chain RPC does not support this query (capability honestly degraded)")

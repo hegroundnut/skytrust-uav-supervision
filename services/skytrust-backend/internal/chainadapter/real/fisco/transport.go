@@ -26,6 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"skytrust-backend/internal/chainadapter"
+	"skytrust-backend/internal/timex"
 )
 
 // contractName 与后端固化常量逐字一致（internal/crosschain/policy.go:70
@@ -288,15 +289,15 @@ func (t *Transport) packArgs(method string, params map[string]any) ([]interface{
 
 var _ chainadapter.ChainTransport = (*Transport)(nil)
 
-// ---- BlockQuerier（explorer 数据源，Task 5）：块高与节点走链原生 RPC（source=rpc）；
-// 块详情受 v3.16 JSON-RPC 怪癖限制**能力如实降级**（chainadapter.ErrUnsupportedFeature
-// → API 层 errcode.ChainUnsupportedFeature=2005，Task 4 校准裁决：5003 已被 AuthScope
-// 占用）——绝不拼凑块数据。 ----
+// ---- BlockQuerier（explorer 数据源）：块高/块详情/块列表/节点全部走链原生 SDK
+// （source=rpc）。§11.4-① 登记的 getBlockByNumber/getTransactionReceipt 怪癖经复核
+// **仅存在于 JSON-RPC curl 面**（该面甚至缺 getTransactionByHash 方法）；后端一直
+// 使用的 go-sdk websocket 通道按块号正确回真实数据（version-matrix §12.11 实证）。
+// 唯一坚持的诚实边界：0 号块为节点合成应答，非账本数据，拒绝透出。 ----
 
 var _ chainadapter.BlockQuerier = (*Transport)(nil)
 
-// GetBlockHeight 当前块号（SDK GetBlockNumber；v3.16 下正常可用，§11.4-① 怪癖
-// 仅影响 getBlockByNumber/getTransactionReceipt）。
+// GetBlockHeight 当前块号（SDK GetBlockNumber）。
 func (t *Transport) GetBlockHeight(ctx context.Context) (uint64, error) {
 	n, err := t.c.GetBlockNumber(ctx)
 	if err != nil {
@@ -308,18 +309,64 @@ func (t *Transport) GetBlockHeight(ctx context.Context) (uint64, error) {
 	return uint64(n), nil
 }
 
-// GetBlockByHeight 能力如实降级（2005，绝不拼凑）：FISCO v3.16 JSON-RPC 怪癖
-// （docs/version-matrix.md §11.4-①，部署实测）——getBlockByNumber 在
-// (onlyHeader=true, onlyTxHash=false) 下**忽略 blockNumber 恒返块 1**；
-// (false,…) 组合交易列表恒空。块详情在现链版本上不可靠 → 不返回任何拼造数据。
+// GetBlockByHeight 块详情（SDK GetBlockByNumber，onlyHeader=false + onlyTxHash=true：
+// 完整头 + 交易哈希列表）。块 0 拒绝：节点对 0 号返回合成应答——其哈希与块 1
+// parentInfo 链上承诺的父哈希不符（非账本数据，无假数据红线）。
 func (t *Transport) GetBlockByHeight(ctx context.Context, height uint64) (*chainadapter.BlockInfo, error) {
-	return nil, fmt.Errorf("fisco-bcos: block detail unavailable — getBlockByNumber v3.16 quirk (docs/version-matrix.md §11.4-①: ignores blockNumber / empty tx list): %w", chainadapter.ErrUnsupportedFeature)
+	if height == 0 {
+		return nil, fmt.Errorf("fisco-bcos: block height 0 rejected — node synthesizes a non-ledger genesis response (hash mismatches block-1 parentInfo); stored heights start at 1")
+	}
+	b, err := t.c.GetBlockByNumber(ctx, int64(height), false, true)
+	if err != nil {
+		return nil, fmt.Errorf("fisco-bcos: get block %d: %w", height, err)
+	}
+	if b == nil {
+		return nil, fmt.Errorf("fisco-bcos: get block %d: empty response", height)
+	}
+	info := &chainadapter.BlockInfo{
+		Height:  b.Number,
+		Hash:    b.Hash,
+		TxCount: len(b.Transactions),
+		TxIDs:   make([]string, 0, len(b.Transactions)),
+	}
+	if b.Timestamp > 0 {
+		info.Time = timex.FormatTime(time.UnixMilli(int64(b.Timestamp))) // 链上毫秒时间戳归一 timex
+	} // Timestamp 缺失 → Time 如实留空，绝不猜测
+	if int(b.Sealer) < len(b.SealerList) {
+		info.Proposer = b.SealerList[b.Sealer] // 出块节点 nodeID（链上 sealerList 原样）
+	} // 索引越界 → Proposer 如实留空，绝不猜测
+	for _, tx := range b.Transactions {
+		switch v := tx.(type) {
+		case string: // onlyTxHash=true：交易哈希直取
+			info.TxIDs = append(info.TxIDs, v)
+		case map[string]interface{}: // 防御：完整交易体形态时取 hash 字段
+			if h, ok := v["hash"].(string); ok && h != "" {
+				info.TxIDs = append(info.TxIDs, h)
+			}
+		}
+	}
+	return info, nil
 }
 
-// ListRecentBlocks 能力如实降级（2005）：块列表依赖 getBlockByNumber 块详情，
-// 与 GetBlockByHeight 同因（version-matrix §11.4-①）——绝不以块号序列拼造块。
+// ListRecentBlocks 最近块，新→旧（逐高 SDK 查询；limit 由调用方按端点契约钳制，
+// 此处防御性执行）。0 号块永不入列（合成应答，见 GetBlockByHeight）。
 func (t *Transport) ListRecentBlocks(ctx context.Context, limit int) ([]chainadapter.BlockInfo, error) {
-	return nil, fmt.Errorf("fisco-bcos: recent blocks unavailable — getBlockByNumber v3.16 quirk (docs/version-matrix.md §11.4-①): %w", chainadapter.ErrUnsupportedFeature)
+	out := make([]chainadapter.BlockInfo, 0)
+	if limit <= 0 {
+		return out, nil
+	}
+	cur, err := t.GetBlockHeight(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for h := cur; h >= 1 && len(out) < limit; h-- {
+		b, err := t.GetBlockByHeight(ctx, h)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *b)
+	}
+	return out, nil
 }
 
 // ListNodes 共识节点列表（source=rpc）：getSealerList（v3.16 正常可用，§11.4-①

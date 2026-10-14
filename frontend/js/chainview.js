@@ -16,7 +16,8 @@
    index 版禁用依赖（裁决 G）：index.html 不加载 PORTAL/MAPX——本模块只依赖 API/UI/PUI
    （index.html 已加载 pui.js，实证于其 script 区）。
    诚实红线：一切数据来自实时响应且 r.ok（code===0）门控；能力降级 code=2005（裁决 A，
-   非 brief 旧字样 5003）→ 降级卡直出后端 message（fisco-bcos 块类查询附 v3.16 怪癖注记）；
+   非 brief 旧字样 5003）→ 降级卡直出后端 message（通用能力哨兵——fisco-bcos 块查询自
+   version-matrix §12.11 复核后走 go-sdk 通道回真实块数据，不再触发降级）；
    空态如实；绝不硬编码块/TxID/高度/哈希。
    端点：explorer/overview、explorer/nodes、explorer/blocks、explorer/block、explorer/tx、
    crosschain/list。 */
@@ -55,14 +56,11 @@
     if (chain !== 'irita' || mode !== 'real') return null;
     return 'Merkle 证明可用：real 传输读路径经 /abci_query prove=true 返回 ics23 双段证明（记录包含证明 + 多 store 提交证明）';
   }
-  /* 2005 降级卡内容（裁决 A：brief 旧字样 5003 一律按 2005 落地）：后端 message 逐字直出；
-     fisco-bcos 块类查询附计划钉死的 v3.16 怪癖注记原文。 */
+  /* 2005 降级卡内容（裁决 A：brief 旧字样 5003 一律按 2005 落地）：后端 message 逐字直出。
+     fisco 块类怪癖注记已随 §12.11 复核移除（SDK 通道块查询可用，2005 不再是 fisco 常态）。 */
   function degradeSpec(r, chain, what) {
     var lines = [];
     if (r && r.message) lines.push('后端原文：' + r.message);
-    if (chain === 'fisco-bcos' && /块/.test(what)) {
-      lines.push('该链 RPC 不支持块详情（v3.16 怪癖，见 version-matrix §11）');
-    }
     lines.push('能力缺口如实降级——绝不拼造块/节点/交易数据。');
     return { title: '⚠ 能力降级 code=2005 · 该链 RPC 不支持' + what, lines: lines };
   }
