@@ -291,6 +291,112 @@ Fabric BFT 每块含 3/4 consenter 签名（orderer 日志 `signatures from [2 3
 - BFT 切换前（etcdraft，修订 5）：CX-54edb4488520 / CX-0847fefe2b6c；
 - **BFT 链正式重放（修订 6，登记用）**：UAV_REGISTER_PROOF `CX-5862df45d53b`（fabric 源 `a419036a…`，CM 两跳 `18ddcd32…`×3，verify PASS，1468ms）；MISSION_APPLICATION `CX-31c266ebb9b2`（fabric 源 `4c5b3ba5…`，CM 中继 `18ddcd33…`，FISCO 目标 `0x261cc523…`，verify PASS，1231ms）；链高齐涨 CM+9/FISCO+1/Fabric+4。
 
+## 12. 第四链（证照链 IRITA）部署登记与四链验收 —— 2026-10-13/14（§11 同机四链化）
+
+> 本节为**追加登记**；§1-§11 一字未动（其中「三链」字样为 2026-10-12 时点事实，历史证据不改写）。
+> 设计权威 `docs/superpowers/specs/2026-10-13-fourth-chain-license-explorer-design.md`；
+> 实施计划与校准实录 `docs/superpowers/plans/2026-10-13-fourth-chain-license-explorer.md`。
+
+### 12.1 四链拓扑总表（验收要求①「至少 3 种异构链」——现 4 链，每链多节点 BFT，f=1 全实证）
+
+| 链 | 角色 | 平台/版本 | 共识 | 节点 | f=1 容错实证 |
+|---|---|---|---|---|---|
+| ChainMaker | 监管链（跨链中继不可绕过） | v2.3.10 | TBFT 4 组织（3/4 quorum） | 4 | §11.1（4-admin 联签部署） |
+| Fabric | 运营链 | 3.1.5 线 dev 构建 | SMARTBFT 4-orderer + 2 peer | 4+2 | §11.1（停 orderer3 仍提交） |
+| FISCO BCOS | 管理链（审核裁决） | v3.16.4 | PBFT 4-sealer | 4 | §11.1（kill 1 节点仍出块） |
+| **IRITA（本节新增）** | **证照链（飞行通行证签发/吊销源链）** | **v4.0.0（SM2 国密原生）** | Tendermint BFT 4-validator（f=1） | 4 | §12.4（滚动重启 ×3 链不停摆） |
+
+商密证据链更硬一层：IRITA 链本体即 **SM2 两层原生**——共识层 `node_key`/`priv_validator_key`
+type=`tendermint/PrivKeySm2`；账户层验证人 X.509 证书曲线 OID `1.2.156.10197.1.301` + 签名
+`SM2withSM3`，keyring 公钥 `/cosmos.crypto.sm2.PubKey`——叠加后端 SM3 摘要 / SM9 签名加密跨链层。
+
+### 12.2 IRITA 平台身份与源码自持（新机重建配方完整）
+
+- 来源 `https://github.com/bianjieai/irita`，tag **v4.0.0**，commit **4c8c4c9**；`make build`（ldflags 注入 algo.Algo=sm2）。
+- 二进制 sha256 **`c93be88cbf7f3d19bca33c97ffefe62b481d457d4c6ee2dcdb7915a81ee3e0aa`**（`/opt/irita/bin/irita`，2026-10-14 复核吻合）。
+- 源码自持 `/opt/irita-src`（用户裁定⑨：不加第 4 个 git submodule）；PoC 证据与产线配置脚本在 `/opt/irita/{poc-artifacts,rewrite_configs_prod.py}`。
+- 网络：chain-id `skytrust-license`，denom uirita、零 fee；节点 `/opt/irita/net/node{0..3}`，rpc 127.0.0.1:26657/26667/26677/26687，p2p 26656+10i；timeout_commit=1s（实测出块 ~1.45-1.5s，空块 ~1.5-2.4s）。
+- 业务账户 `skytrust-biz`（SM2，keyring test backend，CLI HOME=`/opt/irita/cli-home`），注资 1000 IRITA：txhash `73E80A03910352B3CAE48CEED28EABF8C35B33F2CA55BC37882D1D6BCBCF2FDC`。
+- **无合约工件、无部署交易**：证照登记走 IRITA 内置 `record` 模块（逻辑合约），权威说明 `contracts/irita/README.md`。
+- 上游维护停滞（2024-06 后无更新）风险处置：锁 tag + sha256 登记 + 源码自持——与三链版本矩阵同一实践。
+
+### 12.3 启用锚点（§4.4 登记表证照链行——链上可查询，验收 §6.5-② 四链化 PASS）
+
+| 链 | 工件 | TxID | 区块 | 时间 |
+|---|---|---|---|---|
+| irita | record 启用锚点（record_id `9939a8aa6a67e43aadc9fcc93f6d2655fb25d5990e138257e65638e1d436f173`） | `8FD32506345441825A5398BE2CC06F4664F7F3A934A53B4647603CB14681B08A` | 822 | 2026-10-13 14:32 |
+
+锚点材料 SM3 摘要 `2676c21a7c00f11d575d3f8602063387898fd761cff25928ad084b1bccea5464`
+（`/opt/irita/net/ANCHOR_DIGEST.txt`）。2026-10-14 15:2x 经 TM RPC `/tx?hash=0x…` 复核仍
+code=0 可验（Task 14 实弹）——账本永不复位（P6-R6 同源），此锚点即四链化 §6.5-② 的验收依据。
+
+### 12.4 浸泡与 f=1 容错实证（6.2h，2026-10-13 14:50–21:06，soak-log 原始记录）
+
+- 稳定出块：h 1590→15455，~1.5-2s/块（16:37–17:01 段实测 981 块/24min ≈ **1.47s/块**）；零宕机、零分叉、app_hash 全程一致、4 节点高度零落后。
+- RSS 曲线：Gate-1 基线 145-178MB → 定态爬升 253-291MB。**GC 螺旋发现**：GOMEMLIMIT=280MiB 下 ~5-6h 堆触顶 → RSS 钉 280-291MB、单节点 CPU 37-44%、2 核机 load ~10（链健康无损，机器负载不可持续——处置即滚动重启）。
+- **f=1 滚动重启实证 ×3（全程链不停摆，每节点重启期间 3/4 投票权在线、4/4 catching_up=false）**：
+
+| 时间 | 触发 | 高度推进 | 效果 |
+|---|---|---|---|
+| 10-13 21:00–21:03 | GC 螺旋（load 10.6，用户裁决滚动重启） | h 15325→15343 持续出块 | RSS 291→166-172MB、load 10.6→2.65、生产 3×ONLINE 零影响 |
+| 10-14 01:41–01:46 | RSS 271-274MB 越 270 阈值前置干预 | h 26349→26750 零中断 | RSS→146-165MB、available 974→1581MB |
+| 10-14 15:1x | CPU 硬限整改（§12.5）限额重启 | 四节点一致恢复 ~1.45s/块 | cpu.max=30000/100000 ×4 核验 |
+
+- 运维约定（已成文 `scripts/start-irita.sh` 头注）：RSS>270MB→滚动重启；实测/演示前必重启；滚动重启逐节点待同步完成再下一节点；重启窗口避生产高峰。
+
+### 12.5 CPU 硬限整改（2026-10-14 生产事故，用户裁定 —— commit 3ba5e6a）
+
+- 事故：01:46 生产后端 :8080 静默死亡；用户现场观察 = **IRITA 无 CPU 限制占满整机 CPU 拖死后端**（与当晚 ⑤ 负载风暴 load 峰 16→40→93 同源；fabric cc 容器风暴中优雅退出 → endorse「no combination of peers」空窗）。
+- 整改：节点一律经 systemd-run 瞬态单元启动，**CPUQuota=30%/节点（4 节点舰队硬上限 1.2 核 / 物理 2 核）+ CPUWeight=80 + MemoryHigh=280M**；单元创建失败 = 启动失败（**绝不回退无限制启动**）。
+- 验证：cpu.max=30000/100000 ×4；出块 ~1.45s/块不变；RSS 174-196MB。
+- **保护效果实证**（§12.6 两轮正式验收期间）：⑤ 风暴 load 峰 ≤8.3（整改前 40-93）、fabric cc 容器零死亡、生产 :8080 两轮全程无恙（4×ONLINE、RSS 43MB）。
+- 隔夜事实登记：create_empty_blocks=true 空块 ~1.5-2.4s/块，12h +~21000 块（28896→49900，**~40-50k 块/日**）——**四端浏览器显示的证照链块高含空块**，数值偏大且增长快属预期；账本连续、时间戳与真实时间吻合、无业务含义（磁盘/巡检注意项）。
+
+### 12.6 四链正式验收（run-acceptance.sh v2 四链化，隔离 :18180 全新弃用 DB，real 四链，2026-10-14 ×2 轮）
+
+| 项 | Run 1 | Run 2 |
+|---|---|---|
+| ① 四链 ONLINE | PASS（4/4） | PASS（4/4） |
+| ② §4.4 部署 TxID 链上可查询 | PASS（**9/9**：CM×5 + fabric×2 + fisco 块1包含证明 + IRITA 锚点 @h=822 code=0） | PASS（9/9） |
+| ③ 13 步闭环（四链化：签发源段上 IRITA） | PASS：MISSION-2026-001 → PASS-2026-001 VALID；**CX3 源段 `04CE57AF…999A` IRITA 链上核验 code=0** | PASS：MISSION-2026-002 → PASS-2026-002 VALID；CX3 源段 `DB2D79A6…0F47` 链上核验 code=0 |
+| ④ 两跳四段 TxID 持久化 ×3 | PASS（src/reg/relay/tgt 全齐全 SUCCESS） | PASS |
+| ⑤ CROSSCHAIN_LOOP ×10，p95<1000ms | **FAIL 如实**：9/10 rate=0.9（2001×1），avg 18959.6ms，p50 **1572ms**，p95=max **88155ms** | **FAIL 如实**：9/10 rate=0.9（2001×1），avg 17349.8ms，p50 **1700ms**，p95=max **103931ms** |
+
+- ⑤ 两轮唯一受害者同型：**ChainMaker SDK gRPC「connections unavailable」停滞 76-95s**（Run1 = reg relay submit 76439ms；Run2 = reg receive submit 95125ms）→ 该迭代 2001。**不放宽协议、不钓鱼重试**（R13 裁定：正式记录 = ①-④ PASS ×2 + ⑤ 如实双记）。
+- 下一杠杆（§6.5 授权调优类）：CM SDK 连接池/keepalive 专项调优，或 CM 容器 CPU 配额——需专项窗口。
+- 性能证据谱系（全部如实、不互相顶替）：老机 §6.2 **p95=527ms@COUNT=100 仍为正式性能证据**（较轻拓扑）；新机三链时代 §11.3 rate=1 ×2（p95 1524/1658ms）；本节四链双轮 rate=0.9 ×2（p50 1572/1700ms）。
+- 证据留档：`/tmp/acceptance-four-chain-final.log`、`/tmp/acceptance-four-chain-final-run2.log`、`/tmp/acceptance-four-chain-final/{server.log,skytrust.db,sm9}`。
+
+### 12.7 逐跳探针与签发延迟（四链化 8 跳）
+
+- `probe-latency.sh`（2026-10-14 15:4x，PROBE_OK）：8 跳 avg 合计 **3241ms**（≈ 单次 13 步 Send 期望时延）；其中 irita.CrosschainSubmit（证照链源步，record 模块）avg **1498ms**（迭代 1164-1636ms）。负路径全如实：fisco revert Status=16（tx `0x8c4f58f2…`）、CM business fail Status=1（tx `18de557e…`）、fisco/CM QueryState absent → error。
+- pass/issue 签发全链（**irita→chainmaker→fabric**）：Task 12 实测 3972 / 4977 / 4690ms；正式验收样本 **4532ms**（Run1 `CX-3ba993d6d400`）/ **4278ms**（Run2 `CX-e77d690c4930`）——全部落在 timeout_commit=1s 档 3-6s 预期档内。
+
+### 12.8 2005 能力降级实弹（errcode.ChainUnsupportedFeature，Task 4 校准自旧编号 5003）
+
+- fisco-bcos `explorer/blocks` + `explorer/block` → **code=2005**「该链 RPC 不支持区块列表查询/块详情查询」——如实降级绝不拼造（v3.16 怪癖见 §12.9-5）。
+- irita / chainmaker / fabric explorer 各路径 code=0 真数据；`explorer/overview` chains=4。
+
+### 12.9 偏差登记（补充 §8 / §11.4——四链化增量，全部已按授权路径处置）
+
+1. **IRITA 维护停滞锁 tag**：v4.0.0 + sha256 + 源码 /opt 自持（部署期决定，见 §12.2）。
+2. **CM/IRITA CLI shell-out**：`cmc query tx` / `irita tx record create` 走 exec.CommandContext——SDK 缺口的既定实现方式（spec §5 登记）。
+3. **C16 断代**：CM batch 配置调整史造成的块高断代语义（§11.4 同源，四链期维持）。
+4. **双身份过渡**：审批 `FISCO-ADMIN`（管理链角色）/ 签发·吊销 `REGISTRY-ADMIN`（证照链角色）——四方分权语义（申请→审批→签发→验证），旧签发身份不迁移。
+5. **fisco 区块浏览降级 → 2005**：v3.16 `getBlockByNumber` 忽略块号恒回块 1、`getTransactionByHash` 对不存在 TxID 回 -32601、`getTransactionReceipt` 恒 3008（§11.4-1 怪癖的浏览器侧后果；§12.8 实弹证明）。
+6. **ui.js legacy tag 不显新链**：index.html 旧壳心跳仍 3 盏（冻结资产 additive-only 约束）；四门户壳（portal.js）心跳 4 盏含 IRITA。
+7. **timeout_commit=1s、实测出块 ~1.45-1.5s/块**（空块 ~1.5-2.4s）——出块即延迟下限，签发 3-6s 档由此而来。
+8. **D2 校准**：real 传输返回**链原生 TxID**（irita = 裸 64hex 大写 txhash；`IRITA-` 前缀为 sim 工件，real 不拼前缀）。
+9. **D3 校准**：`cmc query tx` 对不存在 TxID 打印错误文本但 exit=0——验收脚本②收紧为 JSON 内含判据（`i>=0`），杜绝空过。
+10. **⑤ 负载风暴机制**：2 核/20 BFT 进程机上 CROSSCHAIN_LOOP ×10 自触发风暴（无限制期 load 16→40→93；fabric cc 容器优雅退出 → endorse 空窗 = 失败直接机制）；IRITA CPU 硬限后风暴收敛（load ≤8.3、cc 零死亡），残余受害者 = CM SDK gRPC 停滞（§12.6）。
+11. **IRITA 隔夜空块增长 ~40-50k 块/日**：磁盘与巡检注意项；浏览器块高注记见 §12.5。
+
+### 12.10 生产切换记录（Task 13，用户单独确认「四链切换重启」—— 2026-10-14 15:17:24）
+
+- :8080 由三链二进制切换为**四链 real 二进制**（HEAD 3ba5e6a 构建；BUILD_OK：冻结依赖断言 5/5 + go vet clean），新 pid 137676；启动自检 4×ONLINE；四门户（operator/authority/regulator/license-center）+ :15001 代理全 200；只读冒烟（explorer/overview chains=4、pass/list）通过。
+- 切换窗口**零业务写 = 零断代**：生产 DB 业务表本为空（仅 2026-10-12 种子 7 架 UAV）。验收产物 PASS-2026-001/002 存在于隔离 /tmp DB（证据留档，见 §12.6）——生产演示数据由前端 `demo/init` 灌注；`verify-three-portals-story.sh` 剧情固定值 PASS-2026-002 系隔离 sim 复跑自动生成，与生产 DB 无关。
+- 旧三链二进制保留 `bin/server-realchains.bak-task5`（如实命名：Task 5 时点备份）；回退路径未动用。
+
 
 ---
 

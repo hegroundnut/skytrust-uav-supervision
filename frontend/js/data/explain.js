@@ -1,7 +1,7 @@
 /* explain.js —— 逐 API 成功/失败解说词典（演示用）。
    codes：业务错误码唯一真源 services/skytrust-backend/internal/errcode/errcode.go，
           释义按各 raise 站点源码归纳；「理论失败」= 设计上必须发生的拒绝。
-   paths：64 端点每个一行「成功证明了什么机制」。
+   paths：78 端点每个一行「成功证明了什么机制」。
    由 window.EXPLAIN 暴露，ui.js 监控台与 explorer 详情页消费。 */
 (function () {
   'use strict';
@@ -18,7 +18,7 @@
       2002: '目标链不可达：两跳中继第二跳失败；源链存证仍在，可用同一幂等键安全重发。',
       2003: '监管链签收校验拒绝：SM3 摘要/签名核验不通过，中继终止（监管链是强制关口）。',
       2004: '幂等重复提交：同一 idempotency_key 已有跨链记录，返回既有结果拒绝重复上链。理论失败：重放攻击必须无效。',
-      2005: '链能力降级：该链 RPC/SDK 不支持此查询能力（如 FISCO BCOS v3.16 无块详情接口）——能力缺口如实降级上报，绝不拼造区块/节点/交易数据（详见 version-matrix §11）。',
+      2005: '链能力降级：该链 RPC/SDK 不支持此查询能力（如 FISCO BCOS v3.16 无块详情接口）——能力缺口如实降级上报，绝不拼造区块/节点/交易数据（详见 version-matrix §11.4/§12）。',
       3001: '航路冲突守卫：引用的 route 不存在，或走廊状态非 OPEN（CLOSED 走廊禁止规划/提交任务）。',
       3002: '许可状态守卫：许可不存在，或状态不允许该操作（仅 VALID 可吊销）。注意 pass/verify 恒 code=0——无效以数据 valid=false 表达。',
       3003: '审核规则拒绝：result 枚举非法（仅 APPROVED/REJECTED/NEED_COORDINATION）、申请不存在、或申请状态不可审（需 PENDING/SENT/RELAYED）。',
@@ -69,10 +69,10 @@
       '/api/review/submit': '成功 = 审核裁决（APPROVED/REJECTED/NEED_COORDINATION）落管理链 + MISSION_REVIEW_RESULT 回传源链，双链闭环。',
       '/api/conflict/detect': '成功 = 三维重叠检测完成（时间 ∧ 航路 ∧ 高度同时重叠才算冲突）；count=0 同样是有效结论（理论失败：无冲突可检）。',
       '/api/conflict/resolve': '成功 = 处置方案记录在案且冲突置 RESOLVED，双方任务 COORDINATING→REVIEWING（「时间窗后移」是决议留痕，任务几何窗口本身不改写——复测仍会按原窗口检出并新开冲突记录）；已 RESOLVED 的冲突不可重复解决（3004 守卫，理论失败）。',
-      '/api/pass/issue': '成功 = 飞行许可签发：FLIGHT_PASS 走管理链→监管链→运营链三链中继，全程留痕。',
+      '/api/pass/issue': '成功 = 飞行许可签发：FLIGHT_PASS 走证照链（IRITA）→监管链（ChainMaker）→运营链（Fabric）三链中继，全程留痕（签发身份 REGISTRY-ADMIN 证照中心——四方分权：申请→审批→签发→验证）。',
       '/api/pass/list': '成功 = 分页读取许可台账。',
       '/api/pass/query': '成功 = 按 pass_id 读回许可全量状态。',
-      '/api/pass/revoke': '成功 = 许可吊销：PASS_REVOKE 跨链重发三链同步；吊销后任何复验必 valid=false。',
+      '/api/pass/revoke': '成功 = 许可吊销：PASS_REVOKE 自证照链（IRITA）源跨链重发同步；吊销后任何复验必 valid=false。',
       '/api/pass/verify': '成功 = 验证执行完毕（恒 code=0）：valid/reasons/status 数据化判定——无效许可以 valid=false 表达而非错误码（理论失败数据化）。',
       '/api/node/register': '成功 = 链下网络节点准入注册（node_type ∈ UAV/EDGE/MANAGEMENT/ATTACKER，SM9 身份格式校验通过）。',
       '/api/node/list': '成功 = 节点台账读取（含 ISOLATED 处置状态——隔离是持久化决定，不自动解除）。',

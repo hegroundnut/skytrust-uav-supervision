@@ -7,8 +7,10 @@ import (
 )
 
 // ChainTransport 抽象链后端的网络 I/O——Plan 6 迁移缝（spec §3.1/R1）。
-// sim.Chain 结构上满足本接口（inproc 传输）；真实三链迁移时按链实现 SDK 传输
-// 并经 RegisterRealTransport 注册。业务代码、13 步协议、状态机零改动。
+// sim.Chain 结构上满足本接口（inproc 传输）；真实四链迁移时按链实现传输
+// （chainmaker/fabric/fisco 为 SDK 传输，irita 为 TM RPC 读 + record CLI shell-out 写，
+// 见 real/irita；均 //go:build realchains）并经 RegisterRealTransport 注册。
+// 业务代码、13 步协议、状态机零改动。
 // 语义契约：回执 Status==0 表示成功；传输级错误返回非 nil error（触发 withRetry）。
 type ChainTransport interface {
 	SubmitTx(ctx context.Context, contract, method string, params map[string]any) (*TxReceipt, error)

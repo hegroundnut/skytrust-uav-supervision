@@ -234,3 +234,15 @@ fresh 视角审查代理对 spec 关键声明逐条核到源码（pass.go:181,32
 4. **无硬日期，质量优先**：Gate-2 过后浸泡半天再进 C-2（已并入 §9）
 
 **实施细节归 plan**（builder 可自行裁定）：stop-chains.sh 补段、explain.js 路由文案、experiment/apidoc 样例中 FISCO-ADMIN 残留值清理、record CLI flag 形态首日冒烟校准。
+
+
+## 13. 实施修订（2026-10-14 Task 15 追记）
+
+权威偏差登记 = `docs/version-matrix.md` §12.9（11 条）；本节只摘与 spec 正文相抵的顶层偏差。
+
+1. **record 模块 CLI 形态**（兑现 §4「偏差在本节登记」承诺）：真实命令为 `irita tx record create <digest> SM3 --uri … --meta …`（spec 设想的 `create-record --record-id --contents` 子命令/旗标不存在）；record-id 链上派生、客户端不可指定 → 业务键移由 `Content.URI` 承载（`skytrust://license_registry/<METHOD>/<key>`）、contents JSON 移由 `Content.Meta` 承载；QueryState 按 record-id/txhash 查询，业务键形态显式报错（全代码库零业务调用点，grep 证据，无静默破坏面）。ics23 双段 Merkle 证明经 `abci_query prove=true` 实证可用——spec 承诺的证明 bonus 兑现。校准全文：计划「实施偏差记录」Task 1 节。
+2. **验收断言 ③ 校准**（§8 门表「四段前缀 = IRITA-/…」措辞对 real 模式为假）：real 传输返回链原生 TxID，`IRITA-` 前缀是 sim 传输工件（§11.3-④ 同源先例）——real 验收 ③ 改为 SRC3 经 IRITA TM RPC `/tx?hash=0x…` 链上实证 `tx_result.code=0`（Run1 `C1A55DF0…`、Run2 `35356B59…` 均实证）；sim 侧 verify 脚本保留前缀断言（两世界各自正确）。
+3. **能力降级错误码 = 2005**（非计划早期钉死的 5003）：5003 已被 `errcode.AuthScope` 占用且在线使用，复用即一码两义（触数据红线）→ 落位 2005（2xxx 跨链段，与 2004 幂等同段）。README 错误码表 / explain.js / 前端降级卡文案全部按 2005。
+4. **CPU 硬限整改**（§9 C-1 风险「16 进程负载推高」以事故形式落地）：IRITA 4 节点无限制启动占满 2 核机，生产后端 01:46 静默死亡 → `start-irita.sh` 改 systemd-run 瞬态单元 CPUQuota=30%/节点 + CPUWeight=80 + MemoryHigh=280M（commit 3ba5e6a），**绝不回退无限制启动**；保护效果经正式验收 Run2 实证（负载风暴 ≤8.3 vs 整改前实测 40-93）。version-matrix §12.5。
+5. **空块常态**：create_empty_blocks 留默认 true → ~1.47s/块，IRITA 块高比其余三链大一个量级（~40-50k 块/日）——如实登记，四端浏览器块高区同屏注记「空块预期、账本连续」。
+6. **验收 ⑤ 如实**（§8「成功率必须 1」未达成，裁定⑥口径）：Run1/Run2 均 9/10，败笔恒为 ChainMaker SDK gRPC stall 受害者（76-95s，与 IRITA 无关，风暴下受害者轮转 fabric↔CM 实证）；跨链性能正式谱系仍以老机 §6.2（527ms@100 连发）为准——§12.6 rate/p95 双记如实登记，绝不放宽协议、绝不调小 COUNT 造好看数字。

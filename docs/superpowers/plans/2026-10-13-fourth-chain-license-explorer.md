@@ -323,7 +323,7 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"`
 
 ## 实施偏差记录（执行中如实追加）
 
-（空——Task 1 Step 7 record CLI 形态校准结果、Task 5 QueryState 路径取舍、Task 13 切换时间线等落地后补记于此）
+（Task 15 收编：Task 1 record CLI 校准 = 下方 Task 1 节；Task 5 QueryState 取舍 = Task 1 节第 4 条落地（record-id/txhash 双形态 + 业务键显式报错，评审全项 agree）；Task 13 切换时间线 = version-matrix §12.10（15:17:24 新 pid 137676，死亡窗口零写入=零断代）；顶层偏差汇总另见 spec §13 实施修订。）
 
 ### Task 1 Step 7 校准实录（record 模块真实接口形态，Task 5 实现必须以此为准）
 

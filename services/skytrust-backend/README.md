@@ -11,6 +11,7 @@
 - **系统三·跨域可信监管（Plan 4）**：6 类安全告警与线性状态机、7 级跨链身份亚秒追踪（断链即断点留痕，禁止拼造）、监管授权（scope×目标×有效窗 + ChainMaker 上链）、SM9 密文核验（未授权仅返回封缄——密文状态/摘要/脱敏值；授权后按 scope 解密临时视图 + SM3/SM9 双验证 + 航路/载荷一致性自动告警，核验结论 audit_hash 上链）、监管审计查询/CSV 导出与驾驶舱聚合；
 - **实验与验收（Plan 5）**：11 类实验引擎（执行器注册表 + 统计器 成功率/p50/p95/max + Run 编排）、experiment 四端点、TC1/TC2/TC3 各 8 例验收套件（24 例独立 :memory: 服务器）、Apifox 文档工件（openapi.json 64 端点 + scenarios.json 24 场景 + 回放录制套件，产物入库 docs/apifox）；
 - **真实三链迁移（Plan 6）**：ChainTransport 迁移缝 + 按链适配器（chainmaker/fabric/fisco）、CHAIN_MODE 与分链覆盖 + buildChains 切换（未注册 real 传输 = 启动 fail-fast，绝不静默仿真冒充真实链）、contracts/ 三链合约工件 + 交付索引、docs/real-chain-migration.md 迁移指南（"三链真实在线"属部署期验收门）。
+- **第四链·证照链与四端浏览器（Plan 7，2026-10-13）**：IRITA v4.0.0 证照链（SM2 两层国密原生、4-validator BFT）real 传输（读 = TM RPC net/http，写 = 内置 record 模块 CLI shell-out）+ `IRITA_MODE` 分链覆盖；FLIGHT_PASS / PASS_REVOKE 签发源链迁移（**irita→chainmaker→fabric**，签发身份 `REGISTRY-ADMIN` 证照中心——四方分权：申请→审批→签发→验证）；explorer 五端点（四链总览 / 节点 / 块列表 / 块详情 / TxID 直查，链 RPC 能力缺失 → 2005 如实降级，绝不拼造数据）；部署与验收证据登记 `docs/version-matrix.md` §12。
 
 ## 启动方式
 
@@ -34,17 +35,23 @@ cd services/skytrust-backend && go run ./cmd/server
 | --- | --- | --- |
 | `SERVER_ADDR` | `:8080` | HTTP 监听地址 |
 | `DB_PATH` | `data/skytrust.db` | SQLite 数据库文件路径 |
-| `CHAIN_MODE` | `sim` | 链模式：`sim`（inproc 模拟传输，默认）/ `real`（真实三链；需按 `docs/real-chain-migration.md` 注册各链 SDK 传输，未注册则启动 fail-fast，绝不静默仿真冒充真实链） |
+| `CHAIN_MODE` | `sim` | 链模式：`sim`（inproc 模拟传输，默认）/ `real`（真实四链；需按 `docs/real-chain-migration.md` 注册各链 SDK/CLI 传输，未注册则启动 fail-fast，绝不静默仿真冒充真实链） |
 | `CHAINMAKER_MODE` | `（空）` | 监管链分链覆盖：空=跟随 `CHAIN_MODE`；可独立设 `sim`/`real` |
 | `FABRIC_MODE` | `（空）` | 运营链分链覆盖：空=跟随 `CHAIN_MODE`；可独立设 `sim`/`real` |
 | `FISCO_MODE` | `（空）` | 管理链分链覆盖：空=跟随 `CHAIN_MODE`；可独立设 `sim`/`real` |
+| `IRITA_MODE` | `（空）` | 证照链分链覆盖：空=跟随 `CHAIN_MODE`；可独立设 `sim`/`real` |
+| `IRITA_RPC` | `（无，real 必填）` | 证照链节点 TM RPC 基址（如 `http://127.0.0.1:26657`，读路径；CLI `--node tcp://…` 由此派生）——缺失即 fail-fast 显式点名 |
+| `IRITA_CHAIN_ID` | `（无，real 必填）` | 证照链 chain-id（部署值 `skytrust-license`） |
+| `IRITA_CLI_BIN` | `（无，real 必填）` | `irita` CLI 二进制路径（写路径 shell-out：`tx record create`） |
+| `IRITA_CLI_HOME` | `（无，real 必填）` | CLI HOME 目录（keyring 所在，部署值 `/opt/irita/cli-home`） |
+| `IRITA_KEY_NAME` | `（无，real 必填）` | 签名账户名（keyring test backend，部署值 `skytrust-biz`） |
 | `SM9_KEY_DIR` | `data/sm9` | SM9 主密钥持久化目录 |
 | `APP_TIMEZONE` | `Asia/Shanghai` | 响应时间戳时区 |
 | `LOG_LEVEL` | `info` | 日志级别 |
 | `OFFCHAIN_AUTOPILOT_MS` | `0` | 系统二后台 HEARTBEAT 间隔（毫秒）。`0`=关闭（测试默认）；生产入口 main.go 在值为 0 时自动采用 2000ms；设为负值 = 显式关闭生产后台流量 |
 | `TELEMETRY_AUTOPILOT_MS` | `0` | 遥测 SIM 推进间隔（毫秒）。语义同 `OFFCHAIN_AUTOPILOT_MS`：`0`=关闭（测试默认）；生产入口 main.go 在值为 0 时自动采用 2000ms；设为负值 = 显式关闭生产遥测推进 |
 
-> **三链真实在线属部署期验收门**：`CHAIN_MODE=real`（或分链 `CHAINMAKER_MODE`/`FABRIC_MODE`/`FISCO_MODE`=real）需 Docker / cgo（CGO_ENABLED=1，MinGW-w64）/ Java 与三链网络就绪，并按 [`docs/real-chain-migration.md`](../../docs/real-chain-migration.md) 注册真实 SDK 传输；hermetic 构建不携带任何链 SDK，未注册传输时启动即 fail-fast（`config.ChainModeFor` 决定每链生效模式，绝不静默仿真冒充真实链）。三链合约工件与索引见 [`contracts/README.md`](../../contracts/README.md)。
+> **四链真实在线属部署期验收门**：`CHAIN_MODE=real`（或分链 `CHAINMAKER_MODE`/`FABRIC_MODE`/`FISCO_MODE`/`IRITA_MODE`=real）需 Docker / cgo（CGO_ENABLED=1，MinGW-w64）/ Java 与 chainmaker/fabric/fisco 三链网络就绪，并按 [`docs/real-chain-migration.md`](../../docs/real-chain-migration.md) 注册真实 SDK 传输；**IRITA 证照链例外**——不需要 Docker/cgo/Java，只需 `irita` CLI 二进制与节点 RPC 可达（读 = net/http TM RPC，写 = CLI shell-out，`IRITA_*` 五个 env 必填，缺失即 fail-fast 显式点名）。hermetic 构建不携带任何链 SDK，未注册传输时启动即 fail-fast（`config.ChainModeFor` 决定每链生效模式，绝不静默仿真冒充真实链）。四链合约工件与索引见 [`contracts/README.md`](../../contracts/README.md)；IRITA 部署/锚点/验收证据见 [`docs/version-matrix.md`](../../docs/version-matrix.md) §12。
 
 ## API 约定与端点清单
 
@@ -69,8 +76,8 @@ cd services/skytrust-backend && go run ./cmd/server
 | 分组 | 端点 | 说明 |
 | --- | --- | --- |
 | health | `POST /api/health/ping` | 存活探测，返回 `{"ping":"pong"}` |
-| health | `POST /api/health/check` | 健康检查（DB / 三链状态） |
-| chain | `POST /api/chain/status` | 三模拟链状态（fabric / chainmaker / fisco-bcos） |
+| health | `POST /api/health/check` | 健康检查（DB / 四链状态） |
+| chain | `POST /api/chain/status` | 四链状态（chainmaker / fabric / fisco-bcos / irita；sim 模式下为模拟链状态，real 模式为真实探针） |
 | crypto | `POST /api/crypto/sm3` | SM3 摘要 |
 | crypto | `POST /api/crypto/sm9/keygen` | 生成 SM9 节点身份密钥 |
 | crypto | `POST /api/crypto/sm9/sign` | SM9 签名 |
@@ -187,8 +194,8 @@ cd services/skytrust-backend && go run ./cmd/server
 4. `mission/submit` 提交 → 源链交易 + MISSION_APPLICATION 跨链（fabric→fisco-bcos）→ 任务 SUBMITTED / 申请 RELAYED；**跨链失败自动撤回 DRAFT**，可修改后重报；
 5. `review/submit` 监管审核 → MISSION_REVIEW_RESULT 跨链（fisco-bcos→fabric）→ APPROVED / REJECTED / COORDINATING；
 6. `conflict/detect` + `conflict/resolve` 三维冲突协调（COORDINATING ⇄ REVIEWING）；
-7. `pass/issue` 签发飞行许可（FLIGHT_PASS 跨链）→ `pass/verify` 放行前验证；
-8. `pass/revoke` 吊销许可（PASS_REVOKE 跨链）；`uav/revoke` 注销无人机。
+7. `pass/issue` 签发飞行许可（FLIGHT_PASS 跨链 **irita→chainmaker→fabric**：证照链为签发源链，签发身份 `REGISTRY-ADMIN` 证照中心；Plan 7 迁移前源链为 fisco-bcos）→ `pass/verify` 放行前验证；
+8. `pass/revoke` 吊销许可（PASS_REVOKE 跨链，源链同为 irita 证照链）；`uav/revoke` 注销无人机。
 
 跨链留痕统一经 `crosschain/send|query|list` 观察：**四段 TxID**（`source_chain_tx_id` / `reg_receive_tx_id` / `reg_relay_tx_id` / `target_chain_tx_id`）+ `reg_record_id`；任一跳失败即 FAILED（含 `error_code`），**不落 SUCCESS**。
 
@@ -448,11 +455,13 @@ services/skytrust-backend/
 │   ├── api/               # 路由、中间件、统一响应/错误码别名、78 端点 handler、api.Deps
 │   ├── apidoc/            # Apifox 文档渲染：Schema 推断 / OpenAPI 3.0.3 构建 / 场景文档 / 确定性渲染 + 端点表（78 行）/ 场景表（24 个）
 │   ├── audit/             # 审计服务（query / export CSV）
-│   ├── chainadapter/      # 链适配接口（ChainAdapter / ChainStatusProvider）+ ChainTransport 迁移缝
-│   │   ├── chainmaker/    # ChainMaker 真实链适配器（合约/方法白名单）
-│   │   ├── fabric/        # Fabric 真实链适配器（recordJSON 约定 + 方法白名单）
-│   │   ├── fisco/         # FISCO BCOS 真实链适配器（合约/方法白名单）
-│   │   └── sim/           # 模拟链：fabric / chainmaker / fisco-bcos（延迟/故障注入）
+│   ├── chainadapter/      # 链适配接口（ChainAdapter / ChainStatusProvider）+ ChainTransport 迁移缝 + BlockQuerier（explorer 块查询缝）
+│   │   ├── chainmaker/    # ChainMaker 链适配器（合约/方法白名单）
+│   │   ├── fabric/        # Fabric 链适配器（recordJSON 约定 + 方法白名单）
+│   │   ├── fisco/         # FISCO BCOS 链适配器（合约/方法白名单）
+│   │   ├── irita/         # IRITA 证照链适配器（record 模块逻辑合约 + 方法白名单，Plan 7）
+│   │   ├── real/          # 真实链传输（//go:build realchains）：chainmaker/fabric SDK、fisco JSON-RPC、irita TM RPC + CLI shell-out + 逐跳延迟探针
+│   │   └── sim/           # 模拟链：fabric / chainmaker / fisco-bcos / irita（延迟/故障注入）
 │   ├── config/            # 环境变量配置加载（默认值见上表）
 │   ├── crosschain/        # 跨链网关：13 步协议引擎、信封规范化、路由/载荷策略、errcode/timex 之外的共享类型
 │   ├── crypto/            # SM3 摘要 + SM9 签名/验签/加解密（含规范化序列化）
@@ -478,6 +487,7 @@ services/skytrust-backend/
 - **Plan 4（系统三·密文监管）**：✅ 完成 —— 6 类安全告警与线性状态机、7 级跨链身份追踪（伪名→设备地址→许可→SM9→无人机→运营方→厂商，断链即断点 5001，亚秒实测）、监管授权（scope×目标×有效窗，APPROVE 写 ChainMaker regulatory_authorization，惰性过期）、SM9 密文核验（未授权仅封缄 5002/5003/5004 且留痕，授权后临时解密视图不落库 + SM3/SM9 双验证 + 航路/载荷一致性自动告警去重 + 结论 audit_hash 写 audit_record）、监管审计查询/CSV 导出、驾驶舱聚合、系统三端到端验证（10 端点）。
 - **Plan 5（实验 + 验收 + Apifox 文档）**：✅ 完成 —— 11 类实验引擎（注册表 + 统计器成功率/p50/p95/max + Run 编排）、experiment 四端点、TC1×8+TC2×8+TC3×8 验收套件（24 例独立 :memory:）、apidoc 渲染核心（Schema 推断/OpenAPI 3.0.3/场景文档/确定性渲染）+ 端点表 64 行/场景表 24 个、Apifox 回放录制套件（24 场景 + 64 端点样例 + [] 探针）与 docs/apifox 产物入库。
 - **Plan 6（真实三链切换 ChainMaker→Fabric→FISCO）**：✅ 完成 —— ChainTransport 迁移缝 + 按链适配器（chainmaker/fabric/fisco）、sim TxID SM3 化、CHAIN_MODE 与分链覆盖（CHAINMAKER_MODE/FABRIC_MODE/FISCO_MODE）+ buildChains 切换（未注册 real = 启动 fail-fast，绝不静默仿真）、三链 contracts/ 合约工件（ChainMaker Docker-Go ×5 / Fabric chaincode / FISCO Solidity）+ 交付索引、docs/real-chain-migration.md 迁移指南、实验并发钳制与遗留 backlog 清扫（F-1/F-2/F-3/F-5、C11-C19、B3/B4）；"三链真实在线"属部署期验收门（需 Docker/cgo/Java/三链网络），hermetic 构建不携带链 SDK。
+- **Plan 7（第四链·证照链 IRITA + 区块链浏览器）**：✅ 完成 —— IRITA v4.0.0（SM2 两层国密、4-validator BFT、chain-id skytrust-license）real 传输（读 = TM RPC，写 = record 模块 CLI shell-out，`IRITA_*` 五 env 缺失 fail-fast，不实现 Resettable）+ `IRITA_MODE` 分链覆盖 + sim irita 链；FLIGHT_PASS/PASS_REVOKE 签发源链迁移 irita→chainmaker→fabric（签发/吊销身份 `REGISTRY-ADMIN`，审批仍 `FISCO-ADMIN`——四方分权）；explorer 五端点（overview/nodes/blocks/block/tx，BlockQuerier 缝，能力缺失 2005 如实降级）；四端门户链上浏览器（前端 CXV 模块）。部署锚点、浸泡/f=1 实证、CPU 硬限整改、两轮正式验收（①-④ PASS ×2，⑤ 如实双记）全部登记 version-matrix §12。
 
 ## Apifox 文档
 
