@@ -41,14 +41,14 @@
 
     /* ---- 每端点一行「成功证明了什么」 ---- */
     paths: {
-      '/api/chain/status': '成功 = 三链适配器（ChainMaker 监管 / Fabric 运营 / FISCO BCOS 管理）真实 SDK 探测全部应答；任一不可达会如实标 OFFLINE，绝不伪装（R0′）。',
-      '/api/health/check': '成功 = 数据库、国密服务（SM3/SM9）、三链适配器自检全通过。',
+      '/api/chain/status': '成功 = 四链适配器（ChainMaker 监管 / Fabric 运营 / FISCO BCOS 管理 / IRITA 证照）真实 SDK/RPC 探测全部应答；任一不可达会如实标 OFFLINE，绝不伪装（R0′）。',
+      '/api/health/check': '成功 = 数据库、国密服务（SM3/SM9）、四链适配器自检全通过。',
       '/api/health/ping': '成功 = HTTP 服务存活（恒 code=0，供探活/负载均衡）。',
       '/api/crypto/sm3': '成功 = 载荷按契约规范化（canonical）后计算 SM3 摘要——同语义载荷恒同摘要，是全系统防篡改证据的根基。',
       '/api/crypto/sm9/keygen': '成功 = SM9 身份密钥对已在服务端生成；私钥仅服务端持有、永不回传（密钥托管设计）。',
       '/api/crypto/sm9/sign': '成功 = 先 SM3 摘要再 SM9 私钥签名，签名与载荷内容强绑定（改一个字节验签即失败）。',
       '/api/crypto/sm9/verify': '成功 = 验签执行完毕（恒 code=0）：valid=true 载荷未篡改；valid=false 即「理论失败」数据化——畸形签名则直接 1002。',
-      '/api/demo/init': '成功 = 业务基线数据幂等重灌（upsert）；真实三链账本不受影响。',
+      '/api/demo/init': '成功 = 业务基线数据幂等重灌（upsert）；真实四链账本不受影响。',
       '/api/demo/reset': '成功 = 20 张业务表清空 + 模拟链状态复位；P6-R6 红线：真实链账本永不重置。',
       '/api/manufacturer/register': '成功 = 制造商主数据入库（幂等 upsert），供应链溯源的根记录。',
       '/api/manufacturer/list': '成功 = 分页读取制造商台账。',

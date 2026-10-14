@@ -91,7 +91,7 @@ func TestBuildOpenAPI(t *testing.T) {
 // TestRenderDeterministic 同输入两次渲染逐字节一致（map 键排序），且为缩进 JSON。
 func TestRenderDeterministic(t *testing.T) {
 	doc := BuildScenarios([]Scenario{
-		{ID: "TC1-01", Name: "三链在线", System: "system1", Steps: []ScenarioStep{
+		{ID: "TC1-01", Name: "四链在线", System: "system1", Steps: []ScenarioStep{
 			{Path: "/api/chain/status", Body: map[string]any{}, ExpectCode: 0},
 		}},
 	})
@@ -100,7 +100,7 @@ func TestRenderDeterministic(t *testing.T) {
 		t.Fatal(err)
 	}
 	b, err := Render(BuildScenarios([]Scenario{
-		{ID: "TC1-01", Name: "三链在线", System: "system1", Steps: []ScenarioStep{
+		{ID: "TC1-01", Name: "四链在线", System: "system1", Steps: []ScenarioStep{
 			{Path: "/api/chain/status", Body: map[string]any{}, ExpectCode: 0},
 		}},
 	}))
@@ -116,4 +116,18 @@ func TestRenderDeterministic(t *testing.T) {
 	if !bytes.Contains(a, []byte("\n  ")) {
 		t.Fatal("want indented output")
 	}
+}
+
+// TestStorylineTC101NamedFourChains 钉死 TC1-01 场景名与四链现实一致（最终评审 IMP-1：
+// chain/status 现报四链，场景名不得残留「三链在线」——该字符串流入生成物 test-scenarios.json）。
+func TestStorylineTC101NamedFourChains(t *testing.T) {
+	for _, sc := range Storylines {
+		if sc.ID == "TC1-01" {
+			if sc.Name != "四链在线" {
+				t.Fatalf("TC1-01 场景名 = %q，期望「四链在线」（四链时代文案一致性）", sc.Name)
+			}
+			return
+		}
+	}
+	t.Fatal("Storylines 缺少 TC1-01")
 }

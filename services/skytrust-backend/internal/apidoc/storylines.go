@@ -8,7 +8,7 @@ package apidoc
 // 自增 ID 从头（MISSION-2026-001 复用无冲突——旧行已清；PASS-2026-001 为显式 ID
 // 签发——演示数据冻结裁定，签发即冻结字面量，年翻永久命中后续 verify/revoke/追踪步）。
 var Storylines = []Scenario{
-	{ID: "TC1-01", Name: "三链在线", System: "system1", Steps: []ScenarioStep{
+	{ID: "TC1-01", Name: "四链在线", System: "system1", Steps: []ScenarioStep{
 		{Path: "/api/chain/status", Body: map[string]any{}, ExpectCode: 0},
 	}},
 	{ID: "TC1-02", Name: "正常任务申请跨链中继", System: "system1", Steps: []ScenarioStep{

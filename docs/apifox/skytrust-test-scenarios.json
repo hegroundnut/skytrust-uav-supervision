@@ -5,7 +5,7 @@
   "scenarios": [
     {
       "id": "TC1-01",
-      "name": "三链在线",
+      "name": "四链在线",
       "system": "system1",
       "steps": [
         {
