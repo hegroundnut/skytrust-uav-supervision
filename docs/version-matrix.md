@@ -404,7 +404,7 @@ code=0 可验（Task 14 实弹）——账本永不复位（P6-R6 同源），�
 - **实装**：`real/fisco/transport.go` `GetBlockByHeight`/`ListRecentBlocks` 由 2005 桩改为 SDK 实查（Time=链上毫秒时间戳归一 timex；Proposer=sealerList[sealer] nodeID 原样；字段缺失如实留空绝不猜测）。TDD：`real/fisco_smoke_test.go`（realchains 标签、**只读**零链上写入）五项断言 RED→GREEN——高度回显（钉死「恒返块 1」不复存在）、块 1 含部署 Tx、块 0 拒绝、新→旧严格降序、limit≤0 防御。fisco `explorer/blocks`/`explorer/block` 自此 code=0 真实块；§12.8 的 2005 实弹记录随之成为历史（2005 哨兵保留为通用能力缺口，现四链无触发者）。
 - **块 0 边界（无假数据红线）**：节点对 0 号返回**合成应答**（hash `0xdc19ce48…` ≠ 块 1 parentInfo 链上承诺的父哈希 `0x14acbcd6…`）——非账本数据；`GetBlockByHeight(0)` 显式拒绝、`ListRecentBlocks` 永不入列 0 号（与 irita 惯例一致；API 面 `binding:"required"` 本就挡 0）。
 - **冻结面处置**：§11.4-① 原文一字不动，本节复核其适用范围（仅 curl 面）；`run-acceptance.sh` ② 的 `fisco_tx_in_block1` 包含证明仍走 JSON-RPC 面（怪癖在该面依旧成立、证明依旧有效），逻辑零改动仅注释加注。前端同步：chainview.js 降级卡移除 fisco 怪癖注记、explain.js 2005/explorer/block 词条、demo-script 第 9 章步骤 4 改「管理链实弹」。
-- **生产切换**：:8080 四链二进制重启待用户确认窗口（生产进程红线），执行后本节追记。
+- **生产切换（2026-10-14 21:11，用户确认「立即切换」窗口）**：已验证二进制（b888937 源码构建，与提交仅差 3 处注释级交叉引用）换入 `bin/server-realchains`；旧 15:16 版备份为 `bin/server-realchains.bak-fisco-blocks`（回退路径，未动用）。旧 pid 137676 优雅停 → `start-backend-real.sh` 拉起新 pid 544444，自检 **4×ONLINE count=4**（脚本预检报 7051/20200 未监听为 ss 高负载假阴性——脚本自注的 2026-10-13 14:42 同款，复核 ss 实监听 3 行）。生产实弹：`explorer/blocks` fisco → **code=0 真实块 182→180**；`explorer/block` h=1 → 部署锚点 `0x172514d300…` 全哈希（real 非 sim 铁证）；`explorer/tx` 部署 Tx → code=0 `tx{block_num:1,status:0}`。用户原报「能力降级 2005·该链 RPC 不支持区块查询」在生产 :15001 门户就此消除。隔离验证（切换前，:18181 弃用 DB/keys）同套 battery 全过含 6002 边界（越界/binding h=0/垃圾 TxID）与三链块列表回归（chainmaker 702 / fabric 336 / irita 62594）。
 
 
 ---
