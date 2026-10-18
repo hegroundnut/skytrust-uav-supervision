@@ -9,14 +9,21 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh"
 
 FAIL=0
 
-echo "== [1/4] FISCO BCOS 管理链（RPC 20200 / p2p 30300）=="
-if port_up 20200; then
-  echo "  已在运行，跳过"
-else
-  (cd "$FISCO_NODE" && bash start.sh)
-  for _ in $(seq 1 20); do port_up 20200 && break; sleep 1; done
-fi
-if port_up 20200; then echo "  ✓ 端口 20200 监听"; else echo "  ✗ FISCO 启动失败（查 $FISCO_NODE/log/）"; FAIL=1; fi
+echo "== [1/4] FISCO BCOS 管理链（4 节点 BFT：RPC 20200-20203 / p2p 30300-30303）=="
+# 2026-10-18 改 4 节点全覆盖（终审后实弹教训）：原脚本只管 node0/20200——整机重启后
+# node1-3（nodes_expand/ 扩容布局，start.sh 硬依赖 ../fisco-bcos symlink）进程被杀，
+# 脚本却看不见（explorer/nodes 3/4 离线才暴露；version-matrix §12.12）。
+for D in $FISCO_NODES; do
+  S=${D##*/node}
+  P="2020$S"
+  if port_up "$P"; then
+    echo "  node$S 已在运行（$P），跳过"
+  else
+    (cd "$D" && bash start.sh)
+    for _ in $(seq 1 20); do port_up "$P" && break; sleep 1; done
+  fi
+  if port_up "$P"; then echo "  ✓ node$S 端口 $P 监听"; else echo "  ✗ FISCO node$S 启动失败（查 $D/log/ 与 $D/nohup.out）"; FAIL=1; fi
+done
 
 echo "== [2/4] ChainMaker 监管链（5-org TBFT：RPC 12301-12305 / p2p 11301-11305，wx-org1..5 / chain1）=="
 # 2a. docker-go 合约 VM 引擎容器（节点执行合约依赖它；容器由节点首次启动时创建，
@@ -33,7 +40,8 @@ for N in $CM_ORGS; do
   if docker_running "$VM"; then
     echo "  $VM 已在运行，跳过"
   elif docker_exists "$VM"; then
-    docker start "$VM" >/dev/null && echo "  已拉起既存 $VM"
+    # 终审 Important #2：失败分支不得静默——start/run 失败即 FAIL=1
+    docker start "$VM" >/dev/null && echo "  已拉起既存 $VM" || { echo "  ✗ $VM docker start 失败"; FAIL=1; }
   else
     docker run -d --name "$VM" --network host --restart unless-stopped \
       -e CGROUP_DISABLE=true -e DOCKERVM_LOG_IN_CONSOLE=false \
@@ -43,7 +51,14 @@ for N in $CM_ORGS; do
       -v "$CM_ROOT/chainmaker-go/data/wx-org$N.chainmaker.org/go:/mount" \
       -v "$CM_ROOT/chainmaker-go/log/wx-org$N.chainmaker.org/go:/log" \
       hub-dev.cnbn.org.cn/chainmakerofficial/chainmaker-vm-engine:v2.3.9 >/dev/null \
-      && echo "  已新建 $VM（engine 2235$N / sandbox 3235$N）"
+      && echo "  已新建 $VM（engine 2235$N / sandbox 3235$N）" || { echo "  ✗ $VM docker run 失败"; FAIL=1; }
+  fi
+  # engine/sandbox 口就绪核验（终审 Important #2：容器活着≠端口在听；刚拉起需数秒）
+  for _ in $(seq 1 10); do port_up "2235$N" && break; sleep 1; done
+  if port_up "2235$N" && port_up "3235$N"; then
+    echo "  ✓ $VM engine 2235$N / sandbox 3235$N 监听"
+  else
+    echo "  ✗ $VM engine/sandbox 端口未就绪（合约执行将失败；docker logs $VM）"; FAIL=1
   fi
 done
 # 2b. 节点进程（chainmaker 为前台进程，须后台化；每 org 日志 log/orgN/console.log。
@@ -52,7 +67,12 @@ for N in $CM_ORGS; do
   RPC_PORT=1230$N
   NODE_LOG="$CM_ROOT/chainmaker-go/log/org$N/console.log"
   mkdir -p "$(dirname "$NODE_LOG")"
-  GL=""; [ "$N" = "5" ] && GL="env GOMEMLIMIT=450MiB "
+  # org5 与 org1-4 一致不加内存限制（2026-10-18 实测定案，version-matrix §12.12）：
+  # GOMEMLIMIT 450MiB→650MiB 两档均实测 GC thrashing——节点稳态 RSS≈630MB（org1-4
+  # 同工作量实证），堆限贴近活堆即持续 GC，82-100% CPU 拖 2 核机到 load 11、
+  # IRITA /status 超时。plan 原 450MiB 红线系老机器 1.7GB 预算产物；本机 avail
+  # >1.4GB，org5 不限后 RSS 增量 ~+90MB 可承受。
+  GL=""
   if port_up "$RPC_PORT"; then
     echo "  org$N 已在运行（$RPC_PORT），跳过"
   else
@@ -65,8 +85,10 @@ for N in $CM_ORGS; do
   if port_up "$RPC_PORT"; then echo "  ✓ org$N 端口 $RPC_PORT 监听"; else echo "  ✗ org$N 启动失败（查 $NODE_LOG）"; FAIL=1; fi
 done
 
-echo "== [3/4] Fabric 运营链（SMARTBFT 4-orderer 7050 / peer0+peer1 ×2org：7051,9051 容器内 + 7061,9061 宿主映射）=="
-if port_up 7050 && port_up 7051 && port_up 9051; then
+echo "== [3/4] Fabric 运营链（SMARTBFT 4-orderer 7050/7052/7056/7058 / peer0+peer1 ×2org：7051,9051 容器内 + 7061,9061 宿主映射）=="
+# 终审 Important #3：4-orderer 宿主口为 7050/7052/7056/7058（compose-bft-test-net.yaml），
+# 原脚本只盯 7050 —— orderer2-4 掉了会误判「已在运行」且终检漏报。
+if port_up 7050 && port_up 7052 && port_up 7056 && port_up 7058 && port_up 7051 && port_up 9051; then
   echo "  orderer/peer0 已在运行，跳过"
 else
   # 容器已存在（test-network 曾 up 过）→ 仅 docker start；绝不用 network.sh down/up 重建
@@ -83,17 +105,19 @@ else
   fi
 fi
 # peer1.org1/peer1.org2（2026-10-18 本机化）：幂等 runner（running→跳过 / 存在→start / 缺失→run）
-if [ -x "$FAB_P1_RUNNER" ] || [ -f "$FAB_P1_RUNNER" ]; then
-  bash "$FAB_P1_RUNNER" | sed 's/^/  /'
+# runner 已收编入仓库 scripts/run-peers-local.sh 并以 RC 传播失败（终审 Important #4 +
+# Minor #2：/opt 原版末行 docker ps 恒 exit 0 会掩盖失败；pipefail 使 || FAIL=1 生效）
+if [ -f "$FAB_P1_RUNNER" ]; then
+  bash "$FAB_P1_RUNNER" | sed 's/^/  /' || FAIL=1
 else
-  echo "  ⚠ $FAB_P1_RUNNER 不存在，跳过 peer1（物料在老机器 /opt/skytrust-nodes？）"; FAIL=1
+  echo "  ⚠ $FAB_P1_RUNNER 不存在，跳过 peer1（物料在本机 /opt/skytrust-nodes/fabric/）"; FAIL=1
 fi
 # 链码容器（dev-*）：peer 会按需拉起，这里 best-effort 预启动既存容器缩短首次调用；
 # peer 未就绪时它们会自灭，无副作用（下次 invoke 由 peer 重建/重启）。
 for c in $(docker ps -a --format '{{.Names}}' | grep '^dev-peer'); do
   docker start "$c" >/dev/null 2>&1 || true
 done
-for P in 7050 7051 9051 7061 9061; do
+for P in 7050 7052 7056 7058 7051 9051 7061 9061; do
   if port_up "$P"; then echo "  ✓ 端口 $P 监听"; else echo "  ✗ 端口 $P 未监听"; FAIL=1; fi
 done
 

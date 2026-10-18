@@ -49,13 +49,17 @@ for N in 5 4 3 2 1; do
   fi
 done
 
-echo "== [4/4] FISCO BCOS：节点自带 stop.sh =="
-if port_up 20200; then
-  (cd "$FISCO_NODE" && bash stop.sh) && echo "  stopped fisco node0"
-  sleep 2
-  port_up 20200 && echo "  ⚠ 20200 仍在监听（stop.sh 未生效？手工核查）" || true
-else
-  echo "  节点未在运行，跳过"
-fi
+echo "== [4/4] FISCO BCOS：节点自带 stop.sh（4 节点逆序 node3→node0，2026-10-18 扩容覆盖）=="
+for D in $(echo "$FISCO_NODES" | tr ' ' '\n' | tac); do
+  S=${D##*/node}
+  P="2020$S"
+  if port_up "$P"; then
+    (cd "$D" && bash stop.sh) && echo "  stopped fisco node$S"
+    sleep 2
+    port_up "$P" && echo "  ⚠ $P 仍在监听（stop.sh 未生效？手工核查）" || true
+  else
+    echo "  node$S 未在运行，跳过"
+  fi
+done
 
 echo ALL_STOPPED
