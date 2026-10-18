@@ -1,0 +1,138 @@
+<style>
+  .mk { border:1px solid #d0d7de; border-radius:8px; background:#fff; padding:10px; margin-top:10px; font-size:12px; color:#1f2328; }
+  .mk * { box-sizing:border-box; }
+  .mk-picker { display:flex; gap:6px; align-items:center; flex-wrap:wrap; border:1px dashed #b8c0c8; border-radius:6px; padding:6px 8px; margin-bottom:8px; background:#f6f8fa; }
+  .mk-chip { border:1px solid #b8c0c8; border-radius:999px; padding:2px 10px; font-size:11px; background:#fff; }
+  .mk-chip.sel { border-color:#2563eb; background:#eff6ff; font-weight:600; }
+  .mk-note { font-size:10px; color:#6e7781; }
+  .hd-fabric { background:#2563eb; } .hd-fisco { background:#0891b2; } .hd-irita { background:#15803d; } .hd-cm { background:#7c3aed; }
+  .bdg { display:inline-block; border:1px solid #b8c0c8; border-radius:3px; padding:0 4px; margin-right:3px; font-size:9.5px; background:#f6f8fa; }
+  .bdg.ok { border-color:#1a7f37; color:#1a7f37; background:#ecfdf0; }
+  /* goals strip */
+  .mk-goals { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:8px; }
+  .mk-goal { border:1px solid #e1e4e8; border-radius:6px; padding:6px 8px; background:#f6f8fa; font-size:10.5px; }
+  .mk-goal b { font-size:11px; display:block; margin-bottom:2px; }
+  .mk-goal .num { font-size:14px; font-weight:700; color:#1f2328; }
+  .mk-goal.link { border-style:dashed; color:#57606a; }
+  /* journey header */
+  .mk-jhdr { display:flex; gap:14px; align-items:baseline; border:1px solid #e1e4e8; border-radius:6px; padding:6px 10px; background:#f6f8fa; margin-bottom:10px; flex-wrap:wrap; }
+  /* rail */
+  .mk-rail { display:flex; height:26px; border-radius:6px; overflow:hidden; margin-bottom:4px; }
+  .mk-seg { display:flex; align-items:center; justify-content:center; color:#fff; font-size:10.5px; }
+  .mk-stops { display:flex; margin-bottom:8px; }
+  .mk-stop { flex:1; text-align:left; padding:0 4px; }
+  .mk-stop .dot { width:10px; height:10px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1.5px #57606a; margin:-31px 0 6px 2px; }
+  .mk-stop .card2 { border:1px solid #e1e4e8; border-radius:4px; padding:4px 6px; font-size:10px; background:#fff; }
+  .mk-stop .card2 b { font-size:10.5px; }
+  .mk-stop .card2 .tx { font-family:ui-monospace,monospace; color:#57606a; }
+  /* compact lanes (option E secondary strip) */
+  .mk-lanes { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; }
+  .mk-lane { border:1px solid #e1e4e8; border-radius:6px; overflow:hidden; background:#fff; }
+  .mk-lane-hd { padding:3px 8px; color:#fff; font-size:10.5px; font-weight:600; }
+  .mk-ev { margin:5px; border:1px solid #e1e4e8; border-left:3px solid #999; border-radius:4px; padding:4px 6px; font-size:10px; background:#fff; }
+  .ev-fabric { border-left-color:#2563eb; } .ev-fisco { border-left-color:#0891b2; } .ev-irita { border-left-color:#15803d; } .ev-cm { border-left-color:#7c3aed; }
+  .mk-fold { border:1px dashed #b8c0c8; border-radius:6px; padding:5px 8px; font-size:10.5px; color:#57606a; background:#f6f8fa; margin-top:6px; }
+</style>
+
+<h2>融合版：C 的目标面板 + B 的时间线，两种密度选一个</h2>
+<p class="subtitle">两版的上半部分完全相同：三目标证据条 → 业务对象选择器 → 旅程概要头 → 横向时间线主叙事。区别只在时间线下方还放不放「四链结构泳道」。图中数字仍全部为示意占位。</p>
+
+<div class="options">
+
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>纯净融合 —— 目标面板 + 时间线（单一主叙事，最干净）</h3>
+      <p>时间线是唯一主角，首屏信息密度低、讲解动线简单：「先看三块芯片 → 点一张许可 → 从左到右读旅程」。四链结构感靠时间线的链色带表达；节点/块/台账三区仍在页面下方。</p>
+      <div class="mk">
+        <div class="mk-goals">
+          <div class="mk-goal"><b>目标① 异构链商密跨链</b><span class="num">4 链在线 · 留痕 1,284 条</span>SM9 验签通过率 100% · SM2/SM3 全链覆盖（下方时间线即证据）</div>
+          <div class="mk-goal link"><b>目标② 秒级链下 · 抗虫洞</b>路由中位 xx ms · 攻击注入→检出 xx s → 跳转「网络安全」页</div>
+          <div class="mk-goal link"><b>目标③ 秒级追踪 · 密文监管</b>七级追踪 xx s · 密文核验 xx 次 → 跳转「监管」页</div>
+        </div>
+        <div class="mk-picker">
+          <span class="mk-note">最近业务对象：</span>
+          <span class="mk-chip sel">✈ FP-2026-000731 · 已签发</span>
+          <span class="mk-chip">📋 MSN-2026-000712 · 审核中</span>
+          <span class="mk-chip">🛩 UAVREG-2026-000118</span>
+          <span class="mk-chip">🔏 LIC-REVOKE-000009</span>
+        </div>
+        <div class="mk-jhdr">
+          <b>FP-2026-000731 全链旅程</b>
+          <span>状态 <span class="bdg ok">SUCCESS</span></span>
+          <span>跨链消息 ×4</span><span>端到端 5.2s</span><span>验签 4/4 PASS</span><span>监管中继 ×3（非旁路）</span>
+        </div>
+        <div class="mk-rail">
+          <div class="mk-seg hd-fabric" style="flex:3">Fabric 运营链 · 申请</div>
+          <div class="mk-seg hd-cm" style="flex:1.2">CM 中继</div>
+          <div class="mk-seg hd-fisco" style="flex:3">FISCO 管理链 · 审批</div>
+          <div class="mk-seg hd-cm" style="flex:1.2">CM 中继</div>
+          <div class="mk-seg hd-irita" style="flex:3">IRITA 证照链 · 签发</div>
+          <div class="mk-seg hd-fabric" style="flex:2.2">Fabric · 验证</div>
+        </div>
+        <div class="mk-stops">
+          <div class="mk-stop"><div class="dot" style="background:#2563eb"></div><div class="card2"><b>① 任务申请上链</b><br><span class="tx">tx f3a9…c021</span><br><span class="bdg ok">SM3✓</span><span class="bdg ok">SM9✓</span><br>块高 1024 · 41ms</div></div>
+          <div class="mk-stop"><div class="dot" style="background:#7c3aed"></div><div class="card2"><b>◈ 监管验签中继</b><br><span class="bdg ok">verify PASS</span><br>4 段 TxID 可点</div></div>
+          <div class="mk-stop"><div class="dot" style="background:#0891b2"></div><div class="card2"><b>② 审批受理</b><br><span class="tx">tx 8c1b…34de</span><br>块高 2210 · 38ms</div></div>
+          <div class="mk-stop"><div class="dot" style="background:#7c3aed"></div><div class="card2"><b>◈ 监管中继</b><br><span class="bdg ok">verify PASS</span></div></div>
+          <div class="mk-stop"><div class="dot" style="background:#15803d"></div><div class="card2"><b>④ 许可签发</b><br><span class="tx">tx e77f…ab10</span><br><span class="bdg ok">SM2✓</span><span class="bdg ok">Merkle✓</span><br>块高 335</div></div>
+          <div class="mk-stop"><div class="dot" style="background:#2563eb"></div><div class="card2"><b>⑤ 起飞前验证</b><br><span class="tx">tx 9b2e…77aa</span><br><span class="bdg ok">验签 PASS</span></div></div>
+        </div>
+        <div class="mk-note">节点可点 → 该跳四段存证 / 块详情 / 链上原始收据；时间严格按链上时间戳排布</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="e" onclick="toggleSelect(this)">
+    <div class="letter">E</div>
+    <div class="content">
+      <h3>双视图融合 —— 时间线讲故事 + 折叠泳道看结构</h3>
+      <p>时间线下方多一条可折叠的「四链结构」窄泳道（默认收起，一键展开）：时间线回答「发生了什么、多快」，泳道回答「每条链各自承担什么」。信息更全，但多一层交互。</p>
+      <div class="mk">
+        <div class="mk-goals">
+          <div class="mk-goal"><b>目标① 异构链商密跨链</b><span class="num">4 链在线 · 留痕 1,284 条</span>SM9 验签通过率 100%</div>
+          <div class="mk-goal link"><b>目标② 秒级链下 · 抗虫洞</b>→ 跳转「网络安全」页</div>
+          <div class="mk-goal link"><b>目标③ 秒级追踪 · 密文监管</b>→ 跳转「监管」页</div>
+        </div>
+        <div class="mk-picker">
+          <span class="mk-note">最近业务对象：</span>
+          <span class="mk-chip sel">✈ FP-2026-000731 · 已签发</span>
+          <span class="mk-chip">📋 MSN-2026-000712 · 审核中</span>
+          <span class="mk-chip">🛩 UAVREG-2026-000118</span>
+        </div>
+        <div class="mk-jhdr">
+          <b>FP-2026-000731 全链旅程</b>
+          <span>状态 <span class="bdg ok">SUCCESS</span></span>
+          <span>跨链消息 ×4</span><span>端到端 5.2s</span><span>验签 4/4 PASS</span>
+        </div>
+        <div class="mk-rail">
+          <div class="mk-seg hd-fabric" style="flex:3">Fabric · 申请</div>
+          <div class="mk-seg hd-cm" style="flex:1.2">CM 中继</div>
+          <div class="mk-seg hd-fisco" style="flex:3">FISCO · 审批</div>
+          <div class="mk-seg hd-cm" style="flex:1.2">CM 中继</div>
+          <div class="mk-seg hd-irita" style="flex:3">IRITA · 签发</div>
+        </div>
+        <div class="mk-stops">
+          <div class="mk-stop"><div class="dot" style="background:#2563eb"></div><div class="card2"><b>① 任务申请</b><br><span class="tx">f3a9…</span> <span class="bdg ok">SM9✓</span></div></div>
+          <div class="mk-stop"><div class="dot" style="background:#7c3aed"></div><div class="card2"><b>◈ 监管验签</b><br><span class="bdg ok">PASS</span></div></div>
+          <div class="mk-stop"><div class="dot" style="background:#0891b2"></div><div class="card2"><b>② 审批受理</b><br><span class="tx">8c1b…</span></div></div>
+          <div class="mk-stop"><div class="dot" style="background:#7c3aed"></div><div class="card2"><b>◈ 监管中继</b><br><span class="bdg ok">PASS</span></div></div>
+          <div class="mk-stop"><div class="dot" style="background:#15803d"></div><div class="card2"><b>④ 许可签发</b><br><span class="tx">e77f…</span> <span class="bdg ok">SM2✓</span></div></div>
+        </div>
+        <div class="mk-fold">▸ 展开「四链结构视图」：同一批事件按链归列（ Fabric 2 笔 · CM 中继 3 跳 · FISCO 2 笔 · IRITA 1 笔 ）</div>
+        <div class="mk-lanes" style="margin-top:6px">
+          <div class="mk-lane"><div class="mk-lane-hd hd-fabric">运营链 Fabric</div><div class="mk-ev ev-fabric"><b>① 申请</b> <span class="tx">f3a9…</span><br><b>⑤ 验证</b> <span class="tx">9b2e…</span></div></div>
+          <div class="mk-lane"><div class="mk-lane-hd hd-cm">监管链 ChainMaker</div><div class="mk-ev ev-cm"><b>◈ 中继 ×3</b><br>签收/验签/转发<br>每跳 4 段 TxID</div></div>
+          <div class="mk-lane"><div class="mk-lane-hd hd-fisco">管理链 FISCO</div><div class="mk-ev ev-fisco"><b>② 受理</b> <span class="tx">8c1b…</span><br><b>③ 审核通过</b> <span class="tx">1d4f…</span></div></div>
+          <div class="mk-lane"><div class="mk-lane-hd hd-irita">证照链 IRITA</div><div class="mk-ev ev-irita"><b>④ 签发</b> <span class="tx">e77f…</span><br><span class="bdg ok">Merkle✓</span></div></div>
+        </div>
+        <div class="mk-note" style="margin-top:6px">（泳道展开态如上图；收起时只留一行折叠条）</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section">
+  <p class="subtitle">两版共同点：三目标芯片实时计算（目标① 数据就在本页取，目标②③芯片点击跳转对应演示页）；时间线节点点击下钻四段存证/块详情/原始收据；sim/real 徽章、2005 降级卡、链色语义、四端共享+按端裁剪等红线全部照旧。</p>
+</div>
