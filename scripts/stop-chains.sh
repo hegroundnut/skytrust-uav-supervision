@@ -14,34 +14,40 @@ echo "== [1/4] IRITA 证照链：start-irita.sh stop =="
 bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/start-irita.sh" stop
 
 echo "== [2/4] Fabric：docker stop（容器保留，账本保留）=="
-# 链码容器（dev-*）随 peer 停止自动退出，无需单独处理
-for c in peer0.org1.example.com peer0.org2.example.com orderer.example.com; do
-  if docker ps --format '{{.Names}}' | grep -qx "$c"; then
+# 链码容器（dev-*）随 peer 停止自动退出，无需单独处理；先 peer 后 orderer，peer1（扩容）先停
+for c in peer1.org1.example.com peer1.org2.example.com peer0.org1.example.com peer0.org2.example.com $FAB_ORDERERS; do
+  if docker_running "$c"; then
     docker stop "$c" >/dev/null && echo "  stopped $c"
   else
     echo "  $c 未在运行，跳过"
   fi
 done
 
-echo "== [3/4] ChainMaker：节点进程 + VM 引擎容器 =="
+echo "== [3/4] ChainMaker：5 节点进程（逆序）+ 5 VM 引擎容器 =="
 # 节点以相对路径启动（cd bin && ./chainmaker start …），pgrep -f 全路径匹配不到——
-# 以 12301 监听 PID 为权威，pgrep 兜底
-CM_PID=$(ss -tlnp 2>/dev/null | grep ':12301 ' | grep -oP 'pid=\K[0-9]+' | head -1 || true)
-[ -z "${CM_PID:-}" ] && CM_PID=$(pgrep -f "chainmaker start" | head -1 || true)
-if [ -n "${CM_PID:-}" ]; then
-  kill "$CM_PID" 2>/dev/null || true
-  for _ in $(seq 1 20); do kill -0 "$CM_PID" 2>/dev/null || break; sleep 1; done
-  kill -0 "$CM_PID" 2>/dev/null && { kill -9 "$CM_PID" 2>/dev/null || true; echo "  节点 SIGKILL（未在 20s 内退出）"; }
-  echo "  stopped chainmaker node (pid $CM_PID)"
-else
-  echo "  节点未在运行，跳过"
-fi
-port_up 12301 && echo "  ⚠ 12301 仍在监听（手工核查）" || true
-if docker ps --format '{{.Names}}' | grep -qx "$CM_VM_CONTAINER"; then
-  docker stop "$CM_VM_CONTAINER" >/dev/null && echo "  stopped $CM_VM_CONTAINER"
-else
-  echo "  VM 引擎容器未在运行，跳过"
-fi
+# 以 1230N 监听 PID 为权威，pgrep -f 配置路径兜底（脚本自身 cmdline 不含模式串，无自匹配风险）
+for N in 5 4 3 2 1; do
+  RPC_PORT=1230$N
+  CM_PID=$(ss -tlnp 2>/dev/null | grep ":$RPC_PORT " | grep -oP 'pid=\K[0-9]+' | head -1 || true)
+  [ -z "${CM_PID:-}" ] && CM_PID=$(pgrep -f "config/wx-org$N.chainmaker.org/chainmaker.yml" | head -1 || true)
+  if [ -n "${CM_PID:-}" ]; then
+    kill "$CM_PID" 2>/dev/null || true
+    for _ in $(seq 1 20); do kill -0 "$CM_PID" 2>/dev/null || break; sleep 1; done
+    kill -0 "$CM_PID" 2>/dev/null && { kill -9 "$CM_PID" 2>/dev/null || true; echo "  org$N SIGKILL（未在 20s 内退出）"; }
+    echo "  stopped chainmaker org$N (pid $CM_PID)"
+  else
+    echo "  org$N 未在运行，跳过"
+  fi
+  port_up "$RPC_PORT" && echo "  ⚠ $RPC_PORT 仍在监听（手工核查）" || true
+done
+for N in 5 4 3 2 1; do
+  VM=$(cm_vm_container "$N")
+  if docker_running "$VM"; then
+    docker stop "$VM" >/dev/null && echo "  stopped $VM"
+  else
+    echo "  $VM 未在运行，跳过"
+  fi
+done
 
 echo "== [4/4] FISCO BCOS：节点自带 stop.sh =="
 if port_up 20200; then

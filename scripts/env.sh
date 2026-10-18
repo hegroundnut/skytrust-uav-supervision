@@ -11,24 +11,36 @@ export GOPROXY=${GOPROXY:-https://goproxy.cn,direct}
 export GOTOOLCHAIN=${GOTOOLCHAIN:-auto}
 
 # ---- ChainMaker 监管链（新机 2026-10-12：4 组织 TBFT，wx-org1..4.chainmaker.org / chain1；
+#      2026-10-18 扩容节点本机化：wx-org5 加入（链上 trustroot/consensusnodeorg add 已完成，
+#      validators=5，nodeID QmWyk…；org5 节点 GOMEMLIMIT=450MiB，VM 引擎口 22355/32355）。
 #      旧 solo 配置备份于 /opt/chains/chainmaker/sdk.yml.solo-bak + trust-roots-solo/）----
 CM_ROOT=/opt/chains/chainmaker
 CMC=$CM_ROOT/bin/cmc                      # cmc v2.3.10
 CM_SDK_CONF=$CM_ROOT/sdk.yml              # node_addr 127.0.0.1:12301, tls_host_name chainmaker.org（org1 client1）
-CM_NODE_BIN=$CM_ROOT/chainmaker-go/bin    # ./chainmaker start -c ../config/wx-orgN.chainmaker.org/chainmaker.yml（N=1..4）
+CM_SDK_CONF_ORG5=$CM_ROOT/sdk-org5.yml    # node_addr 127.0.0.1:12305（org5，2026-10-18 本机化）
+CM_NODE_BIN=$CM_ROOT/chainmaker-go/bin    # ./chainmaker start -c ../config/wx-orgN.chainmaker.org/chainmaker.yml（N=1..5）
 CM_NODE_LOG=$CM_ROOT/chainmaker-go/log/org1/system.log
 CM_BUILD=$CM_ROOT/build                   # docker-go 合约构建目录（每合约一子目录）
 CM_CERTS=$CM_ROOT/chainmaker-go/config/wx-org1.chainmaker.org/certs
 CM_ORG=wx-org1.chainmaker.org
 CM_CHAIN=chain1
-CM_VM_CONTAINER=VM-GO-wx-org1.chainmaker.org-chain1   # docker-go 合约 VM 引擎容器（每 org 一个，engine 端口 2235N）
+CM_ORGS="1 2 3 4 5"                       # 全部共识组织（rpc 1230N / p2p 1130N）
+cm_vm_container() { echo "VM-GO-wx-org$1.chainmaker.org-chain1"; }  # docker-go VM 引擎容器（每 org 一个，engine 口 2235N/sandbox 3235N）
 
-# ---- Fabric 运营链（test-network，mychannel，etcdraft，Org1+Org2）----
+# ---- Fabric 运营链（test-network，mychannel，SMARTBFT 4-orderer，Org1+Org2；
+#      2026-10-18 扩容节点本机化：peer1.org1/peer1.org2 部署于本机 /opt/skytrust-nodes/fabric/，
+#      --network fabric_test，容器内标准口 7051/9051，宿主映射 7061/9061（后端 TCP 探活用）；
+#      拉起固化于 run-peers-local.sh（幂等）。peer1 的 core.yaml 绝不加 vm.docker.hostConfig.
+#      ExtraHosts —— 老机器 host-network 方案的 peerN:127.0.0.1 映射会污染 cc 容器 DNS
+#      （2026-10-18 实坑：cc panic dial 127.0.0.1:7052 refused）。----
 TN=$REPO/platforms/fabric-samples/test-network
 FAB_BIN=$REPO/platforms/fabric-samples/bin       # 静态构建 peer/configtxlator 等
 export FABRIC_CFG_PATH=$REPO/platforms/fabric-samples/config
 FAB_CHANNEL=mychannel
 FAB_CC_NAME=operator_business
+FAB_ORDERERS="orderer.example.com orderer2.example.com orderer3.example.com orderer4.example.com"
+FAB_P1_DIR=/opt/skytrust-nodes/fabric            # peer1×2 物料（core.yaml/msp/tls/admin-msp/production + mychannel.block + cc 包）
+FAB_P1_RUNNER=$FAB_P1_DIR/run-peers-local.sh     # peer1×2 幂等拉起（只 start/run，绝不 rm 容器/删账本）
 ORDERER_CA=$TN/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt
 ORG1_ADMIN_MSP=$TN/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
 ORG2_ADMIN_MSP=$TN/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
@@ -56,7 +68,23 @@ BACKEND_BIN=$BACKEND/bin/server-realchains
 BACKEND_URL=${BACKEND_URL:-http://127.0.0.1:8080}
 
 # ---- 工具函数 ----
-port_up() { ss -tln 2>/dev/null | grep -q ":$1 "; }
+# port_up：ss 高负载偶发漏报（2026-10-13 IRITA 实况 + 2026-10-18 start-chains 复现：
+# load>3 时单次采样瞬态 false）→ 3 次采样、间隔 0.5s，任一次命中即为 true。
+port_up() {
+  local i
+  for i in 1 2 3; do
+    ss -tln 2>/dev/null | grep -q ":$1 " && return 0
+    [ "$i" -lt 3 ] && sleep 0.5
+  done
+  return 1
+}
+# docker_running/docker_exists：同理由，docker ps 在负载尖峰下也会瞬态空输出（2026-10-18 实况）
+docker_running() { docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$1"; }
+docker_exists() {
+  docker ps -a --format '{{.Names}}' 2>/dev/null | grep -qx "$1" && return 0
+  sleep 0.5
+  docker ps -a --format '{{.Names}}' 2>/dev/null | grep -qx "$1"
+}
 
 fabric_env_org1() {
   export CORE_PEER_TLS_ENABLED=true CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_ADDRESS=localhost:7051
