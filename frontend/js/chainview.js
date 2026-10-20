@@ -5,8 +5,9 @@
    字面量（verify 脚本 grep 落点，物理保留于本文件）+ render 组装。
    三区（节点情况/块浏览/链上数据追踪）渲染代码已原样迁移至 js/cxv/zones.js →
    window.CXV_ZONES.render（纯搬家，行为零变化；zones.js 装载序在本文件之前，经运行时
-   window.CXV.SHARED.* / window.CXV.SMALL_PRINT 回引共享面）；后续 goals/journey/lanes
-   模块标签一律插在 zones.js 之前，最终装载序 goals→journey→lanes→zones→本薄壳。
+   window.CXV.SHARED.* / window.CXV.SMALL_PRINT 回引共享面）；goals/journey/lanes
+   模块标签一律插在 zones.js 之前（goals 已于 Task 6 落地），最终装载序
+   goals→journey→lanes→zones→本薄壳。
    render(root, opts) 签名与 opts 契约 {portal:'op'|'au'|'rg'|'ct'|'index', defaultChain?,
    defaultMsgTypes?} 不变。三区详情/四端裁剪/诚实红线文档见 js/cxv/zones.js 头注释。
    端点：explorer/overview、explorer/nodes、explorer/blocks、explorer/block、explorer/tx、
@@ -48,6 +49,8 @@
     return { title: '⚠ 能力降级 code=2005 · 该链 RPC 不支持' + what, lines: lines };
   }
   function isDegrade(r) { return !!(r && r.code === 2005); }
+  /* 同步注记（Task 6 controller-authorized）：本函数在 js/cxv/zones.js 有一份逐字孪生副本
+     （三区侧私有 helper，SHARED 十键钉死不含它）——任一侧修改必须同步另一侧，否则静默分叉。 */
   function degradeCard(r, chain, what) {
     var sp = degradeSpec(r, chain, what);
     return h('div', { class: 'd-cxv-degrade' },
@@ -133,6 +136,8 @@
     ]), h('details', { class: 'p-rawjson' }, h('summary', {}, '原始响应 JSON'), UI.jsonBlock(r.raw)));
     return wrap;
   }
+  /* 同步注记（Task 6 controller-authorized）：本函数在 js/cxv/zones.js 有一份逐字孪生副本
+     （三区侧直查表单 runDq 用）——任一侧修改必须同步另一侧，否则静默分叉。 */
   async function queryTxInto(slot, chain, txId) {
     slot.innerHTML = '';
     slot.append(h('div', { class: 'p-empty' }, '⏳ explorer/tx 直查中…'));
@@ -155,8 +160,11 @@
     });
   }
 
-  /* ================= render（薄壳组装：本任务只有三区；后续任务在此追加 goals/journey/lanes） ================= */
+  /* ================= render（薄壳组装：GOALS → ZONES；后续 journey/lanes 任务在此追加） =================
+     布局 E 第①段三目标证据条（window.CXV_GOALS，js/cxv/goals.js）节点位于 ZONES 之前；
+     goals.js 装载序在本文件之前（5 HTML 一律），window.CXV_GOALS 调用期解析，无加载序问题。 */
   function render(root, opts) {
+    window.CXV_GOALS.render(root, opts);
     window.CXV_ZONES.render(root, opts);
   }
 

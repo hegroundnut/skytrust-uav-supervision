@@ -669,3 +669,46 @@ body[data-theme="dark"] { --d-chain-irita: #4ade80; }
 }
 .d-wtopo-unplaced-edges { margin-top: 4px; color: var(--d-ink-3); }
 .d-wtopo-note { margin: 0; font-size: 11px; line-height: 1.6; color: var(--d-ink-3); }
+
+/* ---------- 第五期 Task 6 追加块（仅追加）：三目标证据条（布局 E 第①段，js/cxv/goals.js） ----------
+   三芯片 grid 三列（auto-fit 窄屏自动换行）；芯片本体中性面板色——链色只出现在芯片内
+   链名徽章（PUI.chainTag → .p-chain-tag[data-chain] 左边框色，经 var(--p-chain-*)/
+   --d-chain-irita），本块零硬编码链色 hex、不触 :root legacy 令牌与 --p-* 定义；
+   跳转/状态永为文字+图标（「文字 →」/ P.errCard），不单靠颜色。
+   芯片数字一律来自 explorer/goals 实时响应（测不到 null → '—'，见 goals.js fmtVal），
+   本块只管排版不表意数据。index.html 不加载 drone.css → 该端 .d-cxv-goal* 缺席，
+   结构类 p-card/p-empty/p-btn（product.css）保证内容完整可读（同 Task 8 块约定，如实降级）。 */
+.d-cxv-goal-sec { margin-bottom: 14px; }
+.d-cxv-goals {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px;
+}
+.d-cxv-goal {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 8px 10px; font-size: 12px; color: var(--d-ink-2);
+  background: var(--d-panel-2); border: 1px solid var(--d-line);
+  border-radius: var(--d-radius-sm);
+}
+.d-cxv-goal-link { border-style: dashed; }
+.d-cxv-goal-title { display: block; font-size: 12px; font-weight: 700; color: var(--d-ink); }
+.d-cxv-goal-nums { font-size: 15px; font-weight: 700; color: var(--d-ink); font-variant-numeric: tabular-nums; }
+.d-cxv-goal-sub { font-size: 12px; color: var(--d-ink-2); font-variant-numeric: tabular-nums; }
+.d-cxv-goal-smallprint { margin: 2px 0 0; font-size: 11px; line-height: 1.5; color: var(--d-ink-3); }
+/* IRITA real 门控说明文案（裁决 D：仅 mode=real 渲染）——绿色 good 语义 = 真实链能力可用 */
+.d-cxv-goal-note {
+  display: flex; align-items: flex-start; gap: 6px; flex-wrap: wrap;
+  margin-top: 4px; padding: 6px 8px; font-size: 11px; line-height: 1.5;
+  background: var(--d-good-soft); border: 1px solid var(--d-good);
+  border-radius: var(--d-radius-sm); color: var(--d-good);
+}
+/* 芯片②③跳转：本端 button 复用 p-btn 结构样式，跨页 <a> 用品牌色文字链接；margin-top:auto 底部对齐 */
+.d-cxv-goal-jump { margin-top: auto; align-self: flex-start; }
+a.d-cxv-goal-jump { color: var(--d-brand); font-weight: 600; text-decoration: none; }
+a.d-cxv-goal-jump:hover { text-decoration: underline; }
+/* 加载失败错误态：警示色 + 文字说明（芯片拒绝显示任何数字，绝不写死/缓存充数） */
+.d-cxv-goal-err {
+  padding: 10px 12px; font-size: 12px; color: var(--d-ink-2);
+  background: var(--d-warning-soft); border: 1px solid var(--d-warning);
+  border-left: 4px solid var(--d-warning); border-radius: var(--d-radius-sm);
+}
+.d-cxv-goal-err b { color: var(--d-warning); }

@@ -1,4 +1,8 @@
 /* cxv/zones.js — 第五期拆分：原 chainview.js 三区原样迁移，行为零变化（window.CXV_ZONES）。
+   迁移后唯一改动（Task 6 controller-authorized，前向陷阱修复）：「⟳ 刷新全部」按钮改经
+   薄壳 window.CXV.render 重渲——壳级组装自 Task 6 起含 goals 段（后续 journey/lanes），
+   直调本文件局部 render 会抹掉壳级新增段；薄壳未装载时回落本地 render（如实只刷三区）。
+   其余代码保持原样副本。
    三区（同页纵排，链选中态跨区共享）：
    ① 节点情况 = explorer/overview 四链卡（链色边条走 CSS var：--p-chain-* / --d-chain-irita，
       JS 绝不硬编码 hex；名称/共识显示串逐字取自后端响应，绝不转述）+ 选中链 explorer/nodes
@@ -74,7 +78,15 @@
     if (portal === 'ct') SUB += '。证照中心端：默认深钻 IRITA 证照链';
     root.append(P.pageHead({
       title: '区块链浏览器', sub: SUB,
-      actions: [h('button', { class: 'p-btn', onClick: function () { root.innerHTML = ''; render(root, opts); } }, '⟳ 刷新全部')]
+      actions: [h('button', {
+        class: 'p-btn',
+        onClick: function () {
+          root.innerHTML = '';
+          /* 刷新全部经薄壳组装重渲（含 goals 段及后续 journey/lanes）——直调本文件局部
+             render 会抹掉壳级已组装段（Task 6 前向陷阱修复）；薄壳未装载时回落本地 render。 */
+          (window.CXV && window.CXV.render ? window.CXV.render : render)(root, opts);
+        }
+      }, '⟳ 刷新全部')]
     }));
 
     /* ---------- 链选择（跨区共享） ---------- */
