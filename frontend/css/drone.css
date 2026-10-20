@@ -794,3 +794,52 @@ a.d-cxv-goal-jump:hover { text-decoration: underline; }
   border-left: 4px solid var(--d-warning); border-radius: var(--d-radius-sm);
 }
 .d-cxv-jn-err b { color: var(--d-warning); }
+
+/* ---------- 第五期 Task 8 追加块（仅追加）：可折叠四链结构泳道（布局 E 第⑤段，js/cxv/lanes.js） ----------
+   泳道回答「每条链各自承担什么」（归档 mockup 布局 E .mk-lanes/.mk-fold 同构）：展开态
+   四列 grid（auto-fit 窄屏自动换行；列序由 lanes.js LANES 常量钉死 Fabric/ChainMaker/
+   FISCO/IRITA——CSS 不表意顺序，不随旅程跳序重排）。列头链色 = Global Constraint 4 四色，
+   只经 var 引用（lanes.js 注入 SHARED.CHAIN_VAR → style.background / --cxv-chain 自定义
+   属性，chainCard 同款先例），本块零硬编码链色 hex（列头白字为文字对比色非链色，Task 7
+   段内白字同先例）、不触 :root legacy 令牌与 --p-* 定义。折叠条 = 虚线面板（mockup
+   .mk-fold 同款）；CM 中继卡虚线边框（--cxv-chain = chainmaker 紫）与实线左边条业务
+   事件卡形态可辨；状态/verify 永为 icon+文字（p-badge）。折叠开合经 lanes.js 内联
+   style.display 切换——index.html 不加载 drone.css → .d-cxv-lane* 缺席，结构类
+   p-card/p-empty/p-badge/p-mono（product.css）保证内容完整可读（同 Task 6/7 块约定，
+   如实降级）。 */
+.d-cxv-lane-sec { margin-bottom: 14px; }
+.d-cxv-lane-fold {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  padding: 6px 10px; font: inherit; font-size: 12px; color: var(--d-ink-2);
+  background: var(--d-panel-2); border: 1px dashed var(--d-line-strong);
+  border-radius: var(--d-radius-sm);
+}
+.d-cxv-lane-fold:hover { border-color: var(--d-brand); color: var(--d-ink); }
+.d-cxv-lanes {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 6px; margin-top: 6px;
+}
+.d-cxv-lane {
+  border: 1px solid var(--d-line); border-radius: var(--d-radius-sm);
+  border-top: 3px solid var(--cxv-chain, var(--d-line-strong));
+  overflow: hidden; background: var(--d-panel);
+}
+.d-cxv-lane-hd { padding: 3px 8px; color: #fff; font-size: 11px; font-weight: 600; }
+.d-cxv-lane-bd { display: flex; flex-direction: column; gap: 5px; padding: 5px; }
+/* 业务事件卡（实线 + 链色左边条）与 CM 中继卡（虚线边框）——形态可辨，永不仅靠颜色 */
+.d-cxv-lane-ev, .d-cxv-lane-relay {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  padding: 4px 6px; font: inherit; font-size: 10.5px; line-height: 1.5; color: var(--d-ink-2);
+  background: var(--d-panel); border-radius: 4px;
+}
+.d-cxv-lane-ev { border: 1px solid var(--d-line); border-left: 3px solid var(--cxv-chain, var(--d-line-strong)); }
+.d-cxv-lane-relay { border: 1px dashed var(--cxv-chain, var(--d-line-strong)); }
+.d-cxv-lane-ev:hover, .d-cxv-lane-relay:hover { border-color: var(--d-brand); }
+.d-cxv-lane-ev b { font-size: 11px; color: var(--d-ink); }
+.d-cxv-lane-tx { display: block; font-size: 10px; color: var(--d-ink-3); }
+.d-cxv-lane-badges { margin-top: 2px; }
+.d-cxv-lane-sm { margin-right: 3px; }
+/* 如实空态（0 笔/0 跳 = hops 实算值，绝不编造事件卡） */
+.d-cxv-lane-zero { padding: 4px 2px; font-size: 10.5px; color: var(--d-ink-3); }
+/* source_chain 不属四链的如实披露行（守卫性兜底，跨满 grid 行） */
+.d-cxv-lane-warn { grid-column: 1 / -1; margin-top: 2px; font-size: 11px; color: var(--d-warning); }

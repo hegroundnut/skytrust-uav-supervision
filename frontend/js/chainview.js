@@ -6,7 +6,7 @@
    三区（节点情况/块浏览/链上数据追踪）渲染代码已原样迁移至 js/cxv/zones.js →
    window.CXV_ZONES.render（纯搬家，行为零变化；zones.js 装载序在本文件之前，经运行时
    window.CXV.SHARED.* / window.CXV.SMALL_PRINT 回引共享面）；goals/journey/lanes
-   模块标签一律插在 zones.js 之前（goals 已于 Task 6、journey 已于 Task 7 落地），
+   模块标签一律插在 zones.js 之前（goals Task 6、journey Task 7、lanes Task 8 落地），
    最终装载序 goals→journey→lanes→zones→本薄壳。
    render(root, opts) 签名与 opts 契约 {portal:'op'|'au'|'rg'|'ct'|'index', defaultChain?,
    defaultMsgTypes?} 不变。三区详情/四端裁剪/诚实红线文档见 js/cxv/zones.js 头注释。
@@ -160,15 +160,21 @@
     });
   }
 
-  /* ================= render（薄壳组装：GOALS → JOURNEY → ZONES；后续 lanes 任务在此追加） =================
-     布局 E 第①段三目标证据条（window.CXV_GOALS，js/cxv/goals.js）与第②③④段业务对象
-     全链旅程（window.CXV_JOURNEY，js/cxv/journey.js，Task 7）节点依次位于 ZONES 之前；
-     goals/journey 装载序在本文件之前（5 HTML 一律），window.CXV_GOALS/CXV_JOURNEY
-     调用期解析，无加载序问题。JOURNEY 的 onSelect(journeyData|null) 回调本任务为空实现
-     （brief 钉死）——Task 8 在此接 CXV_LANES（旅程数据 → 折叠泳道；null → 清空）。 */
+  /* ================= render（薄壳组装：GOALS → JOURNEY → LANES → ZONES） =================
+     布局 E 第①段三目标证据条（window.CXV_GOALS，js/cxv/goals.js）、第②③④段业务对象
+     全链旅程（window.CXV_JOURNEY，js/cxv/journey.js，Task 7）与第⑤段可折叠四链结构泳道
+     （window.CXV_LANES，js/cxv/lanes.js，Task 8）节点依次位于 ZONES 之前；三模块装载序
+     在本文件之前（5 HTML 一律），window.CXV_GOALS/CXV_JOURNEY/CXV_LANES 调用期解析，
+     无加载序问题。JOURNEY 的 onSelect(journeyData|null) 回调接 CXV_LANES.update（Task 8
+     钉死）：旅程加载成功 → 泳道计数/展开内容按 hops 实算刷新；null（空态/失败/清空）→
+     泳道收起且计数清空（如实，绝不以空泳道冒充「无中继」断言——混合探测失败披露行由
+     journey.js 负责，本区不与之矛盾）。LANES.render 在 JOURNEY.render 之后同步挂载
+     （DOM 序 = 组装序）；onSelect 首次回调必经异步 list/journey 请求 → 恒晚于本轮同步
+     组装，update 委托的实例必已就位。 */
   function render(root, opts) {
     window.CXV_GOALS.render(root, opts);
-    window.CXV_JOURNEY.render(root, opts, function (data) { /* Task 8 接 LANES.update(data) */ });
+    window.CXV_JOURNEY.render(root, opts, function (data) { window.CXV_LANES.update(data); });
+    window.CXV_LANES.render(root, opts);
     window.CXV_ZONES.render(root, opts);
   }
 

@@ -111,7 +111,7 @@ for f in \
   frontend/js/api.js frontend/js/store.js frontend/js/portal.js frontend/js/map.js \
   frontend/js/shell-op.js frontend/js/shell-au.js frontend/js/shell-rg.js frontend/js/shell-ct.js \
   frontend/js/chainview.js frontend/js/wormhole-topo.js \
-  frontend/js/cxv/goals.js frontend/js/cxv/journey.js frontend/js/cxv/zones.js \
+  frontend/js/cxv/goals.js frontend/js/cxv/journey.js frontend/js/cxv/lanes.js frontend/js/cxv/zones.js \
   frontend/js/data/geo.js frontend/js/data/explain.js frontend/js/data/endpoints.js \
   frontend/vendor/leaflet/leaflet.js frontend/vendor/leaflet/leaflet.css frontend/vendor/qrcode/qrcode.js \
   frontend/js/pages/op/home.js frontend/js/pages/op/realname.js frontend/js/pages/op/aircraft.js \
