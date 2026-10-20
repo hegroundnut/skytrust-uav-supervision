@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -64,46 +65,54 @@ func explorerQuerier(adt chainadapter.ChainAdapter) (chainadapter.BlockQuerier, 
 	return bq, ok
 }
 
-// explorerOverviewHandler POST /api/explorer/overview —— 链总览（浏览器首屏数据源）。
+// explorerChainsSnapshot 构建 chains[] 总览快照（overview 与 goals 共享——避免双倍
+// RPC；自 explorerOverviewHandler 逐字搬移，行为零变化）。
 // mode 判定 = 真实后端实现 Resettable → sim，否则 real（真实传输不实现 Resettable，P6-R6）。
 // 能力缺失链：node_count/block_height 如实为 0，绝不拼造。
+func explorerChainsSnapshot(deps *Deps, ctx context.Context) []gin.H {
+	names := make([]string, 0, len(deps.Chains))
+	for name := range deps.Chains {
+		names = append(names, name)
+	}
+	sort.Strings(names) // 确定性输出（map 遍历无序；apidoc 回放录制要求稳定）
+	chains := make([]gin.H, 0, len(names))
+	for _, name := range names {
+		prov := deps.Chains[name]
+		status := "OFFLINE"
+		if prov.Health() == nil {
+			status = "ONLINE"
+		}
+		target := explorerCapabilityTarget(prov)
+		mode := "real"
+		if _, ok := target.(chainadapter.Resettable); ok {
+			mode = "sim"
+		}
+		nodeCount, blockHeight := 0, uint64(0)
+		if bq, ok := target.(chainadapter.BlockQuerier); ok {
+			if nodes, err := bq.ListNodes(ctx); err == nil {
+				nodeCount = len(nodes)
+			}
+			if h, err := bq.GetBlockHeight(ctx); err == nil {
+				blockHeight = h
+			}
+		}
+		dispName := explorerChainNames[name]
+		if dispName == "" {
+			dispName = name // 白名单外链如实使用链 ID（不猜测显示名）
+		}
+		chains = append(chains, gin.H{
+			"chain": name, "name": dispName, "mode": mode, "status": status,
+			"consensus": explorerConsensus[name], "node_count": nodeCount, "block_height": blockHeight,
+		})
+	}
+	return chains
+}
+
+// explorerOverviewHandler POST /api/explorer/overview —— 链总览（浏览器首屏数据源）。
+// chains[] 构建走共享函数 explorerChainsSnapshot（语义见其注释）。
 func explorerOverviewHandler(deps *Deps) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		names := make([]string, 0, len(deps.Chains))
-		for name := range deps.Chains {
-			names = append(names, name)
-		}
-		sort.Strings(names) // 确定性输出（map 遍历无序；apidoc 回放录制要求稳定）
-		chains := make([]gin.H, 0, len(names))
-		for _, name := range names {
-			prov := deps.Chains[name]
-			status := "OFFLINE"
-			if prov.Health() == nil {
-				status = "ONLINE"
-			}
-			target := explorerCapabilityTarget(prov)
-			mode := "real"
-			if _, ok := target.(chainadapter.Resettable); ok {
-				mode = "sim"
-			}
-			nodeCount, blockHeight := 0, uint64(0)
-			if bq, ok := target.(chainadapter.BlockQuerier); ok {
-				if nodes, err := bq.ListNodes(c.Request.Context()); err == nil {
-					nodeCount = len(nodes)
-				}
-				if h, err := bq.GetBlockHeight(c.Request.Context()); err == nil {
-					blockHeight = h
-				}
-			}
-			dispName := explorerChainNames[name]
-			if dispName == "" {
-				dispName = name // 白名单外链如实使用链 ID（不猜测显示名）
-			}
-			chains = append(chains, gin.H{
-				"chain": name, "name": dispName, "mode": mode, "status": status,
-				"consensus": explorerConsensus[name], "node_count": nodeCount, "block_height": blockHeight,
-			})
-		}
+		chains := explorerChainsSnapshot(deps, c.Request.Context())
 		OK(c, gin.H{"chains": chains, "count": len(chains)})
 	}
 }
