@@ -592,6 +592,7 @@ cat <<'HUMAN'
 - 能力降级 2005「该链 RPC 不支持…」实弹触发（通用能力哨兵；FISCO 块查询已可用 §12.11）= 真链验收窗
   （Task 14）——sim 四链全实现 BlockQuerier，2005 不可构造；本脚本仅断言可构造负路径
   （未知链 / height=0 / 越界 / 不存在 TxID → 6002）
+- 【浏览器新首屏·布局 E】三目标芯片活数（对照 goals 响应）/ 时间线几何对照归档 mockup（等宽节点列、单条链色带、CM 段窄、泳道列序 Fabric-CM-FISCO-IRITA）/ 节点下钻四段存证 / sim 空态文案 / rg 端 openCx CHAINMAKER 高亮 / ct 端 defaultChain=irita
 【虫洞拓扑（WTOPO · Task 9）】
 - au/netsec 拓扑页签 SVG 实render：position min-max 归一化布点、类型着色（紫 MANAGEMENT /
   蓝 EDGE / 青 UAV / 红 ATTACKER + ⚠ 标签）、虫洞边红虚线 d-wormhole-flow 流动动画 + 中点 ⚠、
@@ -607,6 +608,11 @@ cat <<'HUMAN'
 - 按 docs/demo-script.md 第 0-8 章完成约 30 分钟三标签页实演（附录 A 检查清单逐项勾选、
   附录 B 设计内拒绝现场复现、附录 C 时长核对），另加证照中心端签发/台账/查验/吊销四页实演
   （demo-script 四端版属 Task 15）——正式验收以人工实演为准，本脚本仅 API 层
+【顺延注记（controller ruling 2026-10-20 · 第五期 Task 9 收口）】
+- 本脚本全量实跑（Step 2 → ALL_GREEN）与隔离四端浏览器目检（Step 3，:18080/:18090 隔离
+  sim）均需启动后端进程——按用户「不启动后端」绑定约束 DEFERRED：待用户确认的无生产影响
+  窗口补跑（:8080/:8090 为生产红线绝不触碰）；凡属 DEFERRED 的验证一律如实记为顺延，
+  不得视为已完成。
 HUMAN
 
 printf '\n════════════════ 验证汇总 ════════════════\n'

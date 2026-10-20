@@ -68,7 +68,8 @@
   var KIND_ICON = { pass: '✈', mission: '📋', uav: '🛩' };
 
   /* message_type → 业务动作中文名（固定架构文案非数据，口径 = 后端 README 端点表；
-     未知类型原样直出不编造中文） */
+     未知类型原样直出不编造中文——同步注记：MSG_CN/CHAIN_CN 两表 lanes.js 存有逐字副本，
+     任一侧修改必须双侧同步，否则静默分叉） */
   var MSG_CN = {
     UAV_REGISTER_PROOF: '注册证明上链',
     MISSION_APPLICATION: '任务申请上链',

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # gen-endpoints.sh —— 从 docs/apifox/skytrust-backend.openapi.json 重新生成
-# frontend/js/data/endpoints.js（78 端点 + 录制样例，前端 API 浏览器的数据源）。
+# frontend/js/data/endpoints.js（80 端点 + 录制样例，前端 API 浏览器的数据源）。
 # 用法：./scripts/gen-endpoints.sh   （openapi 契约变更后执行）
 set -euo pipefail
 cd "$(dirname "$0")/.."

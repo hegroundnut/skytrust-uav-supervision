@@ -1,7 +1,8 @@
 /* explain.js —— 逐 API 成功/失败解说词典（演示用）。
    codes：业务错误码唯一真源 services/skytrust-backend/internal/errcode/errcode.go，
           释义按各 raise 站点源码归纳；「理论失败」= 设计上必须发生的拒绝。
-   paths：78 端点每个一行「成功证明了什么机制」。
+   paths：78 端点每个一行「成功证明了什么机制」（后端现为 80 端点——第五期新增
+          explorer/journey、explorer/goals 两条，词典待补录）。
    由 window.EXPLAIN 暴露，ui.js 监控台与 explorer 详情页消费。 */
 (function () {
   'use strict';

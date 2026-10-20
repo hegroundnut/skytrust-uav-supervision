@@ -1,6 +1,6 @@
 # SkyTrust 前端（原生 HTML+CSS+JS，零构建）
 
-零构建、零第三方依赖的前端，全量覆盖 skytrust-backend **78 个 API**
+零构建、零第三方依赖的前端，全量覆盖 skytrust-backend **80 个 API**
 （契约来源 `docs/apifox/skytrust-backend.openapi.json`）。
 **产品入口为四个独立门户页**（严扣无人机主题，固定主题不切换）；`index.html` 降为
 **内部总控导航页**（演示维护台）：顶部四端入口卡片直达产品，下方 SPA 保留平台总览、
@@ -50,7 +50,7 @@ FLIGHT_PASS / PASS_REVOKE 跨链源链为证照链（irita→chainmaker→fabric
 | `#/chainview` | 区块链浏览器（CXV index 版） | explorer/overview·nodes·blocks·block·tx、crosschain/list（index 不加载 PORTAL/MAPX——CXV 只依赖 API/UI/PUI） |
 | `#/dashboard` | 演示总控台（参考） | 三幕总控一键实跑 + 复位守卫 + 悬浮窗 |
 | `#/act1` `#/act2` `#/act3` | 三幕参考流程 | 幕一任务协同 / 幕二虫洞攻防 / 幕三监管核查（各含一键实跑监控台与理论失败步） |
-| `#/explorer` | API 浏览器（工具） | 78 端点全量：分组检索、请求体实发、录制样例对照 |
+| `#/explorer` | API 浏览器（工具） | 80 端点全量：分组检索、请求体实发、录制样例对照 |
 | `#/pui-lab` | 组件自检页（开发工具，不进侧边栏） | PUI 组件画廊 + live 数据组件验证 |
 
 旧工作台（wb-*）与旧五页（dashboard/act1-3/explorer）**冻结**：不改不删，供参考与回归对照；
@@ -76,8 +76,17 @@ FLIGHT_PASS / PASS_REVOKE 跨链源链为证照链（irita→chainmaker→fabric
 
 ## 区块链浏览器（CXV，四端同页——验收直观展示项）
 
-`js/chainview.js` 暴露 `window.CXV`，四端各挂 `#/chainview`「链上浏览器」页，三区同页纵排、
-链选中态跨区共享：
+`js/chainview.js`（薄壳：组装 + 共享原语 + SMALL_PRINT/_pure 导出面）暴露 `window.CXV`，
+四端各挂 `#/chainview`「链上浏览器」页。**第五期新首屏 = 布局 E 六段**（自上而下，结构定死
+见 spec §6.2：`docs/superpowers/specs/2026-10-19-acceptance-explorer-manual-design.md`；
+时间线几何对照源 = 归档 mockup：
+`docs/superpowers/specs/assets/2026-10-19-explorer-layout-e-mockup.html`）：
+① 三目标证据芯片（`js/cxv/goals.js`，explorer/goals 活数）→ ② 最近业务对象选择器 →
+③ 旅程概要头 → ④ 等宽节点横向链色时间线（②③④ = `js/cxv/journey.js`，explorer/journey +
+复用 pass/mission/uav 列表端点）→ ⑤ 可折叠四链结构泳道（`js/cxv/lanes.js`，零端点，
+消费 journey onSelect 回调，列序 Fabric/ChainMaker/FISCO/IRITA 固定）→ ⑥ 原三区保留作
+下钻工具（`js/cxv/zones.js`，原样迁移）；装载序 goals→journey→lanes→zones→薄壳。
+第⑥段三区同页纵排、链选中态跨区共享：
 
 1. **节点情况**：explorer/overview 四链卡（名称/共识显示串逐字取自后端响应，绝不转述）+
    选中链 explorer/nodes 节点表——`source` 列如实标注 `rpc`（链原生实测）/ `static+probe`
@@ -110,7 +119,7 @@ GEO/map.js 地理层独家裁决；无 position 节点不入图、列「未布�
 「一键实跑」是**实跑监控台**而非进度条：每步实时展示 API 路径、code 徽章、延迟、
 关键字段 chips，可展开完整请求/响应；理论失败步带「◈ 预期」徽章（3004/4001/4002/5002/
 valid=false 等设计内拒绝命中预期记 ✓）；每步附成功/失败解说（`js/data/explain.js`
-词典：27 错误码 + 78 端点）。三幕总控出发前自动检测残留并确认复位（真实链账本永不复位，P6-R6）。
+词典：27 错误码 + 78 端点——后端现为 80，journey/goals 两新端点词典待补录）。三幕总控出发前自动检测残留并确认复位（真实链账本永不复位，P6-R6）。
 排练用一键实跑，正式验收按 `docs/demo-script.md` 纯手动。新四端页面无「◈ 预期」徽章——
 设计内拒绝以错误卡 + 解说词典呈现（Global Constraints #13）。
 
@@ -133,14 +142,18 @@ valid=false 等设计内拒绝命中预期记 ✓）；每步附成功/失败解
     ├── css/theme-ct.css      # 证照中心端主题：深绿黑证照驾驶舱（令牌覆盖）
     └── js/
         ├── data/endpoints.js # 由 openapi.json 生成（scripts/gen-endpoints.sh，勿手改）
-        ├── data/explain.js   # 成功/失败解说词典（27 错误码 + 78 端点，新旧共用）
+        ├── data/explain.js   # 成功/失败解说词典（27 错误码 + 78 端点，新旧共用；后端现 80——journey/goals 待补录）
         ├── data/geo.js       # 演示地理数据层：坐标红线纯函数 + zone 缓冲多边形
         ├── api.js            # 统一 POST 客户端：永不 throw（勿动）
         ├── ui.js             # 旧共享组件库（参考页 + 四端 toast/jsonBlock 复用；勿动）
         ├── pui.js            # 产品组件库（只允许追加）
         ├── store.js          # DemoContext 跨页上下文（勿动）
         ├── map.js            # Leaflet 封装：天地图瓦片/退化兜底/矢量层/无人机标记
-        ├── chainview.js      # CXV 四端共享区块链浏览器模块（explorer×5 + crosschain/list）
+        ├── chainview.js      # CXV 薄壳：组装 + 共享原语 + SMALL_PRINT/_pure 导出面
+        ├── cxv/goals.js      # CXV 布局 E 第①段：三目标证据芯片（explorer/goals 活数，window.CXV_GOALS）
+        ├── cxv/journey.js    # CXV 布局 E 第②③④段：对象选择器+旅程概要头+等宽节点横向时间线（window.CXV_JOURNEY）
+        ├── cxv/lanes.js      # CXV 布局 E 第⑤段：可折叠四链结构泳道（零请求，消费 journey onSelect 回调，window.CXV_LANES）
+        ├── cxv/zones.js      # CXV 布局 E 第⑥段：原三区代码原样迁移（explorer×5 + crosschain/list，window.CXV_ZONES）
         ├── wormhole-topo.js  # WTOPO 虫洞抽象拓扑图（纯 SVG，管理端 netsec 挂载）
         ├── capability.js     # CAPX 三大核心能力卡（cards/strip/cockpit 三密度）
         ├── portal.js         # 四端共享壳：路由/四链心跳/chips/key 引导/二维码
