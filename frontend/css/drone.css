@@ -712,3 +712,85 @@ a.d-cxv-goal-jump:hover { text-decoration: underline; }
   border-left: 4px solid var(--d-warning); border-radius: var(--d-radius-sm);
 }
 .d-cxv-goal-err b { color: var(--d-warning); }
+
+/* ---------- 第五期 Task 7 追加块（仅追加）：业务对象全链旅程（布局 E 第②③④段，js/cxv/journey.js） ----------
+   几何合同（spec §6.2 + 归档 mockup 钉死，Review Focus 5——本块几何数值为钉死值不得漂移）：
+   ④ 时间线 = 等宽节点列（.d-cxv-jn-stop flex:1 1 0，每 hop 一列，非时间比例轴）+ 正上方
+   单条链色带（.d-cxv-jn-rail）按 hop 分段：宽业务段 flex:3（源链色）+ 窄紫 CM 中继段
+   flex:1.2（= 业务段宽 40%：1.2/3，监管中继非旁路）。链色只经 var 引用（--p-chain-* /
+   --d-chain-irita，journey.js 经 CXV.SHARED.CHAIN_VAR 注入 background），本块零硬编码
+   链色 hex（段内白字为文字色非链色）、不触 :root legacy 令牌与 --p-* 定义；状态/SM 徽章
+   icon+文字（p-badge）永不仅靠颜色。②③ 只排版不表意数据。index.html 不加载 drone.css →
+   .d-cxv-jn* 缺席，结构类 p-card/p-empty/p-badge/p-mono（product.css）保证内容完整可读
+   （同 Task 6 块约定，如实降级）。 */
+.d-cxv-jn-sec { margin-bottom: 14px; }
+/* ② 选择器：虚线面板 + 圆角芯片（换行自适应；选中态 = 品牌色边框 + 加重字重，非仅颜色） */
+.d-cxv-jn-picker {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  padding: 6px 8px; margin-bottom: 8px;
+  background: var(--d-panel-2); border: 1px dashed var(--d-line-strong);
+  border-radius: var(--d-radius-sm);
+}
+.d-cxv-jn-note { font-size: 11px; color: var(--d-ink-3); }
+.d-cxv-jn-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 10px; font-size: 11px; color: var(--d-ink-2);
+  background: var(--d-panel); border: 1px solid var(--d-line-strong);
+  border-radius: 999px; cursor: pointer;
+}
+.d-cxv-jn-chip.sel {
+  border-color: var(--d-brand); background: var(--d-brand-soft);
+  color: var(--d-ink); font-weight: 600;
+}
+/* ③ 旅程概要头：一行横排（flex-wrap 窄屏允许换行） */
+.d-cxv-jn-hdr {
+  display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline;
+  padding: 6px 10px; margin-bottom: 10px; font-size: 12px; color: var(--d-ink-2);
+  background: var(--d-panel-2); border: 1px solid var(--d-line);
+  border-radius: var(--d-radius-sm);
+}
+.d-cxv-jn-hdr b { color: var(--d-ink); }
+/* ④ 链色带（单条横带，按 hop 分段；段内标注「链名 · 业务动作」/「CM 中继」） */
+.d-cxv-jn-rail {
+  display: flex; height: 26px; border-radius: var(--d-radius-sm);
+  overflow: hidden; margin-bottom: 4px;
+}
+.d-cxv-jn-seg {
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  padding: 0 4px; color: #fff; font-size: 10.5px;
+}
+.d-cxv-jn-seg-biz { flex: 3; }    /* 宽业务段（几何合同钉死值，源链色 JS 注入） */
+.d-cxv-jn-seg-cm { flex: 1.2; }   /* 窄紫 CM 中继段 = 业务段 40%（1.2/3，几何合同钉死值） */
+/* ④ 等宽节点列（每 hop 一列 flex:1 1 0——非时间比例轴，几何合同钉死） */
+.d-cxv-jn-stops { display: flex; align-items: flex-start; }
+.d-cxv-jn-stop { flex: 1 1 0; min-width: 0; padding: 0 4px; }
+/* 列顶圆点（源链色 JS 注入）：负 margin 叠压链色带下缘（归档 mockup 同款几何） */
+.d-cxv-jn-dot {
+  display: block; width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid var(--d-panel); box-shadow: 0 0 0 1.5px var(--d-ink-3);
+  margin: -31px 0 6px 2px;
+}
+/* 节点卡（整卡可点 → 该跳四段存证 openCx） */
+.d-cxv-jn-card {
+  display: block; width: 100%; text-align: left;
+  padding: 4px 6px; font-size: 10.5px; line-height: 1.5; color: var(--d-ink-2);
+  background: var(--d-panel); border: 1px solid var(--d-line);
+  border-radius: 4px; cursor: pointer;
+}
+.d-cxv-jn-card:hover { border-color: var(--d-brand); }
+.d-cxv-jn-card b { font-size: 11px; color: var(--d-ink); }
+.d-cxv-jn-tx { display: block; font-size: 10px; color: var(--d-ink-3); }
+.d-cxv-jn-badges { margin: 2px 0; }
+.d-cxv-jn-sm { margin-right: 3px; }
+.d-cxv-jn-time { display: block; font-size: 10px; color: var(--d-ink-3); font-variant-numeric: tabular-nums; }
+.d-cxv-jn-hint { margin-top: 6px; font-size: 10.5px; color: var(--d-ink-3); }
+/* 部分 list 失败如实标注（该 kind 缺席不冒充） */
+.d-cxv-jn-partial { flex-basis: 100%; margin: 2px 0 0; font-size: 11px; color: var(--d-warning); }
+/* 加载失败错误态：警示色 + 文字说明（时间线拒绝渲染任何编造节点） */
+.d-cxv-jn-err {
+  padding: 10px 12px; font-size: 12px; color: var(--d-ink-2);
+  background: var(--d-warning-soft); border: 1px solid var(--d-warning);
+  border-left: 4px solid var(--d-warning); border-radius: var(--d-radius-sm);
+}
+.d-cxv-jn-err b { color: var(--d-warning); }

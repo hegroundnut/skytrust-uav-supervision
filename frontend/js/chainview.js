@@ -6,8 +6,8 @@
    三区（节点情况/块浏览/链上数据追踪）渲染代码已原样迁移至 js/cxv/zones.js →
    window.CXV_ZONES.render（纯搬家，行为零变化；zones.js 装载序在本文件之前，经运行时
    window.CXV.SHARED.* / window.CXV.SMALL_PRINT 回引共享面）；goals/journey/lanes
-   模块标签一律插在 zones.js 之前（goals 已于 Task 6 落地），最终装载序
-   goals→journey→lanes→zones→本薄壳。
+   模块标签一律插在 zones.js 之前（goals 已于 Task 6、journey 已于 Task 7 落地），
+   最终装载序 goals→journey→lanes→zones→本薄壳。
    render(root, opts) 签名与 opts 契约 {portal:'op'|'au'|'rg'|'ct'|'index', defaultChain?,
    defaultMsgTypes?} 不变。三区详情/四端裁剪/诚实红线文档见 js/cxv/zones.js 头注释。
    端点：explorer/overview、explorer/nodes、explorer/blocks、explorer/block、explorer/tx、
@@ -160,11 +160,15 @@
     });
   }
 
-  /* ================= render（薄壳组装：GOALS → ZONES；后续 journey/lanes 任务在此追加） =================
-     布局 E 第①段三目标证据条（window.CXV_GOALS，js/cxv/goals.js）节点位于 ZONES 之前；
-     goals.js 装载序在本文件之前（5 HTML 一律），window.CXV_GOALS 调用期解析，无加载序问题。 */
+  /* ================= render（薄壳组装：GOALS → JOURNEY → ZONES；后续 lanes 任务在此追加） =================
+     布局 E 第①段三目标证据条（window.CXV_GOALS，js/cxv/goals.js）与第②③④段业务对象
+     全链旅程（window.CXV_JOURNEY，js/cxv/journey.js，Task 7）节点依次位于 ZONES 之前；
+     goals/journey 装载序在本文件之前（5 HTML 一律），window.CXV_GOALS/CXV_JOURNEY
+     调用期解析，无加载序问题。JOURNEY 的 onSelect(journeyData|null) 回调本任务为空实现
+     （brief 钉死）——Task 8 在此接 CXV_LANES（旅程数据 → 折叠泳道；null → 清空）。 */
   function render(root, opts) {
     window.CXV_GOALS.render(root, opts);
+    window.CXV_JOURNEY.render(root, opts, function (data) { /* Task 8 接 LANES.update(data) */ });
     window.CXV_ZONES.render(root, opts);
   }
 
