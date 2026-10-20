@@ -31,7 +31,7 @@ func reviewApproved(appRef, comment string) map[string]any {
 	}
 }
 
-// Endpoints 全部 78 个 POST 端点，按单服务器回放故事序排列（P5-R7 手写唯一源）。
+// Endpoints 全部 80 个 POST 端点，按单服务器回放故事序排列（P5-R7 手写唯一源）。
 // 每行 Sample 在该行位置执行必得 ExpectCode；${ref} 由本表 Capture 先行定义（P5-R13）。
 // 确定性错误样例三处（一路径一行约束下的取舍）：sm9/verify(1002)、conflict/resolve(6002)、path/switch(6002)。
 var Endpoints = []Endpoint{
@@ -112,5 +112,7 @@ var Endpoints = []Endpoint{
 	{Path: "/api/explorer/blocks", Group: "explorer", Summary: "最近块列表（新→旧；limit≤0→20、>200→200；能力缺失→2005）", Sample: map[string]any{"chain": "fabric", "limit": 5}, ExpectCode: 0, ProbeExpect: 6002, Capture: map[string]string{"exp_tx_id": "data.blocks.0.tx_ids.0"}},
 	{Path: "/api/explorer/block", Group: "explorer", Summary: "按高度查块详情（越界→6002；能力缺失→2005）", Sample: map[string]any{"chain": "fabric", "height": 1}, ExpectCode: 0, ProbeExpect: 6002},
 	{Path: "/api/explorer/tx", Group: "explorer", Summary: "按 TxID 链上直查（走既有 QueryTx，不依赖 BlockQuerier；查无→6002）", Sample: map[string]any{"chain": "fabric", "tx_id": "${exp_tx_id}"}, ExpectCode: 0, ProbeExpect: 6002},
+	{Path: "/api/explorer/journey", Group: "explorer", Summary: "业务对象全链旅程（锚点 mission/pass/uav，缺省按 ID 前缀推断；hops 按 created_at 升序含四段 TxID；summary 仅全 SUCCESS 给 end_to_end_ms；锚点不存在→6002）", Sample: map[string]any{"anchor_kind": "mission", "anchor_id": "MISSION-2026-001"}, ExpectCode: 0, ProbeExpect: 6002},
+	{Path: "/api/explorer/goals", Group: "explorer", Summary: "三目标证据芯片实时聚合（芯片①业务留痕口径排除 EXP-*、重试各算一条；测不到→null 绝不写死；wormhole_detected_total 无独立检出字段如实省略）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 0},
 	{Path: "/api/demo/reset", Group: "演示", Summary: "清空全部业务表 + 模拟链状态复位（不重灌种子，重灌用 demo/init）", Sample: map[string]any{}, ExpectCode: 0, ProbeExpect: 0},
 }

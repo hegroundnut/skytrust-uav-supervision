@@ -71,7 +71,7 @@ cd services/skytrust-backend && go run ./cmd/server
   }
   ```
 
-**共 78 个端点**（分组：health×2 / chain×1 / crypto×4 / demo×2 / audit×2 / crosschain×3 / explorer×5 / masterdata×6 / uom×6 / uav×5 / mission×4 / review×2 / conflict×2 / pass×5 / offchain×12 / telemetry×3 / regulatory×10 / experiment×4）：
+**共 80 个端点**（分组：health×2 / chain×1 / crypto×4 / demo×2 / audit×2 / crosschain×3 / explorer×7 / masterdata×6 / uom×6 / uav×5 / mission×4 / review×2 / conflict×2 / pass×5 / offchain×12 / telemetry×3 / regulatory×10 / experiment×4）：
 
 | 分组 | 端点 | 说明 |
 | --- | --- | --- |
@@ -94,6 +94,8 @@ cd services/skytrust-backend && go run ./cmd/server
 | explorer | `POST /api/explorer/blocks` | 最近块列表（新→旧；limit≤0→20、>200→200；能力缺失→2005） |
 | explorer | `POST /api/explorer/block` | 按高度查块详情（越界→6002；能力缺失→2005） |
 | explorer | `POST /api/explorer/tx` | 按 TxID 链上直查（走既有 QueryTx，不依赖 BlockQuerier；查无→6002） |
+| explorer | `POST /api/explorer/journey` | 业务对象全链旅程只读聚合（锚点 mission/pass/uav，anchor_kind 缺省按 ID 前缀推断；hops 按 created_at 升序含四段 TxID；summary 仅 hops 全 SUCCESS 给 end_to_end_ms，否则诚实 null；锚点不存在→6002） |
+| explorer | `POST /api/explorer/goals` | 三目标证据芯片实时聚合（芯片①业务留痕口径：排除 EXP-* 压测流量、重试各算一条不去重；计数无活动时为真实 0 绝不 null——仅 verify_pass_rate_pct（pass+fail==0 时）与两个时延中位数（无 >0 读数时）可为 null=测不到；wormhole_detected_total 键有意省略：WormholeEvent 无独立检出结果字段，wormhole_events_total 即检出事件的诚实计数） |
 | masterdata | `POST /api/manufacturer/register` | 注册厂商 |
 | masterdata | `POST /api/manufacturer/list` | 厂商列表 |
 | masterdata | `POST /api/operator/register` | 注册运营方 |
@@ -452,8 +454,8 @@ services/skytrust-backend/
 ├── cmd/
 │   └── server/            # 服务入口 main.go（go run ./cmd/server）
 ├── internal/
-│   ├── api/               # 路由、中间件、统一响应/错误码别名、78 端点 handler、api.Deps
-│   ├── apidoc/            # Apifox 文档渲染：Schema 推断 / OpenAPI 3.0.3 构建 / 场景文档 / 确定性渲染 + 端点表（78 行）/ 场景表（24 个）
+│   ├── api/               # 路由、中间件、统一响应/错误码别名、80 端点 handler、api.Deps
+│   ├── apidoc/            # Apifox 文档渲染：Schema 推断 / OpenAPI 3.0.3 构建 / 场景文档 / 确定性渲染 + 端点表（80 行）/ 场景表（24 个）
 │   ├── audit/             # 审计服务（query / export CSV）
 │   ├── chainadapter/      # 链适配接口（ChainAdapter / ChainStatusProvider）+ ChainTransport 迁移缝 + BlockQuerier（explorer 块查询缝）
 │   │   ├── chainmaker/    # ChainMaker 链适配器（合约/方法白名单）
@@ -491,7 +493,7 @@ services/skytrust-backend/
 
 ## Apifox 文档
 
-- `docs/apifox/skytrust-backend.openapi.json`（仓库根）：OpenAPI 3.0.3，78 个全 POST 端点，含录制请求样例与 success/business_error 双响应样例（`x-sample-source: recorded|static` 标注来源）——Apifox「导入数据 → OpenAPI/Swagger」直接导入。
+- `docs/apifox/skytrust-backend.openapi.json`（仓库根）：OpenAPI 3.0.3，80 个全 POST 端点，含录制请求样例与 success/business_error 双响应样例（`x-sample-source: recorded|static` 标注来源）——Apifox「导入数据 → OpenAPI/Swagger」直接导入。
 - `docs/apifox/skytrust-test-scenarios.json`：24 个验收/演示场景（TC1-01..TC3-08），每步含 body 与预期 code；`${ref}` 为运行时捕获引用（前序步骤 capture），`${now-1h}`/`${now+1h}` 为动态时间占位符（timex 格式）。
 - 重新生成（在 `services/skytrust-backend` 下执行；产物含时间戳/trace_id，重生成字节变化属正常快照语义）：
 
@@ -499,7 +501,7 @@ services/skytrust-backend/
   APIFOX_GEN=1 go test ./tests/ -run 'TestApifox' -count=1
   ```
 
-- 回放即文档测试：`TestApifoxReplayScenarios`（24 场景单服务器顺序回放）与 `TestApifoxEndpointSamples`（78 端点故事序样例 + `[]` 探针）断言每步信封 code——文档样例与真实行为永久同步。
+- 回放即文档测试：`TestApifoxReplayScenarios`（24 场景单服务器顺序回放）与 `TestApifoxEndpointSamples`（80 端点故事序样例 + `[]` 探针）断言每步信封 code——文档样例与真实行为永久同步。
 
 ## UOM 登记与运行识别域
 

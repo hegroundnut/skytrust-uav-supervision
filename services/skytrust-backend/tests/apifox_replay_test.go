@@ -100,8 +100,8 @@ func TestApifoxReplayScenarios(t *testing.T) {
 	}
 }
 
-// TestApifoxEndpointSamples 端点表回放录制：78 样例（故事序，capture/resolve）
-// + 78 个 `[]` 探针（绑定层判定，状态无关）→ 内存组装 OpenAPI 健全性 →
+// TestApifoxEndpointSamples 端点表回放录制：80 样例（故事序，capture/resolve）
+// + 80 个 `[]` 探针（绑定层判定，状态无关）→ 内存组装 OpenAPI 健全性 →
 // APIFOX_GEN=1 时渲染写盘 docs/apifox/（快照提交，P5-R13）。
 func TestApifoxEndpointSamples(t *testing.T) {
 	srv := bootServerS1(t)
@@ -130,8 +130,8 @@ func TestApifoxEndpointSamples(t *testing.T) {
 	}
 	doc := apidoc.BuildOpenAPI(apidoc.Endpoints, ok, probe)
 	paths := doc["paths"].(map[string]any)
-	if len(paths) != 78 {
-		t.Fatalf("openapi paths = %d, want 78", len(paths))
+	if len(paths) != 80 {
+		t.Fatalf("openapi paths = %d, want 80", len(paths))
 	}
 	for p, item := range paths {
 		m := item.(map[string]any)
@@ -188,8 +188,8 @@ func TestApifoxArtifacts(t *testing.T) {
 		t.Fatalf("openapi = %v", doc["openapi"])
 	}
 	paths := doc["paths"].(map[string]any)
-	if len(paths) != 78 {
-		t.Fatalf("paths = %d, want 78", len(paths))
+	if len(paths) != 80 {
+		t.Fatalf("paths = %d, want 80", len(paths))
 	}
 	for p, item := range paths {
 		m := item.(map[string]any)
