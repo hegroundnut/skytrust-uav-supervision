@@ -29,7 +29,10 @@
       自动选择与每次点选芯片后回调——旅程加载成功回 data；空态/清空/加载失败回 null。
    诚实红线：选择器条目、概要数字、hop 明细全部来自实时响应且 r.ok 门控；journey 失败/
       6002 → 时间线区如实错误态，绝不渲染任何编造节点；list 全部失败 → 错误态（不以空态
-      文案冒充「无中继」）；测不到 null → '—'（绝不以 0 充数、绝不拼假单位）。
+      文案冒充「无中继」）；默认探测混合失败（部分成功且全 hop0）→ 空态文案旁附披露行
+      （code+message+「该候选旅程状态未知，不以空态断言」+ metaLine trace 可溯）；
+      测不到 null → '—'（绝不以 0 充数、绝不拼假单位）；迟到响应归属守卫（等待期间用户
+      改选 → 弃填充）。
    装载序契约：本文件标签在 zones.js 之前、goals.js 之后（终序 goals→journey→lanes→
       zones→薄壳 chainview.js）；IIFE 顶层零 window.CXV 访问——SHARED.CHAIN_VAR/openCx
       仅 render/点击调用期解析（与 goals/zones 同约）。依赖仅 API/UI/PUI（裁决 G，index 兼容）。
@@ -123,7 +126,7 @@
     opts = opts || {};
     var portal = opts.portal || 'index';
     var kinds = KINDS_BY_PORTAL[portal] || KINDS_ALL;
-    var state = { candidates: [], selected: null };   /* selected = 候选对象引用（kind+id 唯一） */
+    var state = { candidates: [], selected: null, okKinds: [] };   /* selected = 候选对象引用；okKinds = 本端查询且成功的 kind */
 
     var pickerBox = h('div', { class: 'd-cxv-jn-picker' },
       h('div', { class: 'p-empty' }, '⏳ pass/mission/uav list 加载中…'));
@@ -195,10 +198,21 @@
         h('div', {}, h('b', {}, '⚠ 旅程加载失败（code=' + r.code + '）——时间线拒绝渲染任何编造节点')),
         P.errCard(r)));
     }
-    function renderTimelineEmpty() {
+    function renderTimelineEmpty(probeErrs) {
       jhdrBox.innerHTML = '';
       tlBox.innerHTML = '';
       tlBox.append(P.empty(EMPTY_COPY));
+      /* 混合探测失败如实披露（诚实红线：失败候选可能正是有中继的那个——空态按省略断言
+         「无中继」即 dishonest）：空态文案旁附披露行（code+message 直出），metaSlot 挂首个
+         失败响应的 metaLine（trace 可溯）。全成功探测的空态不附披露（确证无中继）。 */
+      if (probeErrs && probeErrs.length) {
+        metaSlot.innerHTML = '';
+        metaSlot.append(P.metaLine(probeErrs[0].r));
+        tlBox.append(h('div', { class: 'd-cxv-jn-partial' },
+          probeErrs.map(function (f) {
+            return h('div', {}, '⚠ 候选 ' + f.cand.id + ' 旅程探测失败（code=' + f.r.code + '）：' + (f.r.message || '') + '——该候选旅程状态未知，不以空态断言');
+          })));
+      }
     }
 
     /* ---------- ② 选择器芯片 ---------- */
@@ -206,7 +220,7 @@
     function syncChips() {
       chipEls.forEach(function (it) {
         var sel = state.selected === it.cand;
-        it.el.className = 'd-cxv-jn-chip' + (sel ? ' sel' : '');
+        it.el.className = 'd-cxv-jn-chip' + (sel ? ' d-cxv-jn-sel' : '');
       });
     }
     function renderChips() {
@@ -214,8 +228,11 @@
       chipEls = [];
       pickerBox.append(h('span', { class: 'd-cxv-jn-note' }, '最近业务对象：'));
       if (!state.candidates.length) {
+        /* 空态口径只对本端实际查询且成功的 list 断言（op/ct 不查 uav；失败 kind 由下方
+           .d-cxv-jn-partial 警示行如实披露，绝不以「三 list 均空」以偏概全） */
         pickerBox.append(h('span', { class: 'd-cxv-jn-note' },
-          '暂无业务对象（pass/mission/uav 三 list 均空——如实展示，绝不虚构记录）'));
+          '暂无业务对象（' + state.okKinds.map(function (k) { return k + '/list'; }).join('、') +
+          ' 实时响应均空——如实展示，绝不虚构记录）'));
         return;
       }
       state.candidates.forEach(function (cand) {
@@ -250,6 +267,7 @@
       tlBox.append(h('div', { class: 'p-empty' }, '⏳ explorer/journey 查询中…'));
       var r = await API.call('/api/explorer/journey', { anchor_id: cand.id, anchor_kind: cand.kind });
       if (!pickerBox.isConnected) return;   /* 已导航离开/「刷新全部」卸载本区 → 弃填充 */
+      if (state.selected !== cand) return;  /* 迟到响应归属守卫：等待期间用户已改选他芯片 → 弃填充（绝不把旧对象渲染进新选中态） */
       metaSlot.innerHTML = '';
       metaSlot.append(P.metaLine(r));
       if (!r.ok) { renderTimelineError(r); notify(null); return; }
@@ -261,28 +279,28 @@
     async function autoSelect() {
       var top = state.candidates.slice(0, PROBE_TOP_N);
       if (!top.length) { renderTimelineEmpty(); notify(null); return; }
-      var firstWithHops = null, probeErr = null, probed = 0;
+      var firstWithHops = null, probeErrs = [], probed = 0;
       for (var i = 0; i < top.length; i++) {
         var cand = top[i];
         var r = await API.call('/api/explorer/journey', { anchor_id: cand.id, anchor_kind: cand.kind });
         if (!pickerBox.isConnected) return;
         if (state.selected) return;   /* 探测期间用户已点选芯片 → 让位用户选择，自动探测如实终止 */
-        if (!r.ok) { if (!probeErr) probeErr = r; continue; }   /* 探测失败如实跳过——不可断言 hop_count */
+        if (!r.ok) { probeErrs.push({ cand: cand, r: r }); continue; }   /* 探测失败如实跳过——不可断言 hop_count */
         probed++;
         var s = (r.data && r.data.summary) || {};
         if (s.hop_count > 0 && s.success_count === s.hop_count) { selectAndLoad(cand, r); return; }
         if (s.hop_count > 0 && !firstWithHops) firstWithHops = { cand: cand, r: r };
       }
       if (firstWithHops) { selectAndLoad(firstWithHops.cand, firstWithHops.r); return; }
-      if (!probed && probeErr) {
+      if (!probed && probeErrs.length) {
         /* 前 5 全部探测失败 → 如实错误态（绝不以空态文案冒充「无中继」） */
         metaSlot.innerHTML = '';
-        metaSlot.append(P.metaLine(probeErr));
-        renderTimelineError(probeErr);
+        metaSlot.append(P.metaLine(probeErrs[0].r));
+        renderTimelineError(probeErrs[0].r);
         notify(null);
         return;
       }
-      renderTimelineEmpty();
+      renderTimelineEmpty(probeErrs);   /* 混合失败（部分成功且全 hop0）→ 空态 + 披露行 */
       notify(null);
     }
 
@@ -312,6 +330,7 @@
         return;
       }
       var merged = [];
+      state.okKinds = kinds.filter(function (k) { return !!byKind[k]; });   /* 实际查询且成功的 kind（空态口径用） */
       kinds.forEach(function (k) { merged = merged.concat(byKind[k] || []); });
       /* created_at 字典序 = 时间序（timex 固定格式同时区）；sort 稳定 → 同刻值保持 kind 拼接序 */
       merged.sort(function (a, b) {

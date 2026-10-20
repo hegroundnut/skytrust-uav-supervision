@@ -738,7 +738,7 @@ a.d-cxv-goal-jump:hover { text-decoration: underline; }
   background: var(--d-panel); border: 1px solid var(--d-line-strong);
   border-radius: 999px; cursor: pointer;
 }
-.d-cxv-jn-chip.sel {
+.d-cxv-jn-chip.d-cxv-jn-sel {
   border-color: var(--d-brand); background: var(--d-brand-soft);
   color: var(--d-ink); font-weight: 600;
 }
