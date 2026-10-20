@@ -29,6 +29,7 @@ func NewRouter(deps *Deps) (*gin.Engine, error) {
 		api.POST("/explorer/blocks", explorerBlocksHandler(deps))
 		api.POST("/explorer/block", explorerBlockHandler(deps))
 		api.POST("/explorer/tx", explorerTxHandler(deps))
+		api.POST("/explorer/journey", explorerJourneyHandler(deps))
 		api.POST("/manufacturer/register", manufacturerRegisterHandler(deps))
 		api.POST("/manufacturer/list", manufacturerListHandler(deps))
 		api.POST("/operator/register", operatorRegisterHandler(deps))
