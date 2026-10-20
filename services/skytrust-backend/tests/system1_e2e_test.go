@@ -304,4 +304,32 @@ func TestSystem1E2E(t *testing.T) {
 	if aq2["total"].(float64) < 6 {
 		t.Fatalf("gateway audit total = %v, want >= 6", aq2["total"])
 	}
+
+	// 11. 第五期：验收浏览器聚合端点（只读；旅程/芯片在吊销闭环后如实聚合）。
+	//     MISSION 锚点按 C17 约定写冻结字面量（年份随 start_time 滚动、夹具冻结于
+	//     2026，与第 2 步断言同源；seqID 仅用于 PASS 侧），语义 = 第 2 步创建的首任务。
+	jn := must0("explorer/journey mission", call(t, srv, "/api/explorer/journey", map[string]any{"anchor_id": "MISSION-2026-001"}))
+	if jn["anchor"].(map[string]any)["kind"] != "mission" {
+		t.Fatalf("mission journey anchor = %v", jn["anchor"])
+	}
+	jsum := jn["summary"].(map[string]any)
+	if jsum["hop_count"].(float64) < 3 {
+		t.Fatalf("mission journey hop_count = %v, want >= 3（APP+REVIEW+FLIGHT_PASS[+REVOKE]）", jsum["hop_count"])
+	}
+	jp := must0("explorer/journey pass", call(t, srv, "/api/explorer/journey", map[string]any{"anchor_kind": "pass", "anchor_id": seqID("PASS", 1)}))
+	if jp["anchor"].(map[string]any)["status"] != "REVOKED" {
+		t.Fatalf("pass anchor = %v, want REVOKED", jp["anchor"])
+	}
+	badEnv := call(t, srv, "/api/explorer/journey", map[string]any{"anchor_id": "PASS-1999-999"})
+	if badEnv["code"].(float64) != 6002 {
+		t.Fatalf("unknown anchor = %v, want code 6002", badEnv)
+	}
+	gl := must0("explorer/goals", call(t, srv, "/api/explorer/goals", map[string]any{}))
+	g1 := gl["goal1"].(map[string]any)
+	if g1["chains_total"].(float64) != 4 || g1["chains_online"].(float64) != 4 {
+		t.Fatalf("goal1 chains = %v", g1)
+	}
+	if g1["crosschain_total"].(float64) < 5 {
+		t.Fatalf("goal1 crosschain_total = %v, want >= 5（五条业务中继）", g1["crosschain_total"])
+	}
 }
