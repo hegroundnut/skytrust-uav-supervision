@@ -117,11 +117,14 @@ fabric_env_org2() {
 # 输出经临时文件转发（不走管道）：console JVM 若残留为孤儿仍持有 stdout 管道时，
 # 命令替换 $(…|…) 会永久阻塞——文件中转则孤儿持有的只是文件 fd，不阻塞任何读者。
 # timeout -k：120s TERM 后再 10s 仍未退则 KILL。
+# JDK：console 要求 Java 14+；本机（2026-10-21 部署）系统 java 为 11，JDK17 在 /opt/jdk17
+#   （tarball 自持，不动系统默认）——子 shell 内前置 PATH，仅 console 生效。
 fisco_console_cmd() {
   local out; out=$(mktemp /tmp/fisco-console.XXXXXX)
   # 注意：不可给 start.sh 加 </dev/null——显式重定向会覆盖 echo 管道，console 得到
   # 即时 EOF、来不及执行命令（部署实测教训）。echo 写完即 EOF，console 处理后自退。
-  (cd "$FISCO_CONSOLE" && echo "$*" | timeout -k 10 120 bash start.sh "$FISCO_GROUP" \
+  (cd "$FISCO_CONSOLE" && echo "$*" | PATH="${FISCO_JDK_HOME:-/opt/jdk17}/bin:$PATH" \
+    timeout -k 10 120 bash start.sh "$FISCO_GROUP" \
     >"$out" 2>&1)
   cat "$out"; rm -f "$out"
 }

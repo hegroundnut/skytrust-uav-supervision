@@ -142,11 +142,14 @@ fabric_deploy() {
   SMOKE="SMOKE-$(date +%s)"
   INNER="{\"cross_tx_id\":\"$SMOKE\",\"message_type\":\"MISSION_APPLICATION\",\"business_id\":\"$SMOKE\"}"
   CTOR=$(python3 -c 'import json,sys; print(json.dumps({"function":"CrosschainSubmit","Args":[sys.argv[1]]}))' "$INNER")
+  # 2026-10-21 本机部署实测：官方 3.1.5 CLI 把 "Transaction ID: <hex>" 打在 stderr——
+  # 原 2>/dev/null+tail -1 抓到空串致冒烟假阴性（链上实际成功）。改 2>&1 + 正则提取；
+  # 老机 dev 构建 CLI 不打印 TxID 行（修订5 怪癖）时 TXID 为空、由下方 qscc 兜底判死。
   TXID=$( (fabric_env_org1; peer chaincode invoke -C "$FAB_CHANNEL" -n "$FAB_CC_NAME" \
     --peerAddresses localhost:7051 --tlsRootCertFiles "$ORG1_TLS_CA" \
     --peerAddresses localhost:9051 --tlsRootCertFiles "$ORG2_TLS_CA" \
     --orderer localhost:7050 --tls --cafile "$ORDERER_CA" \
-    --ctor "$CTOR" 2>/dev/null) | tail -1)
+    --ctor "$CTOR" 2>&1) | grep -oE 'Transaction ID: [0-9a-f]{64}' | awk '{print $NF}' | tail -1)
   echo "  invoke TxID=$TXID"
   sleep 3
   # qscc（latest/3.x 线构建）GetBlockByTxID 收 (channel, txID) 两实参
@@ -163,8 +166,10 @@ fisco_deploy() {
   echo "== FISCO BCOS：Console deploy + BFS ln /apps/uav_management =="
   # console 交互式（start.sh 只收 groupID，命令走 stdin——fisco_console_cmd 封装）
   cp "$REPO/contracts/fisco/uav_management.sol" "$FISCO_CONSOLE/contracts/solidity/UavManagement.sol"
-  echo "--- 1) deploy solidity/UavManagement.sol（sol 自动编译，pragma ^0.8）---"
-  fisco_console_cmd "deploy solidity/UavManagement.sol" | tee /tmp/fisco-deploy.out
+  echo "--- 1) deploy contracts/solidity/UavManagement.sol（sol 自动编译，pragma ^0.8）---"
+  # 2026-10-21 本机部署实测：官方 v3.8.0 tarball 布局下 console deploy 路径为
+  # contracts/solidity/<file>（原 "solidity/<file>" 报 does not exist；老机 console 布局差异）
+  fisco_console_cmd "deploy contracts/solidity/UavManagement.sol" | tee /tmp/fisco-deploy.out
   # 地址以 deploylog 末行为准（console 输出含多地址，deploylog 权威）
   ADDR=$(tail -1 "$FISCO_CONSOLE/deploylog.txt" | awk '{print $NF}')
   case "$ADDR" in 0x*) echo "  ✓ contract address=$ADDR（deploy TxID 见上方回执，回填 §4.4）";;

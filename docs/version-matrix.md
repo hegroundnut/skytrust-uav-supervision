@@ -422,6 +422,69 @@ code=0 可验（Task 14 实弹）——账本永不复位（P6-R6 同源），�
 - **回退手册**（只读核验，未执行）：链上 `cmc client chainconfig consensusnodeid|consensusnodeorg|trustroot remove`（plan 原文 "delete" 系笔误——cmc v2.3.10 实际子命令名为 `remove`，--help 三核验）；peer1 回退 = `docker stop` + .env 清单移除（零链上变更）。
 
 
+## 13. 新机部署登记 —— 2026-10-21（本机共享物理机 80C/377G，Ubuntu 22.04.5，四链全栈全新建链）
+
+> 本节为**追加登记**；§1-§12 一字未动。执行依据 `docs/bare-metal-deploy-runbook.md`（2026-10-21 裸机裁定版）。
+> 机器为共享机（另有 coze/label-studio/vllm 等无关容器在跑）：全程未触碰其它项目资产、未重启 docker daemon、
+> 未改 /etc/hosts、未加 docker 组（docker 一律 sudo）。痕迹全量登记于仓库根 `部署痕迹清单.md`（不入 git）。
+
+### 13.1 部署形态与工具链（实测）
+
+| 项 | 值 |
+|---|---|
+| OS / 资源 | Ubuntu 22.04.5 LTS，80C / 377G RAM / 539G 磁盘空闲；时区 Asia/Shanghai、NTP 同步 |
+| Docker / Compose | 29.0.1 / v2.40.3（机器原有；镜像拉取走既有 registry mirror，未改 daemon） |
+| Go / JDK | go1.25.14（/usr/local/go）/ OpenJDK 17.0.20.1（/opt/jdk17 tarball，不动系统 java 11） |
+| libbcos-c-sdk.so | v3.6.0 官方 release（18MB，root:root 644，ldconfig 注册） |
+| 代理 | 127.0.0.1:7890（仅下载期；链上通信全回环） |
+| IRITA 限额 | **无**（裸机裁定默认取消；systemd-run 瞬态单元 irita-node0..3，User=hetong） |
+
+四链拓扑（与 §11/§12 生产形态一致）：FISCO 4 节点 PBFT（group0，rpc 20200-20203 TLS 双向）·
+ChainMaker **5-org TBFT**（chain1，首建 4-org + org5 链上扩容两笔配置交易，rpc 12301-12305，VM 引擎容器 ×5）·
+Fabric SMARTBFT 4-orderer（7050/7052/7056/7058）+ 4 peer（peer0×2 + 本机化 peer1×2 @7061/9061）·
+IRITA 4-validator SM2（chain-id skytrust-license，rpc 回环 26657-26687，timeout_commit=1s，实测 ~1.5s/块）。
+G4 门禁：start-chains.sh **ALL_CHAINS_UP**（2026-10-21，四链深度 RPC 全绿、CM org1/org5 与 Fabric peer0/peer1 块高对齐）。
+
+### 13.2 §4.4 部署 TxID 登记表（新机值——全部链上已核验）
+
+| 链 | 合约/工件 | 部署工具 | deploy TxID | 区块 | 时间 |
+|---|---|---|---|---|---|
+| chainmaker | regulatory_record v1.0.2（DOCKER_GO，**5-admin 联签、5-org endorser 背书链上实证**） | cmc | `18e08e50cf713cc4ca39185218dddeb175baa88c8b7d4452b78768da1c6c0c30` | 5 | 2026-10-21 |
+| chainmaker | crosschain_trace v1.0.2 | cmc | `18e08e51cebad22bcae3ab453676ad4958e4e7193fd948a5ae5a85487544240a` | 6 | 同上 |
+| chainmaker | identity_mapping v1.0.2 | cmc | `18e08e52c49f90adca9c2dff4f5d67573851f7024baa4a3fa3a9337000f37f14` | 7 | 同上 |
+| chainmaker | regulatory_authorization v1.0.2 | cmc | `18e08e53a619bd95ca633fe86945b1ab5bd8f1d7802f4f1aa23546d8b36f6347` | 8 | 同上 |
+| chainmaker | audit_record v1.0.2 | cmc | `18e08e548f92b1bbca9de99ac0dd49ea60321b3a8ade413184ac192bc559af8b` | 9 | 同上 |
+| chainmaker | org5 扩容配置交易①trustroot add | cmc（4-admin 多签） | `18e08beefa28f6b9ca78fc70320b3fa638ec936a284745569786fb7d4c51c2f6` | — | 同上 |
+| chainmaker | org5 扩容配置交易②consensusnodeorg add（--node-ids 携带 `QmRbuPBvyaR3gWqqiNeZKYmSnxvJo46xAg5WajwCwLvrJo`） | cmc（4-admin 多签） | `18e08bf281f4b5dfca14da602049d33828bf1ac5e3744e0594c6b6ab4a889968` | — | 同上 |
+| fabric | operator_business v1.0 seq1（Org1+Org2 approve，package ID `operator_business_1.0:992ab1762cc6e53a6359bb942b40bed83eae236b29fae0757ccce9e7b7b7f9d8`，peer0/peer1×2 四处安装一致） | peer lifecycle | commit `57f48088496a08e1fb6fc367f9af9746951c4e9604ac62432bc47377952968c9`；冒烟 `6f805b6064a6c9312649983e6b858b744a454afe46a4c19ab2878a5f17d24256`（SMOKE-1792587201，QueryState 读回=VALID 证明） | 5（冒烟 6） | 同上 |
+| fisco-bcos | UavManagement（BFS `/apps/uav_management`，console v3.8.0 deploy + ln） | console | `0x1c6a5286da1d0f55ebc0d26a48a8e05822bc635f077e8bcdb17f3853b177cd34` → 合约地址 `0x6849f21d1e455e9f0712b1e99fa4fcd23758e8f1`（**与 §11.2 登记地址逐字一致=字节码同一性旁证**；块 1 包含证明经 JSON-RPC getBlockByNumber 复核） | 1 | 同上 |
+| irita | record 启用锚点（record_id `6a1df1372943c685d95dd638cb9ee7f27f84bd24e23fc20590a5f5a9731be0b7`，SM3 摘要 `0b84bfbcaceeaa16ba4504259d91262431fb47ae4ae1954dccb95943add1220c`；skytrust-biz 注资 1000 IRITA tx `6795C8706FBD20A0D704C3C38FB1F691284752D1777B5066F1FDCF910969F7FF` @h=848） | irita CLI tx record create | `BFC538EA745FE0699E51A979E066B114F5C37931A25D3353A39E43EA9EC8580F`（/tx?hash code=0） | 890 | 同上 |
+
+链上核验方式（修订4 纪律：不信客户端回执）：CM 5 笔经 `cmc query tx`（result.code 缺省=SUCCESS）+ 部署回执
+`install_init_block_height/version=1.0.2` 与块高互证，crosschain_trace 回执含 **wx-org1..5 五组织 endorser 签名**；
+Fabric commit/冒烟经块解码（configtxlator）+ qscc GetBlockByTxID（4652B 区块返回）+ QueryState 读回原文；
+FISCO 块 1 包含证明（§11.4-1 怪癖面）；IRITA /tx?hash code=0 + create_record 事件（creator=skytrust-biz bech32 解码实证）。
+CM 写读冒烟：RegisterReceive invoke `18e08e7c2e0cd73cca15490d9acb7951452209debeac4773a3884b1686ba7080` →
+QueryState("REG/CX-smoke-20261021") 读回全键集 JSON Success。
+
+### 13.3 新机偏差登记（补充 §8/§11.4/§12.9，均已按授权路径处置）
+
+1. **FISCO 节点二进制 = 官方 v3.16.4 release**（runbook §4-1 字面"源码构建"；采用 release 因：sha256 `b2ec459d…` 与 §12.12 生产登记**逐字节一致**、Build 20260114/commit fb90450 与 §2 登记一致，deployment.md 附录 C"二进制 + 子模块"同源；源码指针 v3.17.0 与冻结版 v3.16.4 不符，release 反而更严格满足版本冻结）。
+2. **libbcos-c-sdk.so 来源 = GitHub bcos-c-sdk v3.6.0 release**（go-sdk `tools/download_csdk_lib.sh` 官方同源 URL；非老机迁移物料）。
+3. **chainmaker-cryptogen v2.3.7**（上游无 v2.3.10 tag；同 2.3 线最新，生成物料与 v2.3.10 节点/链互操作实证通过）。cmc 自 chainmaker-go 根模块 `./tools/cmc` 构建（该目录无独立 go.mod，属根模块）。
+4. **IRITA 二进制 sha256 = `ac8bebbc041a46ab37f40546d86d41621e35ea40d13f8833307c5dd6f7c59e78`** ≠ §12.2 登记值（同 commit 4c8c4c9 + 同 `make build` sm2 ldflags，构建机/工具链时点不同所致；**SM2 双层证据不变**：node_key/priv_validator=`tendermint/PrivKeySm2|PubKeySm2`，keyring=`/cosmos.crypto.sm2.PubKey`）。
+5. **IRITA grpc 端口 9090+10i → 19090+10i**（共享机 0.0.0.0:9100 被既有 python 服务占用，node1 bind 冲突实证；rpc/p2p 端口不变；后端读=TM RPC、写=CLI，均不经 grpc，零影响）。
+6. **CM 首建 4-org + org5 链上扩容**（prepare.sh node_cnt 白名单 {1,4,7,10,13,16} 不含 5 → runbook §4-2 预授权路径；扩容两笔交易同 §12.12 形态；cryptogen 单独 count:5 生成 org5 物料）。**cryptogen extend 实坑**：fabric 3.1.5 cryptogen `extend --input` 须给 **organizations 根**——给 org 目录或 peerOrganizations 均会**重新生成 CA**（peer1 证书链不上原 CA，TLS ECDSA verification failure 实证），且输出落 `<input>/peerOrganizations/` 嵌套树；peer0 材料零变化以 sha256 全量对照实证。
+7. **CM 合约部署 = 5-admin 联签**（§11.2"4-admin"生产惯例随 5-org 拓扑扩展；部署交易 endorser 签名含全部 5 org）；v1.0.2 单版本直接 create（同 §11.2 新链形态，不走 1.0.0→1.0.2 升级链）。deploy-contracts.sh 的单 admin chainmaker_deploy 未适用于 5-org 链，部署经同参数 5-admin 扩展命令执行（回执落盘命名与脚本一致 `deploy-<name>.json`）。
+8. **CM 生成配置三处部署期修正**：rpc tls `mode: disable→twoway`（修订4 坑#1，后端 WithNodeUseTLS(true) 硬依赖）；`rpc.max_send/recv_msg_size: 100→200`（D21 继承，v2.3.10 模板自带 100 缺省键、就地改值防重复键）；log.yml `../log/*.log → ../log/orgN/*.log`（对齐 env.sh CM_NODE_LOG 布局，防 5 节点日志互串）。
+9. **FISCO RPC 面**：enable_ssl=true 双向 TLS（curl 须带 sdk 三件套 + -k 跳 CN 主机名）；`getNodeInfo/getBlockNumber(有参形态)` -32601 等 §11.4-1 怪癖复现（getNodeInfo 缺失；getBlockNumber 无参可用）；健康探测按登记走 getSealerList/getSyncStatus + console getBlockNumber。libproviders.so 缺失噪声与老机同款（节点/console 功能不受损，console deploy/ln/call 全可用——**与 §11.4-1"console 彻底不可用"不同**，本机 console 为一等工具）。
+10. **console deploy 路径 = `contracts/solidity/UavManagement.sol`**（官方 v3.8.0 tarball 布局；deploy-contracts.sh 原 `solidity/...` 报 does not exist，脚本已修正）。
+11. **Fabric = 官方 3.1.5 release 二进制 + 3.1.5 镜像重打 latest tag**（修订5 决策沿袭；compose 引用 :latest，peer/orderer 版本一致性 checkPrereqs 实证通过）。**deploy-contracts.sh fabric 冒烟假阴性再现**：官方 CLI 把 `Transaction ID:` 打在 stderr，脚本 `2>/dev/null` 吞掉致 TxID 空、qscc 判死——链上实际成功（block 6 解码证实）；脚本已修正为 2>&1+正则提取。
+12. **jq 经 apt 安装**（机器原仅 anaconda 用户级 jq，root 运行 start-chains.sh/setAnchorPeer 必需；runbook §2 声明依赖）。
+13. **IRITA 注资金额 = 1000000000uirita（1000 IRITA，6 位小数）**：plan Task 1 字面 `100000000000uirita` 系 8 位小数假设，链上 insufficient funds 拒绝（deliver code=5，创世户余额 5000000000uirita=5000 IRITA 实证），按 §12.2"注资 1000 IRITA"语义修正。
+14. **锚点 record CLI 形态照校准实录**：`tx record create <SM3hex> SM3 --uri skytrust://license_registry/ANCHOR/skytrust-license --meta <contents>`（子命令 create、digest 位置参数、record_id 链上派生自事件）。
+15. FISCO `min_seal_time=100` 首建即配（§11.3 授权调优继承，非事后滚动改参）。
+
 ---
 
 *本文件与 `docs/real-chain-migration.md`（迁移指南）、`contracts/README.md`（合约权威索引）配套；
