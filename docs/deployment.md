@@ -37,7 +37,7 @@
 | Fabric peer1.org1 / peer1.org2（扩容） | **Docker 容器** | 物料 `/opt/skytrust-nodes/fabric/`，宿主口 7061/9061，`-m 350m` + `GOMEMLIMIT=280MiB` | `scripts/run-peers-local.sh`（幂等） |
 | FISCO BCOS 管理链 ×4（PBFT，group0） | **原生二进制** | node0 `/opt/fisco/nodes/127.0.0.1/node0` + `nodes_expand/node{1,2,3}`，各节点 `start.sh` | `scripts/start-chains.sh` |
 | FISCO console v3.8.0（Java，合约部署/CNS） | **原生进程**（按需） | `/opt/fisco/console` | `scripts/env.sh: fisco_console_cmd` |
-| IRITA 证照链 ×4（Tendermint BFT，chain-id `skytrust-license`） | **原生二进制**（源码自持构建 v4.0.0） | `/opt/irita/bin/irita`，数据 `/opt/irita/net/node{0..3}` | `scripts/start-irita.sh`（systemd-run 瞬态单元，**强制 CPUQuota=30% / MemoryHigh=420M**，绝不无限额启动） |
+| IRITA 证照链 ×4（Tendermint BFT，chain-id `skytrust-license`） | **原生二进制**（源码自持构建 v4.0.0） | `/opt/irita/bin/irita`，数据 `/opt/irita/net/node{0..3}` | `scripts/start-irita.sh`（systemd-run 瞬态单元；**限额已默认取消**——2026-10-21 裸机裁定，小机器经环境变量重新启用，见脚本头注） |
 | skytrust-backend | **原生二进制** | `services/skytrust-backend/bin/server-realchains`（`CGO_ENABLED=1 -tags realchains`），:8080 | `scripts/build-backend-real.sh` + `start-backend-real.sh` |
 | 前端（三门户 + 浏览器） | **python3 stdlib 静态服务 + /api 同源代理** | `scripts/serve-frontend.py`（生产统一入口 :15001） | `scripts/serve-frontend.sh` |
 | cm_db（MySQL 5.7，gchain 管理平台数据库，**可选**） | **Docker 容器** | 根 `docker-compose.yml`，仅回环 `127.0.0.1:3306`，external volume `cm_db_data`，密码环境变量注入 | 手工 `docker compose up -d cm_db` |
@@ -74,11 +74,11 @@
 
 ### 3.1 前置条件（✓ 实测口径，migration §1）
 
-> 📋 向团队/管理员申请服务器时，直接提交 **`docs/server-requirements.md`**（按四链 ≥4 节点的实测负载逐项给出核数/内存/磁盘预算与环境形态硬要求：systemd + sudo + 嵌套 Docker）。
+> 📋 目标机为**物理裸机**（2026-10-21 裁定，取代此前的团队服务器申请方案）；机上新 agent 直接执行 **`docs/bare-metal-deploy-runbook.md`**（裸机全栈部署执行手册）。
 
 | 项 | 要求 | 备注 |
 |---|---|---|
-| CPU/内存 | 官方口径 8–16 GB RAM；**推荐 ≥4C/16G** | 旧生产机 2C/1.7G 靠全链路内存限额硬撑（教训见 version-matrix §12.5/§12.12）；新机内存充足可放宽限额但**IRITA CPUQuota 红线保留** |
+| CPU/内存 | 目标机为物理裸机、CPU/内存充足（2026-10-21 用户裁定）；参考底线 ≥8C/16G/100G SSD | 历史实测：2C/1.7G 靠限额硬撑、2C/7.2G 跑满四链但 CPU 结构性不足（version-matrix §11/§12）；**IRITA 限额已默认取消**（同裁定），资源不足 <8C/16G 的机器必须按脚本头注重新启用 |
 | 磁盘 | ≥50 GB | 四链账本 + 镜像 |
 | Docker / Compose | 部署机实测 Docker 28.1.1 / Compose v2.35.1 | 需能访问 Docker Hub + `hub-dev.cnbn.org.cn` |
 | Go | 1.25.x（冻结，`build-backend-real.sh` 断言） | `/usr/local/go`，`source scripts/env.sh` 设 PATH + GOPROXY=goproxy.cn |
@@ -97,7 +97,7 @@
    `docker volume create cm_db_data && CM_DB_ROOT_PASSWORD=… CM_DB_PASSWORD=… docker compose up -d cm_db`（密码只走环境变量）。
 3. **建链**（原生）：FISCO `build_chain.sh`（4 节点，p2p 30300-30303 / rpc 20200-20203）；CM `prepare.sh` 生成 5 org 证书与配置（落点 `chainmaker-go/build/`）后源码构建节点；IRITA 从自持源码构建二进制 + 4 validator 配置（**rpc laddr 若要跨机见 §4.3**）。
 4. **Fabric**：`test-network/network.sh up --bft`（首建，compose-bft-test-net.yaml，4-orderer 宿主口 7050/7052/7056/7058）→ `scripts/run-peers-local.sh` 拉起 peer1×2 → 建通道 `mychannel`、部署 cc `operator_business`。**首建之后永远只 `docker start`，不再 network.sh down/up**。
-5. **启动四链**：`scripts/start-chains.sh`（含 CM VM 引擎容器 docker run，见 §1.1；IRITA 走 `start-irita.sh` 限额单元）。
+5. **启动四链**：`scripts/start-chains.sh`（含 CM VM 引擎容器 docker run，见 §1.1；IRITA 走 `start-irita.sh` systemd-run 单元，限额已默认取消——2026-10-21 裁定）。
 6. **部署合约**：CM 5 个 docker-go 合约（`deploy-contracts.sh`，cmc）；FISCO `UavManagement`（console sol2java → deploy → CNS `uav_management`）；Fabric cc；IRITA 用内置 `record` 模块（无合约工件）。
 7. **后端**：`scripts/build-backend-real.sh` → 复制 `.env.example` 为 `.env`（gitignored）逐项填证书路径 → `scripts/start-backend-real.sh`（自检 `/api/chain/status` 无 OFFLINE）。
 8. **前端**：`PORT=15001 BACKEND=http://127.0.0.1:8080 scripts/serve-frontend.sh`（或开发口 8090）。
@@ -106,7 +106,7 @@
 ### 3.3 路线 B：链节点全容器化（◇ 模板·待验证，不推荐在承载账本的机器上采用）
 
 - CM 可用官方 `scripts/docker/four-nodes.docker-compose.yml`（镜像 `chainmaker:v2.3.10`）——但**与本项目 5-org TBFT + docker-go VM + 已部署合约的形态不同**，直接套用等于换链，需重新走建链/部署合约全流程。
-- FISCO / IRITA 无仓库内 compose；IRITA 若容器化，用 `/opt/irita/src` 同 commit 源码构建镜像并**把 CPUQuota/MemoryHigh 等价翻译成 `--cpus`/`mem_limit`**（红线语义不变）。
+- FISCO / IRITA 无仓库内 compose；IRITA 若容器化，用 `/opt/irita/src` 同 commit 源码构建镜像；若目标机资源不足需启用限额（2026-10-21 裁定后默认关闭），把 `CPUQuota/MemoryHigh` 等价翻译成 `--cpus`/`mem_limit`。
 - **无论哪种容器化，账本必须落 named volume 或 bind mount，且永远不执行 `down -v`**。根 compose 的红线注释同样适用于任何新编排文件。
 - 结论：新机器如无强诉求，请按路线 A；容器化收益（环境一致性）主要在后端侧（§4.7），不在链节点侧。
 
@@ -306,7 +306,7 @@ volumes:
 ## §5 红线与安全总则（分离部署不豁免任何一条）
 
 1. **账本红线**：A 机上永不 `network.sh down`、永不 `docker compose down -v`、永不删链数据目录；停机只走 `stop-chains.sh`（优雅、逆序）。B 机 `demo/reset` 只清业务表——但**跨机后 reset 依旧不得触碰 A 机任何数据**（它本来也只连业务库与 sim 链）。
-2. **IRITA 限额红线**：A 机 IRITA 只经 `start-irita.sh`（systemd-run CPUQuota=30%/MemoryHigh=420M）启动；容器化等价物必须带 `--cpus`/`mem_limit`。
+2. **IRITA 启动纪律**：IRITA 只经 `start-irita.sh`（systemd-run 单元管理 + SIGTERM 优雅停机 + 绝不删数据）启动；限额已按 2026-10-21 用户裁定（物理裸机、资源充足）**默认取消**——机器 <8 核或 <16G、或运行中观察到 CPU 失控时，必须按脚本头注经环境变量重新启用（历史事故 version-matrix §12.5/§12.12）。
 3. **密钥红线**：四链证书/私钥、cli-home、`.env`、cm_db 密码——只走 SSH 分发 + 600 权限 + 环境变量注入；不进 Git、不进镜像、不打日志。分发清单见 §4.4（其中 IRITA cli-home 与 Fabric Admin keystore 是**可直接签名交易**的最高敏物料）。
 4. **生产端口红线**：现部署机 :8080/:15001（及 :8090）为生产——分离试点一律在新机/新端口做；任何联调不得向生产口 POST。
 5. **冻结版本红线**：Go 1.25.0、gin v1.12.0、gorm v1.31.2、glebarez/sqlite v1.11.0、gmsm v0.44.1 不升级（`build-backend-real.sh` 断言）；irita CLI 与节点同 commit（4c8c4c9）。
