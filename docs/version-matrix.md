@@ -485,6 +485,32 @@ QueryState("REG/CX-smoke-20261021") 读回全键集 JSON Success。
 14. **锚点 record CLI 形态照校准实录**：`tx record create <SM3hex> SM3 --uri skytrust://license_registry/ANCHOR/skytrust-license --meta <contents>`（子命令 create、digest 位置参数、record_id 链上派生自事件）。
 15. FISCO `min_seal_time=100` 首建即配（§11.3 授权调优继承，非事后滚动改参）。
 
+### 13.4 验收复跑（run-acceptance.sh v2，隔离 :18180 全新弃用 DB /tmp/acceptance-20261021，real 四链，2026-10-21 两轮）
+
+| 项 | Run 1（COUNT=10） | Run 2（COUNT=100 官方口径） |
+|---|---|---|
+| ① 四链 ONLINE | PASS（4/4） | PASS（4/4） |
+| ② §13.2 部署 TxID 链上可查询 | PASS（**9/9**：CM×5 cmc query tx + Fabric×2 qscc GetBlockByTxID + FISCO 块1包含证明 + IRITA 锚点 @h=890 code=0） | PASS（9/9） |
+| ③ 13 步闭环（签发源段 IRITA 链上实证） | PASS：MISSION-2026-001 → PASS-2026-001 VALID；CX1/CX2/CX3 全 SUCCESS（CX3 源段 `501352CF…5B3B` /tx code=0） | PASS：MISSION-2026-002 → PASS-2026-002 VALID（CX3 源段 `23729EDC…` IRITA 实证） |
+| ④ 两跳四段 TxID 持久化 ×3 | PASS（四段全齐 SUCCESS，链原生 TxID：fabric 64-hex / CM 18e0… / fisco 0x… / irita 大写 64-hex） | PASS |
+| ⑤ CROSSCHAIN_LOOP p95<1000ms | **FAIL 如实**：**10/10 rate=1** failed=0，avg 1888.9ms p50 1882 p95 **2163** max 2163（RUN-f13f02e03c89） | **FAIL 如实**：**100/100 rate=1** failed=0，avg 1818.5ms p50 1839 p95 **1954** max 2034（RUN-7b1146428812） |
+
+**⑤ 逐跳探针**（probe-latency.sh，8 跳 ×5 迭代全实链，PROBE_OK）：fabric.CrosschainSubmit **191ms** · chainmaker RegisterReceive/VerifyCredential/RegisterRelay/RegisterReceipt **258/267/267/269ms** · fisco.SubmitApplication **159ms** · fabric.CrosschainAck **142ms** · **irita.CrosschainSubmit 1557ms（主导项=timeout_commit 1s 出块下限，§12.9-7 同源）**；8 跳 avg 合计 **3114ms**（生产 §12.7 3241ms 同量级——主导项为出块间隔/共识轮而非 CPU，80 核与 2 核无差）。负路径契约 3/3 如实：fisco revert Status=16（tx `0xcdfab744…`）、CM business fail Status=1（tx `18e08feb…`）、QueryState absent → error。
+
+**⑤ 判定与根因（R13 裁定同款：正式记录 = ①-④ PASS + ⑤ 如实双记；不放宽协议、不钓鱼重试、不调小 COUNT）**：
+1. 结构性下限 = **用户要求的不可篡改拓扑**：CM 4 跳 ×~265ms（5-org TBFT 共识轮 + docker-VM 执行 + leveldb fsync）；老机 §6.2 官方 p95=527ms@100 证据系 **CM solo（~25ms/跳）+ 单 orderer** 轻拓扑取得，**继续作为 <1000ms 门槛的正式性能证据**（谱系规则 §12.6 不变）。含 IRITA 源跳的流另加 ~1.5s 出块下限。
+2. 剩余授权调优杠杆评估：CM `batch_create_timeout` 50→10（修订7 先例）预期仅 ~120ms 改善、不足以改变判定，且需滚动重启 5 生产节点——**不为装饰性数字触碰生产链**，未执行（如实登记）。
+3. 本机为四链时代健康度谱系最佳：rate=**1.0** ×2 轮（老机四链 §12.6 为 rate 0.9 + CM gRPC 停滞 76-95s 受害者；本机 100 笔零停滞零失败、max−p50 差仅 ~195ms）。
+
+**四端故事功能门**：`verify-three-portals-story.sh`（隔离 :18080/:18090 sim，硬拒生产口）→ **PASS=259 FAIL=0 ALL_GREEN**（含证照中心端/四端浏览器/虫洞拓扑断言）。
+**人工演示彩排**：`docs/acceptance-manual.md` 登记行留给用户（runbook §8-3：是否实走由用户定）。
+
+### 13.5 生产终态（2026-10-21 交付）
+
+- 后端 :8080（pid 2448555，CHAIN_MODE=real，DB data/skytrust-real.db）自检 **4×ONLINE count=4**；前端统一入口 :15001（index+四门户全 200，同源代理 ping code=0）。
+- 全链健康：start-chains.sh **ALL_CHAINS_UP**；`.env`/密钥物料权限收敛 600/700；git 无密钥类文件入 stage（.env/data gitignored 核验通过）。
+- 部署痕迹全量登记：仓库根 `部署痕迹清单.md`（不入 git；含一键清退顺序——账本销毁类操作仅在用户明确下令清退时执行）。
+
 ---
 
 *本文件与 `docs/real-chain-migration.md`（迁移指南）、`contracts/README.md`（合约权威索引）配套；
