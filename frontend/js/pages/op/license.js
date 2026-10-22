@@ -18,7 +18,7 @@
     if (mxMini) { mxMini.destroy(); mxMini = null; }
     root.append(P.pageHead({
       title: '电子飞行许可',
-      sub: '许可由管理当局签发 · 飞行前请务必完成自查 —— valid 绿灯方可起飞' }));
+      sub: '许可由管理当局签发 · 飞行前请务必完成自查 —— 绿灯方可起飞' }));
 
     var panel = h('div', { class: 'd-col' },
       h('div', { class: 'p-empty' }, '点击左侧台账行查看电子许可卡'));
@@ -51,8 +51,8 @@
 
     root.append(h('div', { class: 'd-grid-side' },
       h('div', { class: 'd-col' }, tbl,
-        card('飞行前自查 pass/verify（code 恒 0：valid/reasons 是数据不是错误）',
-          h('p', { class: 'd-small d-muted' }, '校验有效窗、状态与航空器匹配。红灯清单逐条给出中文原因——这正是系统按设计保护飞行安全。'),
+        card('飞行前自查',
+          h('p', { class: 'd-small d-muted' }, '校验有效窗、状态与航空器匹配情况；自查未通过时逐条列明原因，切实保障飞行安全。'),
           fVerify.root,
           P.actionBar([{ label: '起飞前验证', kind: 'primary', run: P.runOp({
             path: '/api/pass/verify',
@@ -72,7 +72,7 @@
           h('span', { class: 'd-cert-title', style: { color: '#15803d' } }, '✓ 自查通过 · 可以起飞'),
           h('span', { class: 'd-cert-no' }, d.pass_id)),
         h('div', { class: 'd-cert-body' }, h('div', { class: 'd-cert-main' },
-          P.kv([['许可状态', P.badge(d.status)], ['结论', 'valid = true · 无拒绝原因']])),
+          P.kv([['许可状态', P.badge(d.status)], ['结论', '自查通过 · 无拒绝原因']])),
           h('div', { class: 'd-seal' }, '可以起飞')));
     }
     return h('div', { class: 'd-cert' },
@@ -80,7 +80,7 @@
         h('span', { class: 'd-cert-title', style: { color: '#b91c1c' } }, '⛔ 自查未通过 · 禁止起飞'),
         h('span', { class: 'd-cert-no' }, d.pass_id)),
       h('div', { class: 'd-cert-body' }, h('div', { class: 'd-cert-main' },
-        P.kv([['许可状态', P.badge(d.status)], ['结论', 'valid = false']]),
+        P.kv([['许可状态', P.badge(d.status)], ['结论', '自查未通过']]),
         h('ul', { class: 'd-mt' }, (d.reasons || []).map(function (x) {
           return h('li', { style: { color: '#b91c1c' } }, x);
         })))));
@@ -92,7 +92,7 @@
     if (fVerify) fVerify.set('pass_id', passId);
     if (mxMini) { mxMini.destroy(); mxMini = null; }
     panel.innerHTML = '';
-    panel.append(h('div', { class: 'p-empty' }, '⏳ pass/query 查询中…'));
+    panel.append(h('div', { class: 'p-empty' }, '⏳ 许可详情查询中…'));
     var r = await API.call('/api/pass/query', { pass_id: passId });
     if (!panel.isConnected) return;
     panel.innerHTML = '';
@@ -135,7 +135,7 @@
       var pts = GEO.routePoints(mine);
       if (pts.length) mxMini.fitPoints(pts);
     } else {
-      mxMini.setEmpty('许可航线无结构化坐标（遗留数据）——不猜测、不绘制');
+      mxMini.setEmpty('该许可航线暂无坐标信息，地图不予展示');
     }
   }
 

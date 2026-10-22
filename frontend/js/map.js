@@ -95,7 +95,7 @@
       mx.degradeReason = reason;
       el.classList.add('is-fallback');
       removeTiles();
-      showBadge('退化底图 · ' + reason + '（矢量层照常）');
+      showBadge('简化底图 · ' + reason + '（不影响业务功能）');
     }
 
     /* 瓦片层：有 key 才加；tileerror 计数超限即退化（无效 key 的 403 会快速触发） */
@@ -110,7 +110,7 @@
         t.addTo(map);
       });
     } else {
-      degrade('未配置天地图 key');
+      degrade('未配置天地图密钥');
     }
 
     /* --- 视图控制 --- */

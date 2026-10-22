@@ -22,13 +22,13 @@
   function signerNote(sm9id) {
     if (sm9id === 'SM9-ID-REGISTRY-ADMIN') return 'REGISTRY-ADMIN · 证照链证照中心（现行签发身份）';
     if (sm9id === 'SM9-ID-FISCO-ADMIN') return 'FISCO-ADMIN · 管理链（2026-10-13 迁移前历史签发身份）';
-    return '未登记身份（原值如实展示，不猜测）';
+    return '未登记身份（原值展示）';
   }
 
   function render(root) {
     root.append(P.pageHead({
       title: '证照台账',
-      sub: 'pass/list 服务端分页 · 状态徽章图标+文字 · 行展开：证照卡（QR 证面）+ SM9 签名身份 + 四段 TxID 存证'
+      sub: '实时分页查询 · 行展开查看电子证面、签名身份与四段 TxID 链上存证'
     }));
     var tbl = P.dataTable({
       endpoint: '/api/pass/list', pageSize: 10,
@@ -39,7 +39,7 @@
         { name: 'uav_id', label: '航空器 ID', type: 'text' }
       ],
       columns: [
-        { title: '证照号 pass_id', key: 'pass_id', mono: true },
+        { title: '证照号', key: 'pass_id', mono: true },
         { title: '任务号', key: 'mission_id', mono: true },
         { title: '航空器', key: 'uav_id', mono: true },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
@@ -51,14 +51,14 @@
             onClick: function (e) { e.stopPropagation(); openLedger(r.pass_id); } }, '展开详情'); } }
       ],
       onRow: function (r) { openLedger(r.pass_id); },
-      emptyText: '暂无证照 —— 在「通行证签发」页签发后出现在此（空台账如实显示 0 条，不虚构记录）'
+      emptyText: '暂无证照 —— 在「通行证签发」页签发后出现在此'
     });
-    root.append(card('证照台账 pass/list（点击行或「展开详情」查看证照卡 + 签名身份 + 链上存证）', tbl));
+    root.append(card('证照台账（点击行或「展开详情」查看证照卡、签名身份与链上存证）', tbl));
   }
 
   /* ---------- 行展开抽屉：pass/query 详情 + QR + 签名身份 + 跨链留痕 ---------- */
   async function openLedger(passId) {
-    var d = P.drawer('证照 ' + passId, h('div', { class: 'p-empty' }, '⏳ pass/query 查询中…'));
+    var d = P.drawer('证照 ' + passId, h('div', { class: 'p-empty' }, '⏳ 证照详情查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/pass/query', { pass_id: passId });
     if (!body.isConnected) return;                       /* 抽屉已被关闭 */
@@ -79,27 +79,27 @@
             ['航空器', h('code', { class: 'p-mono' }, p.uav_id || '—')],
             ['有效窗', p.valid_from + ' → ' + p.valid_to],
             ['许可航线', PORTAL.jp(p.route, []).join(' → ') || '—'],
-            ['SM3 摘要（服务端权威）', h('code', { class: 'p-mono', title: p.sm3_hash }, UI.trunc(p.sm3_hash, 48))],
+            ['SM3 摘要', h('code', { class: 'p-mono', title: p.sm3_hash }, UI.trunc(p.sm3_hash, 48))],
             ['SM9 签名', h('code', { class: 'p-mono', title: p.signature }, UI.trunc(p.signature, 48))],
             ['签发 / 更新', p.created_at + ' → ' + p.updated_at]
           ])),
           qrEl),
         h('div', { class: 'd-seal' }, '证照链\n签发')),
       h('p', { class: 'd-small d-muted' }, '签名身份说明：', TRANSITION_NOTE,
-        '（pass/verify 先试 SM9-ID-REGISTRY-ADMIN、失败回落 SM9-ID-FISCO-ADMIN——存量证照不失效）。'));
+        '，存量证照不失效。'));
     PORTAL.renderQR(qrEl, JSON.stringify({
       pass_id: p.pass_id, mission_id: p.mission_id, uav_id: p.uav_id, valid_to: p.valid_to }),
-      'QR 生成失败（qrcode 库不可用或内容超长）——证照号等以左侧文字为准，不虚构二维码');
+      'QR 生成失败——证照号等以左侧文字为准，不虚构二维码');
 
-    var cxBox = h('div', {}, h('div', { class: 'p-empty' }, '⏳ FLIGHT_PASS 跨链留痕查询中…'));
+    var cxBox = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 链上存证查询中…'));
     body.append(h('div', { class: 'd-section' },
-      'SM9 签名身份 + FLIGHT_PASS 四段 TxID 存证（点击任一段打开 openCxDetail 全量证据）'), cxBox);
+      'SM9 签名身份 + 四段 TxID 链上存证（点击任一段查看全量证据）'), cxBox);
     await fillCx(cxBox, 'FLIGHT_PASS', p.pass_id, true);
     if (!cxBox.isConnected) return;
 
     if (p.status === 'REVOKED') {
-      var rvBox = h('div', {}, h('div', { class: 'p-empty' }, '⏳ PASS_REVOKE 吊销留痕查询中…'));
-      body.append(h('div', { class: 'd-section' }, '吊销留痕 PASS_REVOKE（链上失败/待补发记录如实展示）'), rvBox);
+      var rvBox = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 吊销存证查询中…'));
+      body.append(h('div', { class: 'd-section' }, '吊销链上存证（失败或待补发记录如实展示）'), rvBox);
       await fillCx(rvBox, 'PASS_REVOKE', p.pass_id, false);
     }
   }
@@ -112,19 +112,18 @@
     if (!r.ok) { box.append(P.errCard(r)); return; }
     var recs = (r.data.records || []).filter(function (x) { return x.business_id === passId; });
     box.append(h('p', { class: 'd-small d-muted' },
-      '检索窗口：' + msgType + ' 最近 ' + (r.data.records || []).length +
-      ' 条（服务端仅支持 status/message_type 过滤，business_id 为窗口内客户端匹配；台账总量 ' +
-      (r.data.total || 0) + ' 条）→ 命中 ' + recs.length + ' 条。'));
+      '检索窗口：最近 ' + (r.data.records || []).length +
+      ' 条存证记录（台账总量 ' + (r.data.total || 0) + ' 条）→ 命中 ' + recs.length + ' 条。'));
     if (!recs.length) {
       box.append(P.empty(showIdentity
-        ? '未找到 FLIGHT_PASS 跨链留痕 —— SM9 签名身份无法链上溯源（绝不按日期猜测）；可在跨链台账 / 链上浏览器补查'
-        : '未找到 PASS_REVOKE 留痕（最近 200 条窗口外或缺失）—— 可在跨链台账补查，不猜测'));
+        ? '未找到签发跨链存证 —— SM9 签名身份无法链上溯源；可在跨链台账 / 链上浏览器补查'
+        : '未找到吊销链上存证 —— 可在跨链台账补查'));
       return;
     }
     var primary = recs.filter(function (x) { return x.status === 'SUCCESS'; })[0] || recs[0];
     if (showIdentity) {
       box.append(P.kv([
-        ['SM9 签名身份（主留痕）', h('div', {},
+        ['SM9 签名身份', h('div', {},
           h('code', { class: 'p-mono' }, primary.sm9_identity || '—'),
           h('div', { class: 'd-small d-muted' }, signerNote(primary.sm9_identity)))]
       ]));

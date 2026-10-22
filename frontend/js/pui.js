@@ -58,7 +58,7 @@
     return h('div', { class: 'p-err' },
       h('div', { class: 'p-err-head' }, '✕ code=' + r.code + ' · ' + (r.message || '')),
       r.code === -1
-        ? h('div', { class: 'p-err-why' }, '后端不可达：请确认 go run ./cmd/server（:8080）与 ./scripts/serve-frontend.sh（:8090）已启动。')
+        ? h('div', { class: 'p-err-why' }, '后端服务暂不可达：请确认平台服务已启动后重试。')
         : why ? h('div', { class: 'p-err-why' }, why) : null);
   }
   function resultPanel() {
@@ -145,7 +145,7 @@
       wrap.append(chip);
     });
     wrap.append(h('button', {
-      class: 'p-chip p-chip-clear', title: '清空本地业务上下文（不影响后端数据）',
+      class: 'p-chip p-chip-clear', title: '清空当前业务对象标记（不影响后端数据）',
       onClick: () => STORE.clear(),
     }, '✕ 清空'));
   }
@@ -437,8 +437,8 @@
       h('div', { class: 'p-cx-head' },
         h('code', { class: 'p-mono' }, cx.cross_tx_id), badge(cx.status),
         h('span', { class: 'p-cx-sub' }, cx.message_type, ' · ', (cx.latency_ms ?? '—') + 'ms',
-          ' · verify=', cx.verify_result || '—', ' · policy=', cx.policy_result || '—',
-          cx.error_code ? ' · error_code=' + cx.error_code : '')),
+          ' · 验签=', cx.verify_result || '—', ' · 策略=', cx.policy_result || '—',
+          cx.error_code ? ' · 错误码=' + cx.error_code : '')),
       h('div', { class: 'p-cx-flow' },
         cxSeg('①', '源链上链', cx.source_chain, cx.source_chain_tx_id, cx.cross_tx_id),
         cxSeg('②', '监管链签收', 'chainmaker', cx.reg_receive_tx_id, cx.cross_tx_id),

@@ -22,7 +22,7 @@
     var slotA = STORE.get('ALERT');
     root.append(P.pageHead({
       title: '告警管理',
-      sub: '登记 → 线性状态机推进 → 五维台账（匿名化：库中只有伪名与证据摘要）' }));
+      sub: '告警登记 → 状态机推进 → 台账查询（匿名化：库中只存伪名与证据摘要）' }));
 
     /* --- 告警登记 --- */
     var rpRa = P.resultPanel();
@@ -32,7 +32,7 @@
         hint: '对外只暴露伪名；真实身份经「身份追踪」七级解析' },
       { name: 'event_type', label: '事件类型', type: 'select', required: true, value: 'WORMHOLE_ALERT',
         options: EVENT_TYPES,
-        hint: '封闭 6 枚举（非法值 6002）' },
+        hint: '从标准事件类型中选择' },
       { name: 'risk_level', label: '风险等级', type: 'select', required: true, value: 'HIGH',
         options: ['LOW', 'MEDIUM', 'HIGH'] },
       { name: 'source_system', label: '来源系统', type: 'select', required: true, value: 'MANUAL',
@@ -43,12 +43,12 @@
       { name: 'mission_id', label: '关联任务（可选）', type: 'text',
         value: (slotA && slotA.extra && slotA.extra.mission_id) || '' },
       { name: 'evidence_hash', label: '证据摘要（可选）', type: 'text',
-        placeholder: '64 位 hex；缺省服务端派生 SM3' },
+        placeholder: '可留空，系统自动生成国密摘要' },
       { name: 'wormhole_event_id', label: '虫洞事件号（可选）', type: 'text',
         placeholder: '仅 WORMHOLE_ALERT 有意义' }
     ]);
     var tblAl = null;
-    var raiseCard = card('告警登记 alert/raise',
+    var raiseCard = card('告警登记',
       fRa.root,
       P.actionBar([{ label: '登记告警', kind: 'primary', run: P.runOp({
         path: '/api/alert/raise',
@@ -62,7 +62,7 @@
           });
           return body;
         },
-        rp: rpRa, successText: '告警已登记（status=OPEN）',
+        rp: rpRa, successText: '告警已登记，初始状态 OPEN',
         render: function (d) { return alertKv(d); },
         note: { kind: 'ALERT', id: function (d) { return d.alert_id; },
           extra: function (d) { return { mission_id: d.mission_id }; } },
@@ -83,9 +83,9 @@
       { name: 'operator', label: '操作方', type: 'text', required: true, value: 'REG-01' },
       { name: 'reason', label: '推进理由', type: 'textarea', rows: 2,
         placeholder: '如：初步研判成立，启动跨链追踪',
-        hint: '线性单步推进；跨级/重复推进 → 6002（设计内拒绝）' }
+        hint: '逐段单步推进；跳级或重复推进将被系统显式拒绝并说明原因' }
     ]);
-    var statusCard = card('状态机推进 alert/status（OPEN→IDENTIFIED→TRACED→REVIEWED→RESOLVED→ARCHIVED）',
+    var statusCard = card('状态机推进（OPEN→IDENTIFIED→TRACED→REVIEWED→RESOLVED→ARCHIVED）',
       fSt.root,
       P.actionBar([{ label: '推进状态', kind: 'primary', run: P.runOp({
         path: '/api/alert/status',
@@ -128,7 +128,7 @@
     });
 
     root.append(h('div', { class: 'd-grid-2' }, raiseCard, statusCard));
-    root.append(card('告警台账 alert/list（五维过滤；行点击 → 详情 + 推进预填 + 转追踪）', tblAl));
+    root.append(card('告警台账（五维过滤；行点击 → 详情、推进预填、转追踪）', tblAl));
   }
 
   /* Alert 10 键完整 kv（cockpit.js 落点详情卡复用） */

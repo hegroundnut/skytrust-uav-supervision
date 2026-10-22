@@ -130,13 +130,13 @@
     function toggle() { st.expanded = !st.expanded; sync(); }
     var foldBtn = h('button', {
       type: 'button', class: 'd-cxv-lane-fold',
-      title: '展开/收起四链结构泳道——同一批旅程事件按链归列（列序钉死，不随跳序重排）；计数由 hops 实算',
+      title: '展开/收起四链结构视图——同一批旅程事件按链归列，计数由实际数据实算',
       onClick: toggle
     });
     var gridBox = h('div', { class: 'd-cxv-lanes' });
     root.append(h('section', { class: 'p-card d-cxv-lane-sec' },
       h('h3', { class: 'p-card-title' },
-        '四链结构泳道 · 旅程事件按链归列（数据 = 上方 explorer/journey 实时响应经 onSelect 联动，本区零请求零编造；列序钉死 Fabric/ChainMaker/FISCO/IRITA；CM 列 = 每跳一张监管中继卡——非旁路）'),
+        '四链结构泳道 · 旅程事件按链归列（与上方旅程实时联动，零编造；每跳均含监管链中继卡——非旁路）'),
       foldBtn, gridBox));
 
     /* ---------- 展开态内容 ---------- */
@@ -144,7 +144,7 @@
       var seq = hop.seq || (idx + 1);
       return h('button', {
         type: 'button', class: 'd-cxv-lane-ev',
-        title: '点击打开该跳四段存证详情 openCxDetail' + (portal === 'rg' ? '（监管端 CHAINMAKER 中继段高亮）' : ''),
+        title: '点击打开该跳四段存证详情',
         onClick: function () { window.CXV.SHARED.openCx(hop.cross_tx_id, portal); }
       },
         h('b', {}, circled(seq) + ' ' + msgName(hop.message_type)),
@@ -155,7 +155,7 @@
       var seq = hop.seq || (idx + 1);
       return h('button', {
         type: 'button', class: 'd-cxv-lane-relay',
-        title: '时间线节点 ' + circled(seq) + ' 的监管中继段（每跳必经 ChainMaker 签收/验签/中继，非旁路）——点击打开四段存证详情' + (portal === 'rg' ? '（监管端 CHAINMAKER 中继段高亮）' : ''),
+        title: '时间线节点 ' + circled(seq) + ' 的监管中继段（每跳必经 ChainMaker 签收/验签/中继，非旁路）——点击打开四段存证详情',
         onClick: function () { window.CXV.SHARED.openCx(hop.cross_tx_id, portal); }
       },
         h('span', {}, '◈ 中继：' + chainName(hop.source_chain) + '→' + chainName(hop.final_target_chain) + ' · ' + verifyText(hop.verify_result)),
@@ -185,8 +185,8 @@
         }
         if (!n) {
           bd.append(h('div', { class: 'd-cxv-lane-zero' }, lane.chain === 'chainmaker'
-            ? '中继 0 跳——本旅程无跨链中继记录（hops 实算，如实展示）'
-            : '0 笔——本旅程该链无业务事件（hops 实算，如实展示）'));
+            ? '中继 0 跳——本旅程无跨链中继记录（实算结果，如实展示）'
+            : '0 笔——本旅程该链无业务事件（实算结果，如实展示）'));
         }
         el.append(hd, bd);
         gridBox.append(el);
@@ -195,7 +195,7 @@
       if (c.unknown.length) {
         gridBox.append(h('div', { class: 'd-cxv-lane-warn' },
           c.unknown.map(function (hop) {
-            return h('div', {}, '⚠ 跳 ' + String(hop.seq || '—') + ' source_chain=' + String(hop.source_chain || '(空)') +
+            return h('div', {}, '⚠ 跳 ' + String(hop.seq || '—') + ' 源链 ' + String(hop.source_chain || '(空)') +
               ' 不属四链——如实披露，不猜测归列（TxID ' + String(hop.cross_tx_id || '—') + '）');
           })));
       }
@@ -213,7 +213,7 @@
       gridBox.innerHTML = '';
       if (!st.expanded) return;
       if (!c) {
-        gridBox.append(P.empty('等待旅程选择——泳道内容 = 上方旅程 hops 实时归列（绝不编造事件卡）'));
+        gridBox.append(P.empty('等待旅程选择——泳道内容与上方旅程实时联动（绝不编造事件卡）'));
         return;
       }
       renderLanes(c);

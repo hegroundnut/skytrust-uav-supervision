@@ -116,7 +116,7 @@
         sessionStorage.setItem(KEYGUIDE_FLAG, '1');
       } catch (e) { return; }   /* 隐私模式 sessionStorage 不可用 → 不弹引导 */
       var input = h('input', {
-        type: 'text', placeholder: '粘贴天地图浏览器端 key（tk 参数）',
+        type: 'text', placeholder: '粘贴天地图浏览器端密钥',
         value: window.MAPX.getKey()
       });
       var mask = h('div', { class: 'p-modal-mask' },
@@ -124,10 +124,10 @@
           h('div', { class: 'p-modal-title' }, '🗺 配置天地图密钥'),
           h('div', { class: 'p-modal-msg' },
             '地图底图使用天地图（免费政务地图服务）。在天地图控制台（console.tianditu.gov.cn）申请「浏览器端」密钥，粘贴到此处保存。',
-            '密钥只保存在本浏览器 localStorage（skytrust-tianditu-key），绝不写入代码仓库；未配置时地图自动退化（中性网格 + 矢量层照常），不影响任何业务操作。',
+            '密钥仅保存在本地浏览器，绝不上传服务器、绝不写入代码仓库；未配置时地图自动切换为简化底图，不影响任何业务操作。',
             h('div', { class: 'd-keyform' }, input)),
           h('div', { class: 'p-modal-btns' },
-            h('button', { class: 'p-btn p-btn-ghost', onClick: close }, '跳过（退化底图）'),
+            h('button', { class: 'p-btn p-btn-ghost', onClick: close }, '跳过（简化底图）'),
             h('button', {
               class: 'p-btn p-btn-primary',
               onClick: function () {
@@ -163,8 +163,8 @@
       var page = registry[cur.name];
       if (!page || typeof page.render !== 'function') {
         rootEl.append(window.PUI.pageHead({
-          title: '页面未注册',
-          sub: '路由 #/' + cur.name + ' 在本端暂无页面（或页面脚本尚未加载）'
+          title: '页面暂未开通',
+          sub: '该功能页面暂未在本端开通'
         }));
         rootEl.append(window.PUI.empty('请从导航选择功能'));
         return;

@@ -194,7 +194,7 @@
     var pl = plan(topo, opts.hlPath);
     var root = svgEl('svg', {
       class: 'p-topo d-wtopo-svg', viewBox: '0 0 ' + W + ' ' + H,
-      role: 'img', 'aria-label': '链下可信网络抽象拓扑（全节点含攻击者；仅抽象 position，非地理投影）'
+      role: 'img', 'aria-label': '链下可信网络抽象拓扑（全节点含攻击者）'
     });
 
     /* 边层（先画，节点覆盖其上） */
@@ -245,7 +245,7 @@
         var p = posOf(n);
         return '<b>' + UI.esc(n.node_id) + '</b><br>' +
           '类型 ' + UI.esc(type || '—') + ' · 状态 ' + UI.esc(status || '—') + '<br>' +
-          '拓扑坐标 (' + (p ? p.x + ', ' + p.y : '—') + ')（抽象 position，非经纬度）<br>' +
+          '拓扑坐标 (' + (p ? p.x + ', ' + p.y : '—') + ')<br>' +
           '邻居 ' + UI.esc(neighborsText(n.neighbors)) + '<br>' +
           '风险分 ' + (n.risk_score != null ? Number(n.risk_score).toFixed(2) : '—') + '<br>' +
           'SM9 ' + UI.esc(UI.trunc(n.sm9_identity || '—', 30));
@@ -293,7 +293,7 @@
         'ISOLATED 隔离（⛔ 红虚线描边 + 脉冲环 = 检测命中）'],
       [swatchLine('p-topo-edge'), '正常边（灰实线）'],
       [swatchLine('p-topo-edge p-topo-wormhole d-wtopo-flow'), '虫洞伪造边（红虚线流动 + 中点 ⚠）'],
-      [swatchLine('p-topo-edge p-topo-active'), '当前会话路径（hlPath 加粗）']
+      [swatchLine('p-topo-edge p-topo-active'), '当前会话路径（加粗）']
     ];
     items.forEach(function (it) {
       var s = el('span', { class: 'd-wtopo-lg-item' }, [it[0], el('span', {}, null, it[1])]);
@@ -306,7 +306,7 @@
   function unplacedAside(pl) {
     var box = el('div', { class: 'd-wtopo-unplaced' });
     box.append(el('div', {}, null,
-      '⚠ 未布点节点（无拓扑坐标 position——不入图、不猜测坐标）：'));
+      '⚠ 未布点节点（无拓扑坐标，不入图）：'));
     var chips = el('div', { class: 'd-wtopo-unplaced-chips' });
     pl.unplaced.forEach(function (n) {
       chips.append(el('span', { class: 'd-wtopo-chip' }, null,
@@ -315,7 +315,7 @@
     box.append(chips);
     if (pl.skippedEdges > 0) {
       box.append(el('div', { class: 'd-wtopo-unplaced-edges' }, null,
-        '涉及未布点/未知端点的边 ' + pl.skippedEdges + ' 条同步不画（如实计数）。'));
+        '涉及未布点节点的连线 ' + pl.skippedEdges + ' 条同步不予显示。'));
     }
     return box;
   }
@@ -328,23 +328,23 @@
 
     /* 元信息行：全部计数来自本次响应/plan，不猜测 */
     var whState = topo && topo.wormhole_enabled === true ? '⚠ 虫洞攻击开启中'
-      : topo && topo.wormhole_enabled === false ? '虫洞未开启' : '虫洞状态未知（响应缺 wormhole_enabled）';
+      : topo && topo.wormhole_enabled === false ? '虫洞未开启' : '虫洞状态未知';
     var hl = (opts.hlPath && opts.hlPath.length > 1)
       ? '会话路径高亮：' + opts.hlPath.join(' → ')
-      : '无会话路径高亮（无当前会话上下文或未匹配到会话——不猜测）';
+      : '无会话路径高亮（当前无会话上下文）';
     root.append(el('div', { class: 'd-wtopo-meta' }, [
       el('span', {}, null, '节点 ' + pl.nodeCount + ' · 布点 ' + pl.placed.length + ' · 未布点 ' + pl.unplaced.length),
       el('span', {}, null, '边 ' + ((topo && topo.edges) || []).length + '（虫洞 ' + pl.whCount +
-        (pl.skippedEdges ? ' · 端点缺失不画 ' + pl.skippedEdges : '') + '）'),
+        (pl.skippedEdges ? ' · 端点缺失未显示 ' + pl.skippedEdges : '') + '）'),
       el('b', {}, null, whState),
       el('span', { class: 'd-wtopo-meta-hl' }, null, hl)
     ]));
 
     if (!pl.nodeCount) {
-      root.append(el('div', { class: 'p-empty' }, null, '暂无节点（demo/init 灌种后出现）'));
+      root.append(el('div', { class: 'p-empty' }, null, '暂无节点'));
     } else if (!pl.placed.length) {
       root.append(el('div', { class: 'p-empty' }, null,
-        '全部 ' + pl.unplaced.length + ' 个节点均无拓扑坐标——不画不猜（见下方未布点清单）'));
+        '全部 ' + pl.unplaced.length + ' 个节点均无拓扑坐标，暂不绘制（见下方未布点清单）'));
     } else {
       var box = el('div', { class: 'p-topo-box' });
       box.append(svg(topo, opts));
@@ -354,9 +354,8 @@
     root.append(legend());
     if (pl.unplaced.length) root.append(unplacedAside(pl));
     root.append(el('p', { class: 'd-wtopo-note' }, null,
-      '节点色仅为节点类型语义（紫 MANAGEMENT / 蓝 EDGE / 青 UAV / 红 ATTACKER），与三链链色无关——链色语义不挪用。' +
-      '本图仅消费服务端抽象 position{x,y}（大小写双兼容），绝不读写经纬度；上图（Leaflet 地理层）与本图的分工：' +
-      '地理层只落有经纬度的节点，本图落全部有拓扑坐标的节点（含攻击者）。'));
+      '节点颜色仅表示节点类型（紫 MANAGEMENT / 蓝 EDGE / 青 UAV / 红 ATTACKER）。' +
+      '上图地理分布只展示已设置经纬度的节点；本图展示全部已布点节点（含攻击节点）。'));
     return root;
   }
 

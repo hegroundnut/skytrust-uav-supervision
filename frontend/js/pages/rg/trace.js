@@ -26,9 +26,9 @@
 
     var fTr = P.form([
       { name: 'entry_type', label: '追踪入口', type: 'select', required: true, value: 'ALERT_ID',
-        options: [['ALERT_ID', '告警号（alert_id）'], ['PSEUDO', '航空器伪名（pseudo）'],
-          ['DEVICE_ADDRESS', '设备地址（device_address）']],
-        hint: '服务端优先级 alert_id > pseudo > device_address（本表单只发单键，不触发多键裁决）' },
+        options: [['ALERT_ID', '告警号'], ['PSEUDO', '航空器伪名'],
+          ['DEVICE_ADDRESS', '设备地址']],
+        hint: '三种入口任选其一，均可发起追踪' },
       { name: 'entry', label: '入口值', type: 'text', required: true,
         value: slotA ? slotA.id : '',
         placeholder: 'ALERT-2026-… / PSEUDO-UAV-83921 / 0xADDR83921' },
@@ -59,10 +59,10 @@
       /* note:null——追踪结果不落 STORE（§29） */
     }
 
-    root.append(card('发起追踪 trace/identity（三入口任选其一）',
+    root.append(card('发起追踪（三入口任选其一）',
       fTr.root,
       P.actionBar([{ label: '开始七级追踪', kind: 'primary', run: doTrace }]),
-      h('p', { class: 'd-small d-muted' }, '断链（5001）不是失败——「查不到」本身也是可审计的监管结论。追踪行为已写入全局审计（TRACE_IDENTITY / 断链 TRACE_IDENTITY_BROKEN）。')));
+      h('p', { class: 'd-small d-muted' }, '断链不是失败——「查不到」本身就是可审计的监管结论；系统宁可展示断链，也不拼造身份。追踪行为全程纳入全局审计留痕。')));
     root.append(card('追踪结果（七级时间线）', resultBox));
   }
 
@@ -71,14 +71,14 @@
     return h('div', {},
       P.statCards([
         { label: '追踪结论', value: d.resolved ? '✓ 全链可溯' : '⛔ 断链 L' + d.break_level,
-          sub: d.resolved ? '七级全部解析（break_level=0）' : '第 ' + d.break_level + ' 级中断——后续级不拼造',
+          sub: d.resolved ? '七级身份全部解析成功' : '第 ' + d.break_level + ' 级中断——后续级不拼造',
           tone: d.resolved ? 'good' : 'critical' },
         { label: '追踪时延', value: d.trace_latency_ms != null ? d.trace_latency_ms + ' ms' : '—' },
         { label: '解析伪名', value: d.pseudonym || '—' }
       ]),
       P.kv([
         ['入口', h('span', { class: 'd-row' }, P.badge(d.entry_type), h('code', { class: 'p-mono' }, d.entry))],
-        ['resolved / break_level', String(d.resolved) + ' / ' + String(d.break_level) + '（0=七级全通）']
+        ['解析结果 / 中断级别', String(d.resolved) + ' / ' + String(d.break_level)]
       ]),
       h('div', { class: 'd-col' }, levels.map(function (lv) {
         return h('div', { class: 'd-section' },

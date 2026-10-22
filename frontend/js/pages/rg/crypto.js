@@ -30,16 +30,16 @@
   function render(root, ctx) {
     root.append(P.pageHead({
       title: '密码工具箱',
-      sub: 'SM3 摘要 · SM9 身份派生 · 签名→验签闭环 · 篡改检测（valid=false 仍是 code=0）' }));
+      sub: 'SM3 摘要 · SM9 身份派生 · 签名→验签闭环 · 篡改检测' }));
 
     /* --- SM3 摘要 --- */
     var rpSm = P.resultPanel();
     var fSm = P.form([
-      { name: 'payload', label: 'payload（JSON 对象）', type: 'textarea', required: true, rows: 4,
+      { name: 'payload', label: '数据内容（JSON 对象）', type: 'textarea', required: true, rows: 4,
         value: DEFAULT_PAYLOAD,
-        hint: '服务端按键排序规范化（canonical）后做 SM3——键序不同摘要相同' }
+        hint: '系统自动对数据规范化后计算 SM3 摘要——字段顺序不同，摘要相同' }
     ]);
-    var smCard = card('SM3 摘要 crypto/sm3',
+    var smCard = card('SM3 摘要',
       fSm.root,
       P.actionBar([{ label: '计算摘要', kind: 'primary', run: P.runOp({
         path: '/api/crypto/sm3',
@@ -52,8 +52,8 @@
         rp: rpSm, successText: 'SM3 摘要完成',
         render: function (d) {
           return h('div', {},
-            P.kv([['SM3 摘要（64hex）', h('code', { class: 'p-mono' }, d.sm3_hash)]]),
-            h('div', { class: 'd-section' }, '规范化串 canonical（键排序——摘要的真正输入）'),
+            P.kv([['SM3 摘要', h('code', { class: 'p-mono' }, d.sm3_hash)]]),
+            h('div', { class: 'd-section' }, '规范化串（摘要计算的输入基准）'),
             UI.jsonBlock(d.canonical, 120));
         }
       }) }]),
@@ -63,9 +63,9 @@
     var rpKg = P.resultPanel();
     var fKg = P.form([
       { name: 'entity_id', label: '实体 ID', type: 'text', required: true, value: 'UAV-A-001',
-        hint: '确定性派生：sm9_identity = "SM9-ID-" + entity_id（同一实体永远同一身份）' }
+        hint: '同一实体始终派生同一 SM9 身份，稳定可复验' }
     ]);
-    var kgCard = card('SM9 身份派生 crypto/sm9/keygen',
+    var kgCard = card('SM9 身份派生',
       fKg.root,
       P.actionBar([{ label: '派生身份', run: P.runOp({
         path: '/api/crypto/sm9/keygen',
@@ -88,12 +88,12 @@
     var fSg = P.form([
       { name: 'sm9_identity', label: 'SM9 身份', type: 'text', required: true,
         value: 'SM9-ID-UAV-A-001' },
-      { name: 'payload', label: 'payload（JSON 对象）', type: 'textarea', required: true, rows: 4,
+      { name: 'payload', label: '数据内容（JSON 对象）', type: 'textarea', required: true, rows: 4,
         value: DEFAULT_PAYLOAD }
     ]);
     var tamperBtn = h('button', { class: 'p-btn p-btn-danger', disabled: true,
-      title: '先完成一次签名' }, '⚠ 篡改 payload 并回填验签（altitude_max→999）');
-    var sgCard = card('SM9 签名 crypto/sm9/sign',
+      title: '先完成一次签名' }, '⚠ 篡改数据并回填验签');
+    var sgCard = card('SM9 签名',
       fSg.root,
       P.actionBar([
         { label: '签名', kind: 'primary', run: P.runOp({
@@ -117,7 +117,7 @@
             lastSigned = { identity: lastBody.sm9_identity, payload: lastBody.payload,
               signature: d.signature };
             tamperBtn.disabled = false;
-            tamperBtn.title = '复制载荷 → altitude_max 改 999 → 回填验签表单';
+            tamperBtn.title = '自动篡改已签名载荷并回填验签表单';
           }
         }) },
         { label: '填入验签表单 →', run: function () {
@@ -125,7 +125,7 @@
           fVf.set('sm9_identity', lastSigned.identity);
           fVf.set('payload', JSON.stringify(lastSigned.payload));
           fVf.set('signature', lastSigned.signature);
-          UI.toast('已填入——直接点「验签」应得 valid=true');
+          UI.toast('已填入——直接点「验签」，预期结果为通过');
         } }
       ]),
       rpSg.root);
@@ -135,10 +135,10 @@
     var fVf = P.form([
       { name: 'sm9_identity', label: 'SM9 身份', type: 'text', required: true,
         value: 'SM9-ID-UAV-A-001' },
-      { name: 'payload', label: 'payload（JSON 对象）', type: 'textarea', required: true, rows: 4,
+      { name: 'payload', label: '数据内容（JSON 对象）', type: 'textarea', required: true, rows: 4,
         value: DEFAULT_PAYLOAD },
       { name: 'signature', label: '签名（base64）', type: 'textarea', required: true, rows: 2,
-        placeholder: '从签名卡「填入验签表单」带入，或手工粘贴（非法 base64 → 1002）' }
+        placeholder: '从签名卡「填入验签表单」带入，或手工粘贴' }
     ]);
     tamperBtn.addEventListener('click', function () {
       if (!lastSigned) return;
@@ -147,9 +147,9 @@
       fVf.set('sm9_identity', lastSigned.identity);
       fVf.set('payload', JSON.stringify(t));
       fVf.set('signature', lastSigned.signature);
-      UI.toast('已篡改并回填——点「验签」：预期 valid=false 且 code 仍为 0', 'ok', 5200);
+      UI.toast('已篡改并回填——点「验签」：预期验签不通过，篡改只能藏、不能通过核验', 'ok', 5200);
     });
-    var vfCard = card('SM9 验签 crypto/sm9/verify（篡改检测）',
+    var vfCard = card('SM9 验签（篡改检测）',
       fVf.root,
       P.actionBar([{ label: '验签', kind: 'primary', run: P.runOp({
         path: '/api/crypto/sm9/verify',
@@ -160,15 +160,15 @@
           if (!p) return null;
           return { sm9_identity: v.sm9_identity, payload: p, signature: v.signature };
         },
-        rp: rpVf, successText: '验签完成（有效性以 valid 为准——code 恒 0）',
+        rp: rpVf, successText: '验签完成',
         render: function (d) {
           return h('div', {},
             P.statCards([{ label: 'SM9 验签',
-              value: d.valid ? '✓ valid=true' : '✗ valid=false',
+              value: d.valid ? '✓ 验签通过' : '✗ 验签不通过',
               sub: d.valid ? '签名与载荷一致' : '签名与载荷不一致（被篡改或用错身份）',
               tone: d.valid ? 'good' : 'critical' }]),
             h('p', { class: 'd-small d-muted' },
-              'valid=false 时 code 仍为 0——「验签不通过」是合法业务结论；只有签名不是合法 base64 才是 1002（走上方错误卡）。'));
+              '「验签不通过」不是系统故障，而是明确的核验结论——数据一经篡改，国密验签当即识破。'));
         }
       }) }]),
       h('div', { class: 'd-mt' }, tamperBtn),

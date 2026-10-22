@@ -59,15 +59,15 @@
 
     root.append(h('div', { class: 'd-grid-side' },
       h('div', { class: 'd-col' },
-        card('实名主体台账（realname/list）', tblR),
-        card('飞行员执照台账（pilot/list）', tblP)),
+        card('实名主体台账', tblR),
+        card('飞行员执照台账', tblP)),
       h('div', { class: 'd-col' }, card('详情', panel))));
   }
 
   /* 实名主体详情：realname/query 平铺 Subject（8 键） */
   async function openSubject(sid, panel) {
     panel.innerHTML = '';
-    panel.append(h('div', { class: 'p-empty' }, '⏳ realname/query 查询中…'));
+    panel.append(h('div', { class: 'p-empty' }, '⏳ 实名主体查询中…'));
     var r = await API.call('/api/realname/query', { subject_id: sid });
     if (!panel.isConnected) return;
     panel.innerHTML = '';
@@ -90,7 +90,7 @@
   /* 飞行员执照详情：pilot/query 平铺 License（11 键）+ SM9 验签 */
   async function openLicense(lid, panel) {
     panel.innerHTML = '';
-    panel.append(h('div', { class: 'p-empty' }, '⏳ pilot/query 查询中…'));
+    panel.append(h('div', { class: 'p-empty' }, '⏳ 执照详情查询中…'));
     var r = await API.call('/api/pilot/query', { license_id: lid });
     if (!panel.isConnected) return;
     panel.innerHTML = '';
@@ -111,16 +111,16 @@
         ['SM9 签名', h('code', { class: 'p-mono' }, UI.trunc(L.signature, 40))]
       ]),
       h('div', { class: 'd-section' }, 'SM9 验签（局方签发身份 ' + PILOT_SIGNER + '）'),
-      P.actionBar([{ label: 'SM9 验签', kind: 'primary', title: '以签发 canonical 材料复核签名',
+      P.actionBar([{ label: 'SM9 验签', kind: 'primary', title: '以局方签发材料复核签名',
         run: function (el) { verifyLicense(L, verifyBox, el); } }]),
       verifyBox,
-      h('p', { class: 'd-small d-muted' }, '验签材料 = pilotCanonical 七键 {license_id, license_no, name, id_number, category, issued_at, expires_at}（与后端签名同一 canonical 序列化）。演示数据域：证件号为模拟值。'));
+      h('p', { class: 'd-small d-muted' }, '验签采用执照七项关键信息组成的规范载荷，与签发时的签名材料完全一致。演示数据域：证件号为模拟值。'));
   }
 
   /* crypto/sm9/verify：payload = query 响应七键子集；合法签名 valid true/false 均 code=0 */
   async function verifyLicense(L, box, el) {
     box.innerHTML = '';
-    box.append(h('div', { class: 'p-empty' }, '⏳ crypto/sm9/verify 验签中…'));
+    box.append(h('div', { class: 'p-empty' }, '⏳ SM9 验签中…'));
     if (el) el.disabled = true;
     var payload = {
       license_id: L.license_id, license_no: L.license_no, name: L.name,
@@ -136,7 +136,7 @@
     var ok = !!r.data.valid;
     box.append(
       P.statCards([{ label: 'SM9 验签', value: ok ? '✓ 通过' : '✗ 未通过',
-        sub: ok ? '签名与 canonical 材料一致' : '签名与材料不一致（疑篡改）',
+        sub: ok ? '签名与执照签发材料一致' : '签名与执照材料不一致（疑似篡改）',
         tone: ok ? 'good' : 'critical' }]),
       UI.jsonBlock(payload, 160));
   }

@@ -39,7 +39,7 @@
         }
       }
     } else if (row.status === 'FAILED') {
-      parts.push(h('span', { class: 'd-small d-muted' }, '运行失败 —— 详情见下方错误卡（FAILED 行同样入账本）'));
+      parts.push(h('span', { class: 'd-small d-muted' }, '运行失败 —— 详情见下方错误卡'));
     }
     return h('div', { class: 'd-cap-verdict-row' }, parts);
   }
@@ -67,7 +67,7 @@
           row.failure_reasons ? ['失败原因', h('code', { class: 'p-mono' }, String(row.failure_reasons))] : null,
           ['起止', (row.started_at || '—') + ' → ' + (row.completed_at || '—')],
         ]),
-        h('details', { class: 'p-rawjson' }, h('summary', {}, '运行行 JSON'), UI.jsonBlock(row)));
+        h('details', { class: 'p-rawjson' }, h('summary', {}, '运行记录 JSON'), UI.jsonBlock(row)));
     }
     async function load() {
       if (!box.isConnected) return;
@@ -84,7 +84,7 @@
       box.append(h('table', { class: 'p-tbl d-cap-hist-tbl' },
         h('thead', {}, h('tr', {}, ['时间', '实验', '状态', '成功', 'p95', '秒级判定'].map(function (t) { return h('th', {}, t); }))),
         h('tbody', {}, recs.slice(0, 8).map(function (row) {
-          return h('tr', { class: 'clickable', title: 'run_id ' + row.run_id + ' · 点击查看详情', onClick: function () { showRun(row); } },
+          return h('tr', { class: 'clickable', title: '实验编号 ' + row.run_id + ' · 点击查看详情', onClick: function () { showRun(row); } },
             h('td', {}, String(row.completed_at || row.started_at || '—').slice(5, 19)),
             h('td', {}, h('code', { class: 'p-mono' }, row.experiment_type),
               row.scenario ? h('span', { class: 'd-cap-scen' }, row.scenario) : null),
@@ -102,7 +102,7 @@
   function expRow(cap, def, afterRun) {
     var sel = def.scenarios ? h('select', { class: 'd-cap-sel' },
       def.scenarios.map(function (s) { return h('option', { value: s.v }, s.t); })) : null;
-    var cnt = h('input', { type: 'number', class: 'd-cap-cnt', value: def.count, min: 1, max: 1000, title: '迭代次数 count（1..1000）' });
+    var cnt = h('input', { type: 'number', class: 'd-cap-cnt', value: def.count, min: 1, max: 1000, title: '迭代次数（1–1000）' });
     var slot = h('div', { class: 'd-cap-slot' });
     var btn = h('button', { class: 'p-btn p-btn-sm' + (def.heavy ? '' : ' p-btn-primary') }, def.heavy ? '▶ 运行（真实上链）' : '▶ 运行');
     btn.addEventListener('click', async function () {
@@ -141,7 +141,7 @@
       h('div', {},
         cap.experiments.map(function (def) { return expRow(cap, def, function () { hist.reload(); }); }),
         h('div', { class: 'd-cap-hist-head' },
-          h('span', {}, '最近实验记录（experiment/list）'),
+          h('span', {}, '最近实验记录'),
           h('button', { class: 'p-btn p-btn-sm p-btn-ghost', onClick: function () { hist.reload(); } }, '⟳ 刷新')),
         hist));
     det.addEventListener('toggle', function () { if (det.open) hist.reload(); });
@@ -185,7 +185,7 @@
       h('ul', { class: 'd-cap-points' }, cap.points.map(function (p) { return h('li', {}, p); })),
       evidenceBox(cap),
       h('details', { class: 'd-cap-goal' },
-        h('summary', {}, '📋 项目绩效目标（官方原文）'),
+        h('summary', {}, '📋 项目绩效目标'),
         h('p', {}, cap.goal)),
       expPanel(cap, opts.expOpen));
   }
@@ -209,8 +209,8 @@
     if (!caps.length) return h('div');
     if (density === 'strip') return h('div', { class: 'd-cap-strip' }, caps.map(stripMini));
     var head = density === 'cockpit'
-      ? { t: '能力态势 · 绩效目标实验自证', s: '三大核心能力实时证据 + experiment/run 一键自证；高危虫洞/真实上链实验均有二次确认门禁' }
-      : { t: '平台三大核心能力', s: '证据来自在网实时台账 · 「开展实验验证」一键自证 · 项目绩效目标官方原文见卡内小字' };
+      ? { t: '能力态势 · 绩效目标实验自证', s: '三大核心能力实时证据与一键实验自证；高危实验均有二次确认门禁' }
+      : { t: '平台三大核心能力', s: '证据来自在网实时台账 · 「开展实验验证」一键自证 · 项目绩效目标详见卡内说明' };
     return h('section', { class: 'd-cap-section' + (density === 'cockpit' ? ' d-cap-cockpit' : '') },
       h('div', { class: 'd-cap-sec-head' }, h('h2', {}, head.t), h('p', {}, head.s)),
       h('div', { class: 'd-cap-grid' }, caps.map(function (c) { return capCard(c, { expOpen: density === 'cockpit' }); })));

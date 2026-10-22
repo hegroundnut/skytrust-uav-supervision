@@ -23,29 +23,29 @@
   function signerNote(sm9id) {
     if (sm9id === 'SM9-ID-REGISTRY-ADMIN') return 'REGISTRY-ADMIN · 证照链证照中心（现行签发身份）';
     if (sm9id === 'SM9-ID-FISCO-ADMIN') return 'FISCO-ADMIN · 管理链（2026-10-13 迁移前历史签发身份）';
-    return '未登记身份（原值如实展示，不猜测）';
+    return '未登记身份（原值展示）';
   }
 
   function render(root, ctx) {
     root.append(P.pageHead({
       title: '证照查验',
-      sub: 'pass/verify 恒 code=0：valid/reasons 是数据不是错误 · 服务端验签先试 REGISTRY-ADMIN 回落 FISCO-ADMIN（双身份过渡）'
+      sub: '一键核验证照真伪 · 国密验签 · 查验结论与链上证据实时呈现'
     }));
     var pre = (ctx && ctx.query && ctx.query.get('pass_id')) || '';
     if (!pre) { var slot = STORE.get('PASS'); if (slot && slot.id) pre = slot.id; }
     var f = P.form([
-      { name: 'pass_id', label: '证照号 pass_id', type: 'text', value: pre,
-        placeholder: '如 PASS-2026-001（可从台账 / 签发回执的业务对象 chip 带入）',
-        hint: '有效性由 data.valid + data.reasons 判定；证照号不存在才返回 6002（错误卡解说）' }
+      { name: 'pass_id', label: '证照号', type: 'text', value: pre,
+        placeholder: '如 PASS-2026-001',
+        hint: '输入证照号，即时核验证照真伪与有效性' }
     ]);
     var rp = P.resultPanel();
-    rp.root.append(P.empty('尚未查验 —— 输入证照号点「查验」，结果卡（判定 / 时间窗 / 签名身份 / 链上证据）显示在此'));
-    root.append(card('查验 pass/verify', f.root,
+    rp.root.append(P.empty('尚未查验 —— 输入证照号点「查验」，查验结果与链上证据显示在此'));
+    root.append(card('证照查验', f.root,
       P.actionBar([{ label: '查验', kind: 'primary', run: async function () {
         var v = PORTAL.need(f.read(), 'pass_id');
         if (v) await doVerify(String(v.pass_id).trim(), rp);
       } }])));
-    root.append(card('查验结果（valid/reasons 数据判定 + 双身份过渡说明 + 链上证据区）', rp.root));
+    root.append(card('查验结果（查验结论、签名身份与链上证据）', rp.root));
   }
 
   async function doVerify(passId, rp) {
@@ -53,13 +53,13 @@
     if (!rp.root.isConnected) return;                    /* 用户已离开本页 */
     var slots = {};
     rp.show(v, function (d) {
-      var win = h('div', {}, h('div', { class: 'p-empty' }, '⏳ pass/query 读取有效时间窗…'));
-      var ev = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 链上证据检索中（FLIGHT_PASS 留痕 → crosschain/query 四段时间线）…'));
+      var win = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 有效时间窗读取中…'));
+      var ev = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 链上证据检索中…'));
       slots.win = win; slots.ev = ev;
       return h('div', {}, verdictCard(d), win,
-        h('p', { class: 'd-small d-muted' }, '双身份过渡：', TRANSITION_NOTE,
-          ' —— 服务端验签先试 SM9-ID-REGISTRY-ADMIN（证照链），失败回落 SM9-ID-FISCO-ADMIN（管理链，迁移前存量），存量证照不失效。'),
-        h('div', { class: 'd-section' }, '链上证据区 · crosschain/query 四段时间线（FLIGHT_PASS 主留痕；REVOKED 附 PASS_REVOKE）'),
+        h('p', { class: 'd-small d-muted' }, '签名身份说明：', TRANSITION_NOTE,
+          '，存量证照不失效。'),
+        h('div', { class: 'd-section' }, '链上证据区 · 四段存证时间线（REVOKED 证照自动附加吊销存证）'),
         ev);
     });
     if (!v.ok) return;                                   /* 6002：errCard + EXPLAIN 已渲染，不追加证据区 */
@@ -77,7 +77,7 @@
           h('span', { class: 'd-cert-no' }, d.pass_id || '—')),
         h('div', { class: 'd-cert-body' }, h('div', { class: 'd-cert-main' }, P.kv([
           ['证照状态', P.badge(d.status)],
-          ['判定', 'valid = true · reasons 为空（时间窗校验通过 + SM3 完整性一致 + SM9 验签通过）'],
+          ['判定', '查验通过（时间窗有效 · 证照信息完整 · 国密验签通过）'],
           ['不通过原因', '（无）']
         ]))),
         h('div', { class: 'd-seal' }, '证照\n有效'));
@@ -90,10 +90,10 @@
       h('div', { class: 'd-cert-body' }, h('div', { class: 'd-cert-main' },
         P.kv([
           ['证照状态', P.badge(d.status)],
-          ['判定', 'valid = false（无效原因是数据不是错误——envelope 仍 code=0）'],
+          ['判定', '查验未通过'],
           ['不通过原因', rs.length ? h('ul', { class: 'd-mt' }, rs.map(function (t) {
             return h('li', { style: { color: 'var(--d-critical)' } }, t); }))
-          : h('span', { class: 'd-small d-muted' }, 'reasons 为空（如实展示，不编造原因）')]
+          : h('span', { class: 'd-small d-muted' }, '未提供具体原因（如实展示）')]
         ]))));
   }
 
@@ -109,7 +109,7 @@
       ['任务 / 航空器', h('span', {}, h('code', { class: 'p-mono' }, p.mission_id),
         ' / ', h('code', { class: 'p-mono' }, p.uav_id || '—'))],
       ['许可航线', PORTAL.jp(p.route, []).join(' → ') || '—'],
-      ['SM3 摘要（服务端权威）', h('code', { class: 'p-mono', title: p.sm3_hash }, UI.trunc(p.sm3_hash, 48))]
+      ['SM3 摘要', h('code', { class: 'p-mono', title: p.sm3_hash }, UI.trunc(p.sm3_hash, 48))]
     ]));
   }
 
@@ -123,7 +123,7 @@
     var recs = (r.data.records || []).filter(function (x) { return x.business_id === passId; });
     slot.append(windowNote(r, recs.length, 'FLIGHT_PASS'));
     if (!recs.length) {
-      slot.append(P.empty('未找到 FLIGHT_PASS 跨链留痕 —— SM9 签名身份与四段时间线无法链上溯源（绝不猜测）；可在跨链台账 / 链上浏览器补查'));
+      slot.append(P.empty('未找到签发跨链存证 —— SM9 签名身份与四段时间线无法链上溯源；可在跨链台账 / 链上浏览器补查'));
       if (vd.status === 'REVOKED') appendRevoke(slot, passId);
       return;
     }
@@ -138,7 +138,7 @@
     if (!slot.isConnected) return;
     if (!q.ok) slot.append(P.errCard(q));
     else slot.append(
-      h('div', { class: 'd-small d-muted d-mt' }, '主留痕 crosschain/query · ', primary.created_at,
+      h('div', { class: 'd-small d-muted d-mt' }, '主留痕 · ', primary.created_at,
         primary.retry_of ? ' · 重试自 ' + primary.retry_of : ''),
       P.cxTrail(q.data));
     var others = recs.filter(function (x) { return x.cross_tx_id !== primary.cross_tx_id; });
@@ -158,8 +158,8 @@
 
   /* ---------- REVOKED 附加：PASS_REVOKE 吊销留痕（FAILED 待补发如实展示） ---------- */
   async function appendRevoke(slot, passId) {
-    var box = h('div', {}, h('div', { class: 'p-empty' }, '⏳ PASS_REVOKE 留痕查询中…'));
-    slot.append(h('div', { class: 'd-section' }, '吊销留痕 PASS_REVOKE（REVOKED 证照必查；FAILED 待补发记录如实展示）'), box);
+    var box = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 吊销存证查询中…'));
+    slot.append(h('div', { class: 'd-section' }, '吊销链上存证（失败或待补发记录如实展示）'), box);
     var r = await API.call('/api/crosschain/list', { message_type: 'PASS_REVOKE', page: 1, page_size: 200 });
     if (!box.isConnected) return;
     box.innerHTML = '';
@@ -167,7 +167,7 @@
     var recs = (r.data.records || []).filter(function (x) { return x.business_id === passId; });
     box.append(windowNote(r, recs.length, 'PASS_REVOKE'));
     if (!recs.length) {
-      box.append(P.empty('未找到 PASS_REVOKE 留痕（最近 200 条窗口外或缺失）—— 可在跨链台账补查，不猜测'));
+      box.append(P.empty('未找到吊销链上存证 —— 可在跨链台账补查'));
       return;
     }
     var primary = recs.filter(function (x) { return x.status === 'SUCCESS'; })[0] || recs[0];
@@ -180,7 +180,7 @@
       box.append(h('div', { class: 'd-small',
         style: { marginTop: '8px', padding: '10px 12px', background: 'var(--d-warning-soft)',
           border: '1px dashed var(--d-warning)', borderRadius: '6px', color: 'var(--d-warning)' } },
-        '⚠ 链上吊销未达（FAILED 待补发）—— 本地状态已是 REVOKED（吊销即时生效）；到「证照吊销」页可一键补发跨链腿（同 pass_id 重调 pass/revoke，PASS_REVOKE_RETRY 审计留痕，不重复状态迁移）。'));
+        '⚠ 链上吊销未达（待补发）—— 本地状态已是 REVOKED（吊销即时生效）；到「证照吊销」页可一键补发链上吊销，补发全程审计留痕，不重复变更状态。'));
     }
     var others = recs.filter(function (x) { return x.cross_tx_id !== primary.cross_tx_id; });
     others.forEach(function (x) {
@@ -193,9 +193,8 @@
 
   function windowNote(r, hit, msgType) {
     return h('p', { class: 'd-small d-muted' },
-      '检索窗口：' + msgType + ' 最近 ' + ((r.data && r.data.records) || []).length +
-      ' 条（服务端仅支持 status/message_type 过滤，business_id 为窗口内客户端匹配；台账总量 ' +
-      ((r.data && r.data.total) || 0) + ' 条）→ 命中 ' + hit + ' 条。');
+      '检索窗口：最近 ' + ((r.data && r.data.records) || []).length +
+      ' 条存证记录（台账总量 ' + ((r.data && r.data.total) || 0) + ' 条）→ 命中 ' + hit + ' 条。');
   }
 
   CT.verify = { render: render };

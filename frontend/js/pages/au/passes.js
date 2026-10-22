@@ -39,7 +39,7 @@
     root.append(h('div', { class: 'd-notice d-mt' },
       h('b', {}, '通行证签发/吊销已移交证照中心端（四方分权：申请→审批→签发→验证）'),
       ' ',
-      h('a', { href: 'license-center.html' }, '前往证照中心端（license-center.html）→')));
+      h('a', { href: 'license-center.html' }, '前往证照中心端 →')));
 
     var tbl = P.dataTable({
       endpoint: '/api/pass/list', pageSize: 10,
@@ -64,13 +64,13 @@
       onRow: function (r) { passDrawer(r.pass_id); },
       emptyText: '暂无许可 —— 任务审核通过并经证照中心端签发后出现在此'
     });
-    root.append(card('许可台账 pass/list（只读 · 点击行开详情抽屉）', tbl,
+    root.append(card('许可台账（只读 · 点击行查看详情）', tbl,
       h('p', { class: 'd-small d-muted' },
-        'FLIGHT_PASS 跨链：irita → fabric（证照链签发）—— 签发/吊销操作请前往证照中心端，本页不提供任何变更入口。')));
+        'FLIGHT_PASS 跨链存证：证照链（irita）签发 → 运营链（fabric）存证 —— 签发/吊销操作请前往证照中心端，本页不提供任何变更入口。')));
   }
 
   async function passDrawer(passId) {
-    var d = P.drawer('许可 ' + passId, h('div', { class: 'p-empty' }, '⏳ pass/query 查询中…'));
+    var d = P.drawer('许可 ' + passId, h('div', { class: 'p-empty' }, '⏳ 许可详情查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/pass/query', { pass_id: passId });
     if (!body.isConnected) return;
@@ -80,15 +80,15 @@
     STORE.note('PASS', p.pass_id);                       /* §29 */
     var rpV = P.resultPanel();
     body.append(passKv(p),
-      h('div', { class: 'd-section' }, '验证 pass/verify（code 恒 0：valid/reasons 是数据不是错误）'),
+      h('div', { class: 'd-section' }, '许可验证'),
       P.actionBar([{ label: '验证许可', run: P.runOp({
         path: '/api/pass/verify',
         body: function () { return { pass_id: passId }; },
         rp: rpV, successText: '验证完成',
         render: function (x) {
           return h('div', {},
-            P.statCards([{ label: 'valid', value: x.valid ? '✓ 有效' : '✗ 无效',
-              tone: x.valid ? 'good' : 'critical', sub: 'status ' + x.status }]),
+            P.statCards([{ label: '有效性', value: x.valid ? '✓ 有效' : '✗ 无效',
+              tone: x.valid ? 'good' : 'critical', sub: x.status }]),
             x.reasons && x.reasons.length
               ? h('ul', {}, x.reasons.map(function (t) { return h('li', { style: { color: '#b91c1c' } }, t); }))
               : h('div', { class: 'd-small d-muted' }, '无拒绝原因'));

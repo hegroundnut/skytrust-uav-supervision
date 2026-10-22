@@ -17,7 +17,7 @@
     if (mxMini) { mxMini.destroy(); mxMini = null; }
     root.append(P.pageHead({
       title: '审核队列',
-      sub: '队列以跨链台账为准（MISSION_APPLICATION·SUCCESS 的 business_id 即申请号）· 裁决跨链回传源链' }));
+      sub: '队列以跨链台账为准 · 裁决跨链回传源链' }));
     /* --- 三大核心能力条（绩效目标自然嵌入：点击迷你卡抽屉展开证据与实验自证）--- */
     root.append(CAPX.section('strip'));
 
@@ -31,7 +31,7 @@
       endpoint: '/api/crosschain/list', pageSize: 10,
       baseBody: { message_type: 'MISSION_APPLICATION', status: 'SUCCESS' },
       columns: [
-        { title: '申请号（business_id）', render: function (r) { return UI.trunc(r.business_id, 24); }, mono: true },
+        { title: '申请号', render: function (r) { return UI.trunc(r.business_id, 24); }, mono: true },
         { title: 'cross_tx_id', render: function (r) { return UI.trunc(r.cross_tx_id, 18); }, mono: true },
         { title: '时延(ms)', key: 'latency_ms', num: true },
         { title: '申请时间', key: 'created_at' },
@@ -81,7 +81,7 @@
     root.append(h('div', { class: 'd-grid-side' },
       h('div', { class: 'd-col' },
         card('跨链申请台账（MISSION_APPLICATION · SUCCESS）', tblA),
-        card('待审任务面板（mission/list · SUBMITTED；管理方只见脱敏值）', tblB)),
+        card('待审任务面板（SUBMITTED · 管理方只见脱敏值）', tblB)),
       h('div', { class: 'd-col' }, card('审核工作台', panel))));
   }
 
@@ -102,7 +102,7 @@
         P.cxTrail(cxR.data));
     }
     var histWrap = h('div', {}, histBox(hR));
-    panel.append(h('div', { class: 'd-section' }, '审核历史 review/query'), histWrap);
+    panel.append(h('div', { class: 'd-section' }, '审核历史'), histWrap);
 
     /* 裁决表单 */
     var rp = P.resultPanel();
@@ -114,10 +114,10 @@
         placeholder: '如 R-ALT-001,TIME_WINDOW' },
       { name: 'comment', label: '审核意见', type: 'textarea', rows: 2 }
     ]);
-    panel.append(h('div', { class: 'd-section' }, '裁决 review/submit（MISSION_REVIEW_RESULT 跨链回传源链）'),
+    panel.append(h('div', { class: 'd-section' }, '裁决（MISSION_REVIEW_RESULT 跨链回传源链）'),
       f.root,
       P.actionBar([{ label: '提交裁决', kind: 'primary',
-        confirm: { title: '提交裁决', msg: '裁决将跨链回传源链并推进任务状态机（APPROVED→APPROVED / REJECTED→REJECTED / NEED_COORDINATION→COORDINATING）。审核规则拒绝 → 3003 设计内。', ok: '提交' },
+        confirm: { title: '提交裁决', msg: '裁决将跨链回传源链，并同步推进任务审批状态。', ok: '提交' },
         run: P.runOp({
           path: '/api/review/submit',
           body: function () {
@@ -178,7 +178,7 @@
   async function openMission(mid, panel) {
     if (mxMini) { mxMini.destroy(); mxMini = null; }
     panel.innerHTML = '';
-    panel.append(h('div', { class: 'p-empty' }, '⏳ mission/query 查询中…'));
+    panel.append(h('div', { class: 'p-empty' }, '⏳ 任务详情查询中…'));
     var r = await API.call('/api/mission/query', { mission_id: mid });
     if (!panel.isConnected) return;
     panel.innerHTML = '';
@@ -213,7 +213,7 @@
       var pts = GEO.routePoints(mine);
       if (pts.length) mxMini.fitPoints(pts);
     } else {
-      mxMini.setEmpty('任务航线无结构化坐标（遗留数据）——不猜测、不绘制');
+      mxMini.setEmpty('该任务航线暂无坐标数据，地图不予绘制');
     }
   }
 

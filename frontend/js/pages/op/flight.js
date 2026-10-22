@@ -18,7 +18,7 @@
     if (mx) { mx.destroy(); mx = null; }
     root.append(P.pageHead({
       title: '飞行活动申请',
-      sub: '地图勾选航段建任务 · 描述密文入库脱敏展示 · 冲突协调全程留痕 · 跨链提交跨域申请' }));
+      sub: '地图勾选航段建任务 · 描述加密存储脱敏展示 · 冲突协调全程留痕 · 跨链提交跨域申请' }));
     root.append(P.tabs([
       { key: 'create', label: '新建申请', render: tabCreate },
       { key: 'missions', label: '我的任务', render: tabMissions }
@@ -38,19 +38,19 @@
         placeholder: 'MEDICAL / POWER_INSPECTION / LOGISTICS…' },
       { name: 'payload_type', label: '载荷类型', type: 'text', required: true, value: 'MEDICAL_KIT',
         placeholder: 'MEDICAL_KIT / CAMERA / CARGO…' },
-      { name: 'route_segments', label: '航段（地图点选或勾选）', type: 'multi', required: true, options: [],
-        hint: '选项取自 route/list；地图点选与勾选框双向同步' },
+      { name: 'route_segments', label: '航段', type: 'multi', required: true, options: [],
+        hint: '地图点选与勾选框双向同步' },
       { name: 'altitude_min', label: '高度下限(m)', type: 'number', value: 60 },
       { name: 'altitude_max', label: '高度上限(m)', type: 'number', required: true, value: 120 },
       { name: 'start_time', label: '开始时间', type: 'datetime', required: true, value: UI.datetimeLocal(60),
-        hint: '格式 YYYY-MM-DD HH:mm:ss（已预填「1 小时后」，可直接改）' },
+        hint: '已预填「1 小时后」，可直接修改' },
       { name: 'end_time', label: '结束时间', type: 'datetime', required: true, value: UI.datetimeLocal(240),
         hint: '已预填「4 小时后」' },
       { name: 'pilot_license_id', label: '关联执照', type: 'select', options: [['', '不关联（可选）']],
-        hint: '取自 pilot/list；执照不存在/过期 → 7002 拒绝' },
+        hint: '可关联操控员执照；执照无效或过期时无法通过校验' },
       { name: 'description', label: '任务描述', type: 'textarea', rows: 3,
         placeholder: '如：紧急医疗运输——特殊血样送达市一医院（演示剧情）',
-        hint: '描述经 SM9 加密入库：管理端与台账只见脱敏值 masked_value，明文永不出运营商域' }
+        hint: '任务描述经国密算法加密存储：管理端与台账仅见脱敏值，明文不出运营商域' }
     ]);
     var slot = STORE.get('MISSION');
     var fCf = P.form([
@@ -62,26 +62,26 @@
       { name: 'resolution', label: '消解措施', type: 'text', required: true, placeholder: '如：时间窗后移 30 分钟' },
       { name: 'operator', label: '操作方', type: 'text', required: true, value: '', placeholder: '如：Operator-B' },
       { name: 'mission_id', label: '继续执行方任务号', type: 'text',
-        placeholder: '留空 = 双方任务均回 REVIEWING（可选）' }
+        placeholder: '留空则双方任务均回到 REVIEWING（可选）' }
     ]);
     var fSb = P.form([
       { name: 'mission_id', label: '任务号', type: 'text', required: true, value: slot ? slot.id : '',
         placeholder: 'MISSION-2026-xxx（创建成功后自动预填）' },
       { name: 'operator', label: '提交人/运营方', type: 'text', required: true, value: '',
-        placeholder: 'Operator-MED（须为航空器归属运营方——mission/submit 归属校验违者 1001；创建任务成功后自动回填）' }
+        placeholder: 'Operator-MED（须为航空器归属运营方；创建任务成功后自动回填）' }
     ]);
 
     box.append(h('div', { class: 'd-grid-side' },
       h('div', { class: 'd-col' },
-        h('div', { class: 'd-map-hint' }, '🗺️ 点击地图航线 = 勾选/取消（高亮即入单）。走廊着色：绿=开放 OPEN · 琥珀=限制 RESTRICTED · 红=关闭 CLOSED'),
+        h('div', { class: 'd-map-hint' }, '🗺️ 点击地图航线即可勾选或取消（高亮即入单）。走廊着色：绿色为开放 OPEN · 琥珀色为限制 RESTRICTED · 红色为关闭 CLOSED'),
         mapEl),
       h('div', { class: 'd-col' },
-        card('① 任务创建 mission/create（描述密文入库 · 脱敏展示）', f.root,
+        card('① 任务创建', f.root,
           P.actionBar([{ label: '创建任务', kind: 'primary', run: P.runOp({
             path: '/api/mission/create',
             body: function () { return PORTAL.need(f.read(), 'operator_id', 'uav_id', 'mission_type',
               'payload_type', 'route_segments', 'altitude_max', 'start_time', 'end_time'); },
-            rp: rpCr, successText: '任务已创建（DRAFT），描述已密文入库',
+            rp: rpCr, successText: '任务已创建（DRAFT），描述已加密存储',
             render: function (d) {
               return h('div', {},
                 P.kv([
@@ -105,8 +105,8 @@
             }
           }) }]),
           rpCr.root),
-        card('② 冲突检测与协调 conflict/detect · resolve',
-          h('p', { class: 'd-small d-muted' }, '同走廊重叠时窗会检出 TIME/ROUTE/ALTITUDE 冲突，主动方任务进 COORDINATING；重复消解同一冲突 → 3004 设计内拒绝。'),
+        card('② 冲突检测与协调',
+          h('p', { class: 'd-small d-muted' }, '同走廊重叠时窗会检出 TIME/ROUTE/ALTITUDE 冲突，主动方任务进入 COORDINATING；同一冲突不可重复消解。'),
           fCf.root,
           P.actionBar([{ label: '检测冲突', run: P.runOp({
             path: '/api/conflict/detect',
@@ -121,7 +121,7 @@
             render: function (d) { return P.kv([['冲突', d.conflict_id || '—'], ['消解后状态', P.badge(d.status || '—')]]); },
             note: { kind: 'CONFLICT', id: function (d) { return (d && d.conflict_id) || ''; } } }) }]),
           rpRs.root),
-        card('③ 跨链提交 mission/submit（fabric → chainmaker → fisco-bcos）', fSb.root,
+        card('③ 跨链提交', fSb.root,
           P.actionBar([{ label: '提交跨域申请', kind: 'primary',
             confirm: { title: '提交跨域申请', msg: '任务将经运营链→监管链→管理链跨域提交，进入管理当局待审队列。', ok: '确认提交' },
             run: P.runOp({
@@ -197,7 +197,7 @@
      fRs 可为 null（详情面板复用本视图时无预填目标）。 */
   function conflictsView(d, fRs) {
     var list = d.conflicts || [];
-    if (!list.length) return P.empty('无冲突（count=' + (d.count || 0) + '）—— 可直接跨链提交');
+    if (!list.length) return P.empty('无冲突（' + (d.count || 0) + ' 项）—— 可直接跨链提交');
     return h('div', {},
       h('div', { class: 'd-small d-muted d-mb' }, '检出 ' + list.length + ' 项冲突。类型：TIME 时窗重叠 / ROUTE 航路交叉 / ALTITUDE 高度冲突。'),
       h('div', { class: 'd-col' }, list.map(function (c) {
@@ -245,7 +245,7 @@
 
   async function openMission(mid, panel, tbl) {
     panel.innerHTML = '';
-    panel.append(h('div', { class: 'p-empty' }, '⏳ mission/query 查询中…'));
+    panel.append(h('div', { class: 'p-empty' }, '⏳ 任务详情查询中…'));
     var r = await API.call('/api/mission/query', { mission_id: mid });
     if (!panel.isConnected) return;
     panel.innerHTML = '';
@@ -268,10 +268,10 @@
         ['SM3 摘要', h('code', { class: 'p-mono' }, UI.trunc(m.sm3_hash, 40))],
         ['创建 / 更新', m.created_at + ' → ' + m.updated_at]
       ]),
-      h('p', { class: 'd-small d-muted' }, '描述明文经 SM9 加密入库，本页与管理端都只见脱敏值 —— 数据可用不可见。'),
+      h('p', { class: 'd-small d-muted' }, '任务描述经国密算法加密存储，本页与管理端仅见脱敏值 —— 数据可用不可见。'),
       P.actionBar([
         { label: '提交跨域申请', kind: 'primary',
-          confirm: { title: '提交跨域申请', msg: '任务 ' + m.mission_id + ' 将跨链提交（fabric → chainmaker → fisco-bcos）。非 DRAFT 状态 → 3004 设计内拒绝。', ok: '确认提交' },
+          confirm: { title: '提交跨域申请', msg: '任务 ' + m.mission_id + ' 将经运营链→监管链→管理链跨域提交，进入管理当局待审队列；仅 DRAFT 状态可提交。', ok: '确认提交' },
           run: P.runOp({
             path: '/api/mission/submit',
             body: function () { return { mission_id: m.mission_id, operator: m.operator_id }; },

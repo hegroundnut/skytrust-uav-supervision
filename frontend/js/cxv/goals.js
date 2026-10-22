@@ -64,7 +64,7 @@
     if (!note) return null;
     return h('div', {
       class: 'd-cxv-goal-note',
-      title: '仅当 goal1.chains 中 irita 项 mode=real 时出现（裁决 D：绝不在模拟数据上声称链本体密码学能力）'
+      title: '仅当证照链以真实链模式运行时展示——绝不在模拟数据上声称密码学能力'
     }, P.chainTag('irita'), h('span', {}, 'SM2 链本体 · ' + note));
   }
 
@@ -93,7 +93,7 @@
         '虫洞事件 ', fmtUnit(g2.wormhole_events_total, ' 起'), ' · 恢复中位 ',
         fmtUnit(g2.recovery_latency_median_ms, ' ms')),
       jumpEl(portal === 'au', '链网安全运营', '#/netsec', 'authority.html#/netsec',
-        '跳转管理当局端「链网安全运营」页（目标②演示：可信路由/秒级时延/SM9 挑战-应答/虫洞注入检出与隔离重算）'));
+        '跳转管理当局端「链网安全运营」页面'));
   }
 
   /* 芯片③（目标③ 秒级追踪 · 密文监管）——跳转「身份追踪」（本端为 rg → #/trace） */
@@ -104,7 +104,7 @@
       h('div', { class: 'd-cxv-goal-nums' }, '告警 ', fmtVal(g3.alerts_total), ' · 身份追踪 ', fmtVal(g3.trace_total)),
       h('div', { class: 'd-cxv-goal-sub' }, '密文核验 ', fmtVal(g3.inspect_total), ' · 授权 ', fmtVal(g3.auth_total)),
       jumpEl(portal === 'rg', '身份追踪', '#/trace', 'regulator.html#/trace',
-        '跳转监管当局端「身份追踪」页（目标③演示：七级跨链身份追踪，断链 5001 断点证据如实）'));
+        '跳转监管当局端「身份追踪」页面'));
   }
 
   /* ================= render（薄壳 chainview.js 组装时位于 ZONES 之前） ================= */
@@ -112,11 +112,11 @@
     opts = opts || {};
     var portal = opts.portal || 'index';
     var box = h('div', { class: 'd-cxv-goals' },
-      h('div', { class: 'p-empty' }, '⏳ explorer/goals 加载中…'));
+      h('div', { class: 'p-empty' }, '⏳ 加载中…'));
     var metaSlot = h('div', {});
     root.append(h('section', { class: 'p-card d-cxv-goal-sec' },
       h('h3', { class: 'p-card-title' },
-        '三目标证据条 · explorer/goals（验收三目标活数芯片：请求时实时聚合，测不到 →「—」，绝不写死）'),
+        '三目标证据条 · 实时活数呈现'),
       metaSlot, box));
     load();
 
@@ -130,7 +130,7 @@
         /* 失败/非 0 code → 错误态文案如实直出，芯片区不显示任何数字（绝不写死、绝不缓存假数） */
         box.append(h('div', { class: 'd-cxv-goal-err' },
           h('div', {}, h('b', {}, '⚠ 三目标证据加载失败（code=' + r.code + '）——芯片拒绝显示任何数字')),
-          h('div', { class: 'd-small' }, '芯片数字全部来自本次 explorer/goals 实时聚合；加载失败时绝不以写死值/缓存值充数。'),
+          h('div', { class: 'd-small' }, '芯片数字全部来自本次实时聚合；加载失败时如实呈现，绝不以预设值充数。'),
           P.errCard(r)));
         return;
       }

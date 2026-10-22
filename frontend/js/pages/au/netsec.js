@@ -52,19 +52,19 @@
 
   /* ============ 页签 1：拓扑·节点 ============ */
   function tabTopo(box) {
-    var statsBox = h('div', {}, P.empty('⏳ topology/get 加载中…'));
+    var statsBox = h('div', {}, P.empty('⏳ 拓扑数据加载中…'));
     var mapEl = h('div', { class: 'd-map d-map-xl' });
-    var wtopoBox = h('div', {}, P.empty('⏳ 抽象拓扑（WTOPO）等待 topology/get…'));   /* Task 9 追加 */
+    var wtopoBox = h('div', {}, P.empty('⏳ 抽象拓扑加载中…'));   /* Task 9 追加 */
     var tblNd = null;
 
     box.append(statsBox);
     box.append(h('div', { class: 'd-col' }, mapEl,
-      h('div', { class: 'd-map-hint' }, '节点着色：紫=MANAGEMENT · 蓝=EDGE · 青=UAV · 红=ATTACKER（空心=OFFLINE、红虚线⛔=ISOLATED）；红虚线边=虫洞伪造边。无经纬度的节点不上图（红线：不猜测坐标）。')));
+      h('div', { class: 'd-map-hint' }, '节点着色：紫=MANAGEMENT · 蓝=EDGE · 青=UAV · 红=ATTACKER（空心=OFFLINE、红虚线⛔=ISOLATED）；红虚线边=虫洞伪造边。无经纬度的节点不上图。')));
     /* ---- Task 9 追加：抽象拓扑（含攻击节点）区块 —— Leaflet 容器正下方；双层分工如标题 ----
        Leaflet 地理层保留不动（只落有经纬度的节点）；WTOPO 落全部有拓扑坐标的节点（含攻击者），
        只消费服务端抽象 position{x,y}，绝不读写经纬度（红线）；无 position 节点列「未布点」清单。 */
-    box.append(card('抽象拓扑（含攻击节点）WTOPO · topology/get 全节点 —— 上图：地理分布（未设坐标节点不落图）；下图：抽象拓扑（全节点含攻击者）',
-      P.actionBar([{ label: '⟳ 刷新拓扑（双层联动重绘）', run: loadTopo }]),
+    box.append(card('抽象拓扑（含攻击节点）—— 上图：地理分布（未设坐标节点不落图）；下图：抽象拓扑（全节点含攻击者）',
+      P.actionBar([{ label: '⟳ 刷新拓扑', run: loadTopo }]),
       wtopoBox));
 
     mx = MAPX.create(mapEl, { view: GEO.DEFAULT_VIEW });
@@ -74,15 +74,14 @@
     var rpNd = P.resultPanel();
     var fNd = P.form([
       { name: 'node_id', label: '节点 ID', type: 'text', required: true, placeholder: 'N5',
-        hint: '无人机端节点约定 <uav_id>-NODE（session/open 建会话前须已注册，否则 6002）' },
+        hint: '无人机端节点约定命名为「航空器ID-NODE」，建立会话前须先注册' },
       { name: 'node_type', label: '节点类型', type: 'select', required: true, value: 'EDGE',
         options: ['EDGE', 'MANAGEMENT', 'UAV', 'ATTACKER'] },
       { name: 'posX', label: '拓扑坐标 X（0-100）', type: 'number', required: true, value: 60 },
-      { name: 'posY', label: '拓扑坐标 Y（0-100）', type: 'number', required: true, value: 60,
-        hint: 'position 键为大写 X/Y（非经纬度）' },
+      { name: 'posY', label: '拓扑坐标 Y（0-100）', type: 'number', required: true, value: 60 },
       { name: 'neighbors', label: '邻居（逗号分隔，可空）', type: 'text', placeholder: 'N3,MGR' },
       { name: 'lat', label: '纬度（真地图需填）', type: 'number', step: '0.000001',
-        hint: '不填则不上真地图（红线：无地理坐标不画）' },
+        hint: '不填则不上真地图' },
       { name: 'lon', label: '经度（真地图需填）', type: 'number', step: '0.000001' }
     ]);
     tblNd = P.dataTable({
@@ -100,9 +99,9 @@
         { title: '地图坐标', render: function (r) { return GEO.fmtCoordPair(r.lat, r.lon); }, mono: true },
         { title: 'SM9 身份', render: function (r) { return UI.trunc(r.sm9_identity, 24); }, mono: true }
       ],
-      emptyText: '暂无节点（demo/init 灌种后出现）'
+      emptyText: '暂无节点'
     });
-    box.append(card('节点注册 node/register（ISOLATED 由攻防处置产生，注册不可指定；4003=节点身份校验失败）',
+    box.append(card('节点注册',
       fNd.root,
       P.actionBar([{ label: '注册节点', kind: 'primary', run: P.runOp({
         path: '/api/node/register',
@@ -119,7 +118,7 @@
           if (v.lon !== undefined) body.lon = v.lon;
           return body;
         },
-        rp: rpNd, successText: '节点已注册（sm9_identity 自动派生 SM9-ID-<node_id>）',
+        rp: rpNd, successText: '节点已注册（国密身份自动派生）',
         render: function (d) {
           var pos = PORTAL.jp(d.position, {});
           var px = pos.X != null ? pos.X : (pos.x != null ? pos.x : '?');
@@ -139,7 +138,7 @@
         onOk: function () { tblNd.reload(); loadTopo(); }
       }) }]),
       rpNd.root));
-    box.append(card('节点台账 node/list（种子 position 小写 x/y 与 API 注册回显大写 X/Y 并存——展示层双兼容）', tblNd));
+    box.append(card('节点台账', tblNd));
 
     /* hlPath = 当前会话路径（Task 9：STORE SESSION 槽 → session/list 200 条窗内客户端匹配
        ——服务端 SessionQuery 无 session_id 过滤键（session.go:168-174），不猜测；无槽/未匹配/
@@ -235,13 +234,13 @@
 
     async function closeSession(sid, tbl) {
       var ok = await P.confirm('关闭会话',
-        '关闭后对该会话发消息 → 4002（设计内拒绝）。会话号：' + sid, '确认关闭');
+        '关闭后将无法向该会话发送消息。会话号：' + sid, '确认关闭');
       if (!ok) return;
       var r = await API.call('/api/session/close',
         { session_id: sid, operator: 'SecOps', reason: '手动关闭' });
       if (r.ok) {
         STORE.note('SESSION', r.data.session_id);
-        UI.toast('会话已关闭（status=' + r.data.status + '）');
+        UI.toast('会话已关闭（' + r.data.status + '）');
         tbl.reload();
       } else {
         UI.toast('关闭失败 code=' + r.code + '：' + r.message, 'err', 5200);
@@ -252,13 +251,13 @@
     var rpSo = P.resultPanel();
     var fSo = P.form([
       { name: 'uav_id', label: '航空器', type: 'text', required: true, value: 'UAV-A-001',
-        hint: '源节点缺省 <uav_id>-NODE，须已注册（否则 6002）' },
-      { name: 'source_node', label: '源节点（可选）', type: 'text', placeholder: '缺省 <uav_id>-NODE' },
+        hint: '源节点缺省为「航空器ID-NODE」，须先注册' },
+      { name: 'source_node', label: '源节点（可选）', type: 'text', placeholder: '缺省 航空器ID-NODE' },
       { name: 'target_node', label: '目标节点（可选）', type: 'text', placeholder: '缺省 MGR' },
       { name: 'mission_id', label: '关联任务（可选留档）', type: 'text', value: slotM ? slotM.id : '' },
       { name: 'pass_id', label: '关联许可（可选留档）', type: 'text', value: slotP ? slotP.id : '' }
     ]);
-    var soCard = card('建立会话 session/open（SM9 挑战-应答；4002=认证失败、4004=无可达路径）',
+    var soCard = card('建立会话（国密身份认证）',
       fSo.root,
       P.actionBar([{ label: '起飞报备 · 建立会话', kind: 'primary', run: P.runOp({
         path: '/api/session/open',
@@ -272,7 +271,7 @@
           if (v.pass_id) body.pass_id = v.pass_id;
           return body;
         },
-        rp: rpSo, successText: '会话已建立（INIT→AUTHENTICATED→ACTIVE，审计留两条 STATE_TRANSITION）',
+        rp: rpSo, successText: '会话已建立（INIT→AUTHENTICATED→ACTIVE，全程审计留痕）',
         render: function (d) {
           return h('div', {},
             P.kv([
@@ -308,7 +307,7 @@
       { name: 'payload', label: '载荷（可选，JSON 对象）', type: 'textarea', rows: 2,
         placeholder: '{"lat":30.52,"lon":114.32}' }
     ]);
-    var msCard = card('消息发送 message/send（会话须 ACTIVE；对 CLOSED 会话发送 → 4002 设计内）',
+    var msCard = card('消息发送（会话须 ACTIVE；CLOSED 会话不可发送）',
       fMs.root,
       P.actionBar([{ label: '发送', kind: 'primary', run: P.runOp({
         path: '/api/message/send',
@@ -336,7 +335,7 @@
               ['路径', PORTAL.jp(m.path, []).join(' → ') || '—'],
               ['SM3 摘要', h('code', { class: 'p-mono' }, UI.trunc(m.sm3_hash, 32))]
             ]),
-            h('div', { class: 'd-section' }, '逐跳时延 path_detail'),
+            h('div', { class: 'd-section' }, '逐跳时延'),
             P.pathHops(d.path_detail));
         },
         onOk: function () { tblM.reload(); }
@@ -398,13 +397,13 @@
           ['SM3 摘要', h('code', { class: 'p-mono' }, m.sm3_hash || '—')],
           ['时间戳 / 入库', (m.timestamp || '—') + ' / ' + m.created_at]
         ]),
-        h('div', { class: 'd-section' }, '存证原文（evidence JSON 字符串：逐跳明细 + 网关代签 proxy_signed + 签名）'),
+        h('div', { class: 'd-section' }, '存证原文（逐跳明细 · 网关代签 · 签名）'),
         UI.jsonBlock(PORTAL.jp(m.evidence, m.evidence), 240));
     }
 
     box.append(h('div', { class: 'd-grid-2' }, soCard, msCard));
-    box.append(card('会话台账 session/list（六态全列：INIT/AUTHENTICATED/ACTIVE/DEGRADED/RECOVERED/CLOSED——裁决 22）', tblS));
-    box.append(card('消息台账 message/list（点行看存证原文）',
+    box.append(card('会话台账（六态全列：INIT/AUTHENTICATED/ACTIVE/DEGRADED/RECOVERED/CLOSED）', tblS));
+    box.append(card('消息台账（点击行查看存证原文）',
       P.actionBar([{ label: '加载流量统计', run: loadStats }]),
       statsM, tblM));
   }
@@ -430,8 +429,8 @@
         }
       });
     }
-    var whCard = card('虫洞攻击模拟 wormhole/toggle',
-      h('p', { class: 'd-small d-muted' }, '开启后 NODE-X⇄NODE-Y 建立伪造隧道边（拓扑图红虚线）。NODE-X/Y 已被 ISOLATED 后再开 → 4001：隔离残留只能 demo/reset 复原（设计内）。'),
+    var whCard = card('虫洞攻击模拟',
+      h('p', { class: 'd-small d-muted' }, '开启后 NODE-X⇄NODE-Y 建立伪造隧道边（拓扑图红虚线）；节点一旦被隔离（ISOLATED），攻击不可重新开启——处置记录不可抹除。'),
       P.actionBar([
         { label: '⚠ 开启虫洞攻击', kind: 'danger',
           confirm: { title: '开启虫洞攻击', msg: '将建立 NODE-X⇄NODE-Y 伪造隧道边；期间新建会话的初始路径可能经过隧道。', ok: '开启' },
@@ -446,11 +445,11 @@
     var rpRk = P.resultPanel();
     var fRk = P.form([
       { name: 'session_id', label: '会话号', type: 'text', required: true, value: prefill,
-        placeholder: 'SESS-…（SESSION 上下文 chip 自动预填）' },
+        placeholder: 'SESS-…（自动预填当前会话）' },
       { name: 'node_x', label: '隧道端点 X（可选）', type: 'text', placeholder: '缺省取会话相关虫洞端点' },
       { name: 'node_y', label: '隧道端点 Y（可选）', type: 'text', placeholder: '缺省取会话相关虫洞端点' }
     ]);
-    var rkCard = card('风险评估 risk/evaluate（5 维：身份/邻接/时延/挑战/路径）',
+    var rkCard = card('风险评估（五维引擎：身份/邻接/时延/挑战/路径）',
       fRk.root,
       P.actionBar([{ label: '评估风险', kind: 'primary', run: P.runOp({
         path: '/api/risk/evaluate',
@@ -489,7 +488,7 @@
         }
       }) }]),
       rpRk.root,
-      h('p', { class: 'd-small d-muted' }, '评估检出攻击时会话可能迁 DEGRADED——用下方「路径切换」恢复（RECOVERED）。'));
+      h('p', { class: 'd-small d-muted' }, '评估检出攻击时，会话可能降级为 DEGRADED——可用下方「路径切换」恢复至 RECOVERED。'));
 
     /* --- 路径切换（仅 DEGRADED 会话；健康会话切换被拒 4002 是设计内） --- */
     var rpPs = P.resultPanel();
@@ -497,9 +496,9 @@
       { name: 'session_id', label: '会话号', type: 'text', required: true, value: prefill },
       { name: 'operator', label: '操作方', type: 'text', required: true, value: 'SecOps' },
       { name: 'new_path', label: '新路径（逗号分隔，可空）', type: 'text',
-        placeholder: '留空 = 服务端自动重算避让路径', hint: '如 UAV-A-001-NODE,N1,N2,N3,N4,MGR' }
+        placeholder: '留空 = 自动重算避让路径', hint: '如 UAV-A-001-NODE,N1,N2,N3,N4,MGR' }
     ]);
-    var psCard = card('路径切换 path/switch（仅 DEGRADED 会话可切换；健康会话 → 4002、无替代路径 → 4004，均设计内）',
+    var psCard = card('路径切换（仅 DEGRADED 会话可执行）',
       fPs.root,
       P.actionBar([{ label: '切换路径', kind: 'primary',
         confirm: { title: '切换路径', msg: '将重算避让路径并产生 RECOVER 安全事件（会话 → RECOVERED）。', ok: '切换' },
@@ -561,7 +560,7 @@
 
     box.append(h('div', { class: 'd-grid-2' }, whCard, rkCard));
     box.append(psCard);
-    box.append(card('安全事件台账 event/list（DETECT 检出 / ISOLATE 隔离节点 / RECOVER 路径恢复）', tblEv));
+    box.append(card('安全事件台账（DETECT 检出 / ISOLATE 隔离节点 / RECOVER 路径恢复）', tblEv));
   }
 
   /* ============ 页签 4：性能实验 ============ */
@@ -576,14 +575,14 @@
         options: EXP_TYPES },
       { name: 'count', label: '次数（1-1000）', type: 'number', required: true, value: 5 },
       { name: 'scenario', label: '场景', type: 'select', value: '',
-        options: [['', '（留空——仅 MESSAGE_FLOW 必选）'], ['NORMAL', 'NORMAL 正常'],
+        options: [['', '（留空）'], ['NORMAL', 'NORMAL 正常'],
           ['ATTACK', 'ATTACK 攻击'], ['DEFENSE', 'DEFENSE 防御']],
-        hint: '双向严格：MESSAGE_FLOW 必填 NORMAL/ATTACK/DEFENSE，其余类型必须留空（传了 → 6002）' },
+        hint: 'MESSAGE_FLOW 实验须选择场景（NORMAL/ATTACK/DEFENSE），其余类型请留空' },
       { name: 'concurrency', label: '并发（可选，1-20）', type: 'number', placeholder: '缺省串行' }
     ]);
     var tblEx = null;
 
-    var runCard = card('运行实验 experiment/run（11 类）',
+    var runCard = card('运行实验（11 类）',
       fEx.root,
       P.actionBar([{ label: '运行实验', kind: 'primary', run: P.runOp({
         path: '/api/experiment/run',
@@ -593,7 +592,7 @@
           var body = { experiment_type: v.experiment_type, count: Number(v.count) };
           if (v.experiment_type === 'MESSAGE_FLOW') {
             if (!v.scenario) {
-              UI.toast('MESSAGE_FLOW 必须选择场景（NORMAL/ATTACK/DEFENSE），否则 6002', 'err', 5200);
+              UI.toast('MESSAGE_FLOW 必须选择场景（NORMAL/ATTACK/DEFENSE）', 'err', 5200);
               return null;
             }
             body.scenario = v.scenario;
@@ -607,7 +606,7 @@
         onOk: function () { if (tblEx) tblEx.reload(); }
       }) }]),
       rpEx.root,
-      h('p', { class: 'd-small d-muted' }, 'MESSAGE_FLOW × ATTACK 场景低成功率不是故障——是虫洞检测在生效（设计内）；失败原因按「原因×次数」聚合展示。'));
+      h('p', { class: 'd-small d-muted' }, 'MESSAGE_FLOW × ATTACK 场景下成功率偏低不是故障，而是虫洞检测正在生效；失败原因按「原因×次数」聚合展示。'));
 
     /* 导出过滤表单：experiment/export 过滤键只有 experiment_type/status（裁决 24：无 run_id） */
     var fEx2 = P.form([
@@ -641,11 +640,11 @@
     });
 
     box.append(runCard);
-    box.append(card('实验台账 experiment/list（CSV 导出过滤键仅 experiment_type/status——裁决 24）',
+    box.append(card('实验台账（支持 CSV 导出）',
       h('div', { class: 'd-row d-row-wrap' }, fEx2.root,
         P.csvExport({ endpoint: '/api/experiment/export',
           filters: function () { return fEx2.read(); },
-          filename: 'experiments.csv', label: '⤓ 导出 CSV（experiment/export）' })),
+          filename: 'experiments.csv', label: '⤓ 导出 CSV' })),
       tblEx));
   }
 
@@ -673,14 +672,14 @@
 
   /* 实验结果抽屉：experiment/result（run_id required；6002 = run_id 不存在） */
   async function openExp(runId) {
-    var d = P.drawer('实验结果 ' + runId, h('div', { class: 'p-empty' }, '⏳ experiment/result 查询中…'));
+    var d = P.drawer('实验结果 ' + runId, h('div', { class: 'p-empty' }, '⏳ 实验结果查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/experiment/result', { run_id: runId });
     body.innerHTML = '';
     if (!r.ok) { body.append(P.errCard(r)); return; }
     var x = r.data;
     body.append(expView(x));
-    body.append(h('div', { class: 'd-section' }, '配置原文（config JSON 字符串）'));
+    body.append(h('div', { class: 'd-section' }, '配置原文'));
     body.append(UI.jsonBlock(PORTAL.jp(x.config, x.config), 200));
   }
 

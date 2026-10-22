@@ -63,7 +63,7 @@
 
     root.append(h('div', { class: 'd-grid-side' },
       h('div', { class: 'd-col' },
-        card('航段登记 route/create', fRt.root,
+        card('航段登记', fRt.root,
           P.actionBar([{ label: '登记航段', kind: 'primary',
             confirm: { title: '登记航段', msg: '航段入库后全局可见（运营商端空域查询/飞行申请同源台账）。', ok: '登记' },
             run: P.runOp({
@@ -74,7 +74,7 @@
                 var filled = [v.start_lat, v.start_lon, v.end_lat, v.end_lon]
                   .filter(function (x) { return x !== undefined; }).length;
                 if (filled > 0 && filled < 4) {
-                  UI.toast('坐标半套视为缺失：四个坐标要么全填、要么全留空（留空=服务端从点名内嵌坐标解析）', 'err', 5200);
+                  UI.toast('坐标须完整：四项坐标要么全部填写、要么全部留空（留空时从起终点名称内嵌坐标解析）', 'err', 5200);
                   return null;
                 }
                 var body = { route_id: v.route_id, zone: v.zone,
@@ -110,7 +110,7 @@
               }
             }) }]),
           rpRt.root,
-          h('p', { class: 'd-small d-muted' }, '坐标红线：0 值 = 未设，不猜测、不绘制；显式坐标半套（只给 lat 或只给 lon）后端视为缺失 → 6002。'))),
+          h('p', { class: 'd-small d-muted' }, '坐标规范：坐标为 0 视为未设置，不予绘制；坐标须成对完整填写，缺项视为未填。'))),
       h('div', { class: 'd-col' }, mapEl,
         h('div', { class: 'd-map-hint' }, '地图点选：第 1 击 = 起点「起」，第 2 击 = 终点「止」，第 3 击清空重来；点已有航线可高亮'))));
 
@@ -142,7 +142,7 @@
       },
       emptyText: '暂无航段'
     });
-    root.append(card('航段台账 route/list（点行 → 地图高亮定位）', tblRt));
+    root.append(card('航段台账（点击行地图高亮定位）', tblRt));
 
     /* --- 厂商登记 --- */
     var tblMf = null;
@@ -162,7 +162,7 @@
       ],
       emptyText: '暂无厂商'
     });
-    var mfCard = card('厂商登记 manufacturer/register', fMf.root,
+    var mfCard = card('厂商登记', fMf.root,
       P.actionBar([{ label: '注册厂商', kind: 'primary', run: P.runOp({
         path: '/api/manufacturer/register',
         body: function () {
@@ -170,7 +170,7 @@
           if (!v) return null;
           return { manufacturer_id: v.manufacturer_id, name: v.name, adapter_type: v.adapter_type || '' };
         },
-        rp: rpMf, successText: '厂商已注册（status 服务端固定 ACTIVE）',
+        rp: rpMf, successText: '厂商已注册（状态 ACTIVE）',
         render: function (d) {
           return P.kv([
             ['厂商 ID', h('code', { class: 'p-mono' }, d.manufacturer_id)],
@@ -203,7 +203,7 @@
       ],
       emptyText: '暂无运营商'
     });
-    var opCard = card('运营商登记 operator/register', fOp.root,
+    var opCard = card('运营商登记', fOp.root,
       P.actionBar([{ label: '注册运营商', kind: 'primary', run: P.runOp({
         path: '/api/operator/register',
         body: function () {
@@ -212,7 +212,7 @@
           return { operator_id: v.operator_id, name: v.name,
             contact: v.contact || '', chain_org_id: v.chain_org_id || '' };
         },
-        rp: rpOp, successText: '运营商已注册（资质服务端固定 QUALIFIED）',
+        rp: rpOp, successText: '运营商已注册（资质 QUALIFIED）',
         render: function (d) {
           return P.kv([
             ['运营商 ID', h('code', { class: 'p-mono' }, d.operator_id)],

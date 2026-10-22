@@ -34,7 +34,7 @@
   var h = UI.h, P = PUI;
 
   var CHAIN_FALLBACK = ['chainmaker', 'fabric', 'fisco-bcos', 'irita'];  /* 仅 overview 失败时的裸键兜底（显示名不派生） */
-  var SOURCE_NOTE = { rpc: '链原生 RPC 实测', 'static+probe': '静态配置 + 逐节点 TCP 探活', sim: '进程内模拟链' };
+  var SOURCE_NOTE = { rpc: '链上实时实测', 'static+probe': '登记信息 + 在线探活', sim: '模拟链环境' };
   var lastChain = {};   /* portal → 最近选中链（路由重渲染后保持；仅内存） */
 
   function card(title) {
@@ -56,7 +56,7 @@
      逻辑逐字不变。 */
   async function queryTxInto(slot, chain, txId) {
     slot.innerHTML = '';
-    slot.append(h('div', { class: 'p-empty' }, '⏳ explorer/tx 直查中…'));
+    slot.append(h('div', { class: 'p-empty' }, '⏳ 链上直查中…'));
     var r = await API.call('/api/explorer/tx', { chain: chain, tx_id: txId });
     if (!slot.isConnected) return;
     slot.innerHTML = '';
@@ -72,7 +72,7 @@
       modes: {}
     };
 
-    var SUB = '节点情况 · 块浏览 · 链上数据追踪 —— 四链实时数据（explorer/* + crosschain/list），能力缺口如实降级（code=2005），绝不拼造';
+    var SUB = '节点情况 · 块浏览 · 链上数据追踪 —— 四链实时数据，能力缺口如实降级展示，绝不拼造';
     if (portal === 'op') SUB += '。本端聚焦：任务申请 / 飞行许可跨链留痕';
     if (portal === 'rg') SUB += '。监管端：跨链存证详情中 CHAINMAKER 监管中继段高亮';
     if (portal === 'ct') SUB += '。证照中心端：默认深钻 IRITA 证照链';
@@ -127,9 +127,9 @@
     }
 
     /* ---------- ① 节点情况 ---------- */
-    var cardBox = h('div', { class: 'd-cxv-chains' }, h('div', { class: 'p-empty' }, '⏳ explorer/overview 加载中…'));
+    var cardBox = h('div', { class: 'd-cxv-chains' }, h('div', { class: 'p-empty' }, '⏳ 链总览加载中…'));
     var nodesBox = h('div', {}, h('div', { class: 'p-empty' }, '等待总览加载…'));
-    var zone1 = card('① 节点情况 · explorer/overview + explorer/nodes（点击链卡选中链，驱动节点表与块浏览）',
+    var zone1 = card('① 节点情况（点击链卡选中链，联动节点表与块浏览）',
       cardBox, nodesBox);
 
     async function loadOverview() {
@@ -147,7 +147,7 @@
       state.modes = {};
       chains.forEach(function (c) { state.modes[c.chain] = c.mode; });
       if (!chains.length) {
-        cardBox.append(P.empty('overview 返回 0 链（如实展示，绝不虚构链卡）'));
+        cardBox.append(P.empty('链总览返回 0 条链（如实展示，绝不虚构链卡）'));
         fillSelects(null);
         return;
       }
@@ -167,19 +167,19 @@
 
     async function loadNodes(box, chain) {
       box.innerHTML = '';
-      box.append(h('div', { class: 'p-empty' }, '⏳ explorer/nodes 查询中…'));
+      box.append(h('div', { class: 'p-empty' }, '⏳ 节点查询中…'));
       var r = await API.call('/api/explorer/nodes', { chain: chain });
       if (!box.isConnected) return;
       box.innerHTML = '';
       box.append(h('div', { class: 'd-cxv-zone-head' }, P.chainTag(chain),
-        h('span', { class: 'd-small d-muted' }, '节点列表 explorer/nodes（source 数据源如实标注）')),
+        h('span', { class: 'd-small d-muted' }, '节点列表（数据来源如实标注）')),
         P.metaLine(r));
       if (window.CXV.SHARED.isDegrade(r)) { box.append(degradeCard(r, chain, '节点查询')); return; }
       if (!r.ok) { box.append(P.errCard(r)); return; }
       var nodes = (r.data && r.data.nodes) || [];
       if (!nodes.length) { box.append(P.empty('该链未返回节点（如实展示，绝不虚构节点）')); return; }
       box.append(h('div', { class: 'p-tbl-wrap' }, h('table', { class: 'p-tbl' },
-        h('thead', {}, h('tr', {}, ['节点名', '角色', '地址', '在线', '数据来源 source'].map(function (t) { return h('th', {}, t); }))),
+        h('thead', {}, h('tr', {}, ['节点名', '角色', '地址', '在线', '数据来源'].map(function (t) { return h('th', {}, t); }))),
         h('tbody', {}, nodes.map(function (n) {
           return h('tr', {},
             h('td', { class: 'p-mono' }, n.name || '—'),
@@ -189,7 +189,7 @@
             h('td', {}, h('span', { class: 'p-mono', title: SOURCE_NOTE[n.source] || '未登记来源（原值如实展示）' }, n.source || '—')));
         })))));
       box.append(h('p', { class: 'd-cxv-smallprint' },
-        'source：rpc=链原生 RPC 实测 · static+probe=静态配置+逐节点探活 · sim=进程内模拟——绝不以仿真冒充真实链数据。'));
+        '数据来源标注：rpc=链上实时实测 · static+probe=登记信息+在线探活 · sim=模拟链环境——绝不以模拟数据冒充真实链数据。'));
     }
 
     /* ---------- ② 块浏览 ---------- */
@@ -197,7 +197,7 @@
     var z2Tag = h('span', {});
     var heightEl = h('b', { class: 'p-mono' }, '当前高度 —');
     var blocksBox = h('div', {}, h('div', { class: 'p-empty' }, '等待总览加载…'));
-    var zone2 = card('② 块浏览 · explorer/blocks（最近 20 · 新→旧 · 行点击块详情，tx 点击链上直查）',
+    var zone2 = card('② 块浏览（最近 20 块 · 新→旧 · 点击行查看块详情，点击交易链上直查）',
       h('div', { class: 'd-cxv-zone-head' }, z2Sel, z2Tag, heightEl,
         h('button', {
           class: 'p-btn p-btn-sm',
@@ -207,7 +207,7 @@
 
     async function loadBlocks(box, hEl, chain, mode) {
       box.innerHTML = '';
-      box.append(h('div', { class: 'p-empty' }, '⏳ explorer/blocks 查询中…'));
+      box.append(h('div', { class: 'p-empty' }, '⏳ 区块查询中…'));
       var r = await API.call('/api/explorer/blocks', { chain: chain, limit: 20 });
       if (!box.isConnected) return;
       box.innerHTML = '';
@@ -217,7 +217,7 @@
       hEl.textContent = '当前高度 ' + String((r.data && r.data.height) ?? '—');
       var blocks = (r.data && r.data.blocks) || [];
       if (!blocks.length) {
-        box.append(P.empty('该链暂无块记录（sim 链在业务写入后产生块；real 链以 RPC 实际返回为准——空态如实，绝不虚构）'));
+        box.append(P.empty('该链暂无块记录（空态如实展示，绝不虚构）'));
         return;
       }
       box.append(h('div', { class: 'p-tbl-wrap' }, h('table', { class: 'p-tbl' },
@@ -225,7 +225,7 @@
           h('th', { class: 'num' }, '高度'), h('th', {}, '块哈希'), h('th', {}, '出块时间'),
           h('th', { class: 'num' }, '交易数'), h('th', {}, '出块者'))),
         h('tbody', {}, blocks.map(function (b) {
-          return h('tr', { class: 'clickable', title: '点击查看块详情 explorer/block', onClick: function () { window.CXV.SHARED.openBlock(chain, b.height, mode); } },
+          return h('tr', { class: 'clickable', title: '点击查看块详情', onClick: function () { window.CXV.SHARED.openBlock(chain, b.height, mode); } },
             h('td', { class: 'num p-mono' }, String(b.height ?? '—')),
             h('td', { class: 'p-mono', title: b.hash || '' }, UI.trunc(b.hash || '—', 24)),
             h('td', {}, b.time || '—'),
@@ -242,15 +242,15 @@
       recs: [], total: 0, page: 1, pageSize: 10
     };
     var metaSlot = h('div', {});
-    var rowsBox = h('div', {}, h('div', { class: 'p-empty' }, '⏳ crosschain/list 查询中…'));
+    var rowsBox = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 链上台账查询中…'));
     var pagerBox = h('div', { class: 'd-cxv-pager' });
     var windowNote = h('span', {}, '窗口：—');
 
-    var statusSel = h('select', { title: '服务端过滤（status）', onChange: function () { st.status = statusSel.value; loadTrace(); } },
+    var statusSel = h('select', { title: '服务端状态过滤', onChange: function () { st.status = statusSel.value; loadTrace(); } },
       [h('option', { value: '' }, '全部状态（服务端）')].concat(
         window.CXV.SHARED.CX_STATUSES.map(function (s) { return h('option', { value: s }, s); })));
     var bizInp = h('input', {
-      type: 'text', placeholder: '业务单号（客户端窗口筛选）', title: window.CXV.SMALL_PRINT,
+      type: 'text', placeholder: '业务单号（窗口内筛选）', title: window.CXV.SMALL_PRINT,
       onInput: function () { st.biz = bizInp.value; st.page = 1; renderTable(); }
     });
     var filterBar = h('div', { class: 'd-cxv-filterbar' },
@@ -260,7 +260,7 @@
 
     /* 类型 = 客户端筛选芯片（icon+文字：☑/☐ 永不仅靠颜色）；op 端默认聚焦 defaultMsgTypes */
     var chipSyncs = [];
-    var chipRow = h('div', { class: 'd-cxv-chips' }, h('span', { class: 'd-small d-muted' }, '类型（客户端筛选）：'));
+    var chipRow = h('div', { class: 'd-cxv-chips' }, h('span', { class: 'd-small d-muted' }, '类型（窗口内筛选）：'));
     window.CXV.SHARED.MSG_TYPES.forEach(function (t) {
       var b = h('button', {
         type: 'button', class: 'd-cxv-chip', title: window.CXV.SMALL_PRINT,
@@ -280,13 +280,13 @@
     });
     if (opts.defaultMsgTypes && opts.defaultMsgTypes.length) {
       chipRow.append(h('span', { class: 'd-small d-muted' },
-        '本端默认聚焦 ' + opts.defaultMsgTypes.join(' / ') + '（客户端筛选，点选芯片可调整）'));
+        '本端默认聚焦 ' + opts.defaultMsgTypes.join(' / ') + '（点选芯片可调整）'));
     }
     var smallPrint = h('p', { class: 'd-cxv-smallprint' }, window.CXV.SMALL_PRINT, ' · ', windowNote);
 
     async function loadTrace() {
       rowsBox.innerHTML = '';
-      rowsBox.append(h('div', { class: 'p-empty' }, '⏳ crosschain/list 查询中…'));
+      rowsBox.append(h('div', { class: 'p-empty' }, '⏳ 链上台账查询中…'));
       pagerBox.innerHTML = '';
       var body = { page: 1, page_size: 200 };
       if (st.status) body.status = st.status;
@@ -299,7 +299,7 @@
       st.total = (r.data && r.data.total) || 0;
       st.recs = (r.data && r.data.records) || [];
       st.page = 1;
-      windowNote.textContent = '窗口：台账总量 ' + st.total + ' 条，本次取最近 ' + st.recs.length + ' 条（page_size=200）';
+      windowNote.textContent = '窗口：台账总量 ' + st.total + ' 条，本次取最近 ' + st.recs.length + ' 条';
       renderTable();
     }
     function resetTrace() {
@@ -324,7 +324,7 @@
       var recs = traceFiltered();
       if (!recs.length) {
         rowsBox.append(P.empty(st.recs.length
-          ? '窗口内无符合当前筛选的跨链留痕（客户端筛选条件见上；空态如实，绝不虚构记录）'
+          ? '窗口内无符合当前筛选的跨链留痕（空态如实，绝不虚构记录）'
           : '暂无跨链留痕 —— 业务操作（登记/申请/签发等）产生跨链中继后自动出现'));
         return;
       }
@@ -332,10 +332,10 @@
       if (st.page > pages) st.page = pages;
       var view = recs.slice((st.page - 1) * st.pageSize, st.page * st.pageSize);
       rowsBox.append(h('div', { class: 'p-tbl-wrap' }, h('table', { class: 'p-tbl' },
-        h('thead', {}, h('tr', {}, ['跨链号 cross_tx_id', '类型', '业务单号', '链路', '状态', '验签', '时延', '创建时间'].map(function (t) { return h('th', {}, t); }))),
+        h('thead', {}, h('tr', {}, ['跨链号', '类型', '业务单号', '链路', '状态', '验签', '时延', '创建时间'].map(function (t) { return h('th', {}, t); }))),
         h('tbody', {}, view.map(function (x) {
           return h('tr', {
-            class: 'clickable', title: '点击打开四段存证详情 openCxDetail',
+            class: 'clickable', title: '点击打开四段存证详情',
             onClick: function () { window.CXV.SHARED.openCx(x.cross_tx_id, portal); }
           },
             h('td', { class: 'p-mono', title: x.cross_tx_id }, UI.trunc(x.cross_tx_id, 18)),
@@ -357,7 +357,7 @@
     var dqSel = buildChainSelect(null);
     var dqInp = h('input', { type: 'text', placeholder: '粘贴链上 TxID（可从块详情交易列表或跨链存证段复制）' });
     var dqResult = h('div', {});
-    var dqBtn = h('button', { class: 'p-btn p-btn-sm', onClick: runDq }, '直查 explorer/tx');
+    var dqBtn = h('button', { class: 'p-btn p-btn-sm', onClick: runDq }, '链上直查');
     async function runDq() {
       var chain = dqSel.value, tx = dqInp.value.trim();
       if (!chain || !tx) { UI.toast('请选择链并输入 TxID', 'err'); return; }
@@ -365,10 +365,10 @@
       try { await queryTxInto(dqResult, chain, tx); } finally { dqBtn.disabled = false; }
     }
 
-    var zone3 = card('③ 链上数据追踪 · crosschain/list + explorer/tx 直查',
+    var zone3 = card('③ 链上数据追踪（含链上直查）',
       filterBar, chipRow, smallPrint,
       h('div', {}, metaSlot, rowsBox, pagerBox),
-      h('div', { class: 'p-drawer-sec' }, '链上直查（链选 + TxID → explorer/tx；不存在或查询失败 → 6002 如实上报）'),
+      h('div', { class: 'p-drawer-sec' }, '链上直查（选择链并粘贴交易编号；查不到即如实报告，绝不虚构回执）'),
       h('div', { class: 'd-cxv-filterbar' }, dqSel, dqInp, dqBtn),
       dqResult);
 

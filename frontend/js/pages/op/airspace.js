@@ -22,7 +22,7 @@
 
     root.append(P.pageHead({
       title: '空域查询',
-      sub: '走廊状态 · 航段详情 · 网络节点一张图 —— 数据源 route/list + topology/get' }));
+      sub: '走廊状态 · 航段详情 · 网络节点一张图' }));
     var nodesOn = true;   /* 网络节点图层开关（spec §5.1） */
     var legend = legendBar();
     var nodesChk = h('input', { type: 'checkbox', checked: true,
@@ -36,16 +36,16 @@
     var listBox = h('div', { class: 'd-col' }, P.empty('尚未查询'));
     var countEl = h('span', { class: 'd-strong' }, '—');
     var f = P.form([
-      { name: 'zone', label: '空域分区', type: 'text', placeholder: 'Zone-A / Zone-B（留空=全部）' },
+      { name: 'zone', label: '空域分区', type: 'text', placeholder: 'Zone-A / Zone-B（留空查全部）' },
       { name: 'corridor_status', label: '走廊状态', type: 'select',
         options: [['', '全部'], ['OPEN', 'OPEN · 开放走廊'], ['RESTRICTED', 'RESTRICTED · 限制走廊'], ['CLOSED', 'CLOSED · 关闭走廊']] }
     ]);
 
     root.append(h('div', { class: 'd-grid-side' },
       h('div', { class: 'd-col' }, mapEl,
-        h('div', { class: 'd-map-hint' }, '🗺️ 点击航线查看详情并高亮。走廊着色：绿=开放 OPEN · 琥珀=限制 RESTRICTED · 红=关闭 CLOSED。')),
+        h('div', { class: 'd-map-hint' }, '🗺️ 点击航线查看详情并高亮。走廊着色：绿色为开放 OPEN · 琥珀色为限制 RESTRICTED · 红色为关闭 CLOSED。')),
       h('div', { class: 'd-col' },
-        card('查询条件 route/list（服务端过滤）', f.root,
+        card('查询条件', f.root,
           P.actionBar([
             { label: '查询空域', kind: 'primary', run: doQuery },
             { label: '重置', run: function () { f.set('zone', ''); f.set('corridor_status', ''); doQuery(); } }]),
@@ -63,7 +63,7 @@
       if (b.zone) body.zone = b.zone;
       if (b.corridor_status) body.corridor_status = b.corridor_status;
       listBox.innerHTML = '';
-      listBox.append(h('div', { class: 'p-empty' }, '⏳ route/list 查询中…'));
+      listBox.append(h('div', { class: 'p-empty' }, '⏳ 空域航段查询中…'));
       var r = await API.call('/api/route/list', body);
       if (!listBox.isConnected) return;
       listBox.innerHTML = '';

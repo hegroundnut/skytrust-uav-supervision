@@ -28,7 +28,7 @@
       idbarEl.append(
         h('span', { class: 'd-idbar-label' }, '当前身份'),
         h('span', { class: 'd-idchip' }, kind + ' · ' + name + ' · ' + s.id),
-        h('span', { class: 'd-small d-muted' }, '（登记/选择即替换；清空请用顶栏 chip 条「✕ 清空」）'));
+        h('span', { class: 'd-small d-muted' }, '（登记或选定后自动更新，如需清除请点击顶栏「✕ 清空」）'));
     } else {
       idbarEl.append(
         h('span', { class: 'd-idbar-label' }, '当前身份'),
@@ -75,10 +75,10 @@
         placeholder: '如：武汉应急医疗运输有限公司（演示）' },
       { name: 'id_number', label: '证件号码（模拟）', type: 'text', required: true,
         placeholder: '企业 91420100DEMO001X / 个人 420100199001010011',
-        hint: '红线：仅收取演示用模拟证件号（格式示意统一社会信用代码/身份证号），系统不采集、不存储任何真实证件信息' },
+        hint: '仅收取演示用模拟证件号，系统不采集、不存储任何真实证件信息' },
       { name: 'contact', label: '联系方式', type: 'text', placeholder: '如 027-88880001（可选）' }
     ]);
-    box.append(card('主体登记 realname/register', f.root,
+    box.append(card('主体登记', f.root,
       P.actionBar([{ label: '提交登记', kind: 'primary', run: P.runOp({
         path: '/api/realname/register',
         body: function () { return PORTAL.need(f.read(), 'subject_type', 'name', 'id_number'); },
@@ -86,7 +86,7 @@
         render: function (d) { return subjectCert(d.subject); },   /* {subject:{…}} 包裹（§8） */
         note: { kind: 'OPERATOR', id: function (d) { return d.subject.subject_id; },
           extra: function (d) { return { name: d.subject.name, subject_type: d.subject.subject_type }; } },
-        onOk: function () { drawIdbar(); UI.toast('已设为当前身份，全端预填'); }
+        onOk: function () { drawIdbar(); UI.toast('已设为当前身份，相关信息将自动填写'); }
       }) }]),
       rp.root));
   }
@@ -118,20 +118,20 @@
         placeholder: '如：医疗运输操控员（演示）' },
       { name: 'id_number', label: '证件号码（模拟）', type: 'text', required: true,
         placeholder: '如 420100199203054321',
-        hint: '红线：仅收取演示用模拟证件号，系统不采集、不存储任何真实证件信息' },
+        hint: '仅收取演示用模拟证件号，系统不采集、不存储任何真实证件信息' },
       { name: 'category', label: '航空器类别', type: 'select', required: true, value: '垂直起降',
         options: ['多旋翼', '固定翼', '垂直起降'] }
     ]);
-    box.append(card('执照申领 pilot/apply（即申即发 · SM9 局方签名）', f.root,
+    box.append(card('执照申领（即申即发）', f.root,
       P.actionBar([{ label: '提交执照申领', kind: 'primary', run: P.runOp({
         path: '/api/pilot/apply',
         body: function () { return PORTAL.need(f.read(), 'name', 'id_number', 'category'); },
-        rp: rp, successText: '执照已即申即发（ISSUED · 失效时间=签发+2 年）',
+        rp: rp, successText: '执照已即申即发（ISSUED · 有效期两年）',
         render: function (d) { return licenseCert(d.license); },   /* {license} 包裹（§8） */
         onOk: function () { if (tbl) tbl.reload(); }               /* pilot 域无 STORE 落点 */
       }) }]),
       rp.root,
-      h('p', { class: 'd-small d-muted' }, '「飞行活动申请」页建任务时可关联本执照（pilot_license_id）；管理当局「登记与资质」页可对本执照做 SM9 验签（签发身份 SM9-ID-FISCO-ADMIN）。')));
+      h('p', { class: 'd-small d-muted' }, '「飞行活动申请」页建任务时可关联本执照；管理当局「登记与资质」页可对本执照进行国密验签。')));
     tbl = P.dataTable({
       endpoint: '/api/pilot/list', pageSize: 5,
       filters: [{ name: 'category', label: '类别', type: 'select',
@@ -152,7 +152,7 @@
       onRow: function (r) { openLicense(r.license_id, tbl); },
       emptyText: '暂无执照 —— 在上方提交申领后即发'
     });
-    box.append(card('执照台账 pilot/list', tbl));
+    box.append(card('执照台账', tbl));
   }
 
   /* 执照凭证卡（d-cert 政务凭证样式；申领回执与详情抽屉共用） */
@@ -177,7 +177,7 @@
   }
 
   async function openLicense(lid, tbl) {
-    var d = P.drawer('操控员执照 ' + lid, h('div', { class: 'p-empty' }, '⏳ pilot/query 查询中…'));
+    var d = P.drawer('操控员执照 ' + lid, h('div', { class: 'p-empty' }, '⏳ 执照详情查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/pilot/query', { license_id: lid });
     body.innerHTML = '';
@@ -199,7 +199,7 @@
         { title: '登记时间', key: 'created_at' },
         { title: '操作', render: function (r) {
             return h('span', { class: 'd-row' },
-              h('button', { class: 'p-btn p-btn-sm', title: '存入当前身份，全端预填',
+              h('button', { class: 'p-btn p-btn-sm', title: '设为当前身份，办理时自动填写',
                 onClick: function (e) { e.stopPropagation(); pick(r); } }, '选为当前身份'),
               h('button', { class: 'p-btn p-btn-sm p-btn-ghost',
                 onClick: function (e) { e.stopPropagation(); openSubject(r.subject_id, null); } }, '详情'));
@@ -217,7 +217,7 @@
   }
 
   async function openSubject(sid, tbl) {
-    var d = P.drawer('实名主体 ' + sid, h('div', { class: 'p-empty' }, '⏳ realname/query 查询中…'));
+    var d = P.drawer('实名主体 ' + sid, h('div', { class: 'p-empty' }, '⏳ 主体详情查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/realname/query', { subject_id: sid });
     body.innerHTML = '';

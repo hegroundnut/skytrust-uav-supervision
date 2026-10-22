@@ -197,7 +197,7 @@
         h('code', { class: 'mono' }, cx.cross_tx_id),
         statusBadge(cx.status),
         h('span', { class: 'small muted' }, cx.message_type, ' · ', cx.latency_ms + 'ms',
-          ' · verify=', cx.verify_result || '—', ' · policy=', cx.policy_result || '—')),
+          ' · 验签=', cx.verify_result || '—', ' · 策略=', cx.policy_result || '—')),
       h('div', { class: 'cx-flow' },
         seg('① 源链上链', cx.source_chain, cx.source_chain_tx_id),
         seg('② 监管链签收', 'chainmaker', cx.reg_receive_tx_id),
@@ -334,7 +334,7 @@
                  : h('span', { class: 'badge critical' }, h('i', { class: 'bi' }, '✕'), 'code=' + r.code),
             h('code', { class: 'mono' }, 'POST ' + r.path),
             h('span', { class: 'rc-ms' }, r.latencyMs + 'ms')),
-          why ? h('div', { class: 'run-why' }, h('b', {}, r.ok ? '✔ 成功解说 · ' : expected ? '◈ 理论失败解说 · ' : '✖ 失败解说 · '), why) : null,
+          why ? h('div', { class: 'run-why' }, h('b', {}, r.ok ? '✔ 成功解说 · ' : expected ? '◈ 设计内拒绝解说 · ' : '✖ 失败解说 · '), why) : null,
           chips.length ? h('div', { class: 'run-sum' }, chips.map(([k, v]) =>
             h('span', { class: 'chip' }, h('b', {}, k), '=', v))) : null,
           h('details', {},
@@ -369,7 +369,7 @@
             const av = tData && typeof tData === 'object' ? tData[k] : undefined;
             if (av !== v) { good = false; autoNote = '预期 ' + k + '=' + v + '，实际 ' + av; break; }
           }
-          if (good) autoNote = '符合理论预期 ' + Object.entries(S.expectData).map(([k, v]) => k + '=' + v).join(' ');
+          if (good) autoNote = '符合预期 ' + Object.entries(S.expectData).map(([k, v]) => k + '=' + v).join(' ');
         }
         if (good && S.expectFn && !S.expectFn(tData)) { good = false; autoNote = '返回未达预期结论'; }
       }

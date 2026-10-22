@@ -38,7 +38,7 @@
   /* Merkle 标注诚实门（裁决 D）：irita 且 overview 报告 mode=real 才允许出现；sim/未知 → null。 */
   function merkleNote(chain, mode) {
     if (chain !== 'irita' || mode !== 'real') return null;
-    return 'Merkle 证明可用：real 传输读路径经 /abci_query prove=true 返回 ics23 双段证明（记录包含证明 + 多 store 提交证明）';
+    return '提供国密链上 inclusion 证明（Merkle 证明），可独立验证记录真实性';
   }
   /* 2005 降级卡内容（裁决 A：brief 旧字样 5003 一律按 2005 落地）：后端 message 逐字直出。
      fisco 块类怪癖注记已随 §12.11 复核移除（SDK 通道块查询可用，2005 不再是 fisco 常态）。 */
@@ -46,7 +46,7 @@
     var lines = [];
     if (r && r.message) lines.push('后端原文：' + r.message);
     lines.push('能力缺口如实降级——绝不拼造块/节点/交易数据。');
-    return { title: '⚠ 能力降级 code=2005 · 该链 RPC 不支持' + what, lines: lines };
+    return { title: '⚠ 能力降级 code=2005 · 该链暂不支持' + what, lines: lines };
   }
   function isDegrade(r) { return !!(r && r.code === 2005); }
   /* 同步注记（Task 6 controller-authorized）：本函数在 js/cxv/zones.js 有一份逐字孪生副本
@@ -60,8 +60,8 @@
 
   /* ---------- 模式徽章（icon+文字，永不单靠颜色） ---------- */
   function modeBadge(mode) {
-    if (mode === 'sim') return h('span', { class: 'p-badge p-tone-info', title: 'mode=sim：进程内模拟链（后端按 Resettable 能力判定）' }, '◈ SIM 模拟链');
-    if (mode === 'real') return h('span', { class: 'p-badge p-tone-good', title: 'mode=real：真实链 SDK/RPC 传输' }, '● REAL 真实链');
+    if (mode === 'sim') return h('span', { class: 'p-badge p-tone-info', title: '模拟链模式' }, '◈ SIM 模拟链');
+    if (mode === 'real') return h('span', { class: 'p-badge p-tone-good', title: '真实链模式' }, '● REAL 真实链');
     return h('span', { class: 'p-badge p-tone-neutral' }, '· mode=' + String(mode ?? '—'));
   }
 
@@ -71,7 +71,7 @@
       type: 'button',
       class: 'd-cxv-chain-card' + (sel ? ' sel' : ''),
       'data-chain': c.chain,
-      title: '选中 ' + c.chain + '：驱动节点表与块浏览。node_count/block_height 来自实时探测——0 = 能力缺失或探测失败（后端如实归 0，前端不猜测）',
+      title: '选中该链，联动节点表与块浏览。块高与节点数来自实时探测——0 表示能力缺失或探测失败，如实呈现、不做推测',
       onClick: function () { onPick(c.chain); }
     },
       h('div', { class: 'd-cxv-chain-name' }, c.name || c.chain),
@@ -87,7 +87,7 @@
 
   /* ---------- ② 块详情抽屉 ---------- */
   async function openBlock(chain, height, mode) {
-    var d = P.drawer('块详情 ' + chain + ' #' + height, h('div', { class: 'p-empty' }, '⏳ explorer/block 查询中…'));
+    var d = P.drawer('块详情 ' + chain + ' #' + height, h('div', { class: 'p-empty' }, '⏳ 块详情查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/explorer/block', { chain: chain, height: height });
     if (!body.isConnected) return;                     /* 抽屉已关闭 */
@@ -109,7 +109,7 @@
     var txs = b.tx_ids || [];
     var txResult = h('div', {});
     body.append(
-      h('div', { class: 'p-drawer-sec' }, '交易列表（' + txs.length + ' 笔 · 点击直查链上收据 explorer/tx）'),
+      h('div', { class: 'p-drawer-sec' }, '交易列表（' + txs.length + ' 笔 · 点击直查链上收据）'),
       txs.length
         ? h('div', {}, txs.map(function (tx) {
             return h('button', {
@@ -131,7 +131,7 @@
       ['链', P.chainTag(chain)],
       ['TxID', h('code', { class: 'p-mono' }, tx.tx_id || '—')],
       ['所在块高', String(tx.block_num ?? '—')],
-      ['状态（链原生收据值，原样展示不转译）', P.badge(tx.status ?? '—')],
+      ['状态（链上原值，原样展示）', P.badge(tx.status ?? '—')],
       ['时间戳', tx.timestamp || '—']
     ]), h('details', { class: 'p-rawjson' }, h('summary', {}, '原始响应 JSON'), UI.jsonBlock(r.raw)));
     return wrap;
@@ -140,7 +140,7 @@
      （三区侧直查表单 runDq 用）——任一侧修改必须同步另一侧，否则静默分叉。 */
   async function queryTxInto(slot, chain, txId) {
     slot.innerHTML = '';
-    slot.append(h('div', { class: 'p-empty' }, '⏳ explorer/tx 直查中…'));
+    slot.append(h('div', { class: 'p-empty' }, '⏳ 链上直查中…'));
     var r = await API.call('/api/explorer/tx', { chain: chain, tx_id: txId });
     if (!slot.isConnected) return;
     slot.innerHTML = '';

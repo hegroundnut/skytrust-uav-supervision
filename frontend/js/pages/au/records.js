@@ -20,10 +20,10 @@
     /* ① review/query 审核记录 */
     var rpR = P.resultPanel();
     var fR = P.form([
-      { name: 'application_id', label: '申请号', type: 'text', placeholder: 'APP-…（顶栏 chips 可复制）' },
-      { name: 'review_id', label: '审核号', type: 'text', placeholder: 'REV-…（两键至少填一个）' }
+      { name: 'application_id', label: '申请号', type: 'text', placeholder: 'APP-…（可从顶栏复制）' },
+      { name: 'review_id', label: '审核号', type: 'text', placeholder: 'REV-…（与申请号至少填写一项）' }
     ]);
-    root.append(card('审核记录 review/query（无分页回显，review_time ASC）', fR.root,
+    root.append(card('审核记录', fR.root,
       P.actionBar([{ label: '查询审核记录', kind: 'primary', run: P.runOp({
         path: '/api/review/query',
         body: function () {
@@ -62,7 +62,7 @@
       ],
       columns: [
         { title: 'cross_tx_id', render: function (r) { return UI.trunc(r.cross_tx_id, 20); }, mono: true },
-        { title: '审核号（business_id）', render: function (r) { return UI.trunc(r.business_id, 26); }, mono: true },
+        { title: '审核号', render: function (r) { return UI.trunc(r.business_id, 26); }, mono: true },
         { title: '回传路由', render: function (r) {
           return h('span', {}, P.chainTag(r.source_chain), ' → ', P.chainTag(r.final_target_chain));
         } },
@@ -77,7 +77,7 @@
       onRow: function (r) { P.openCxDetail(r.cross_tx_id); },
       emptyText: '暂无裁决回传记录（提交裁决后自动出现）'
     });
-    root.append(card('裁决跨链回传流水 crosschain/list（MISSION_REVIEW_RESULT；点行开四段存证）', tblC));
+    root.append(card('裁决跨链回传流水（MISSION_REVIEW_RESULT · 点击行查看四段存证）', tblC));
   }
 
   AU.records = { render: render };

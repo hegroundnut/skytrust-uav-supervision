@@ -38,7 +38,7 @@
     var slotM = STORE.get('MISSION'), slotAz = STORE.get('AUTHORIZATION');
     root.append(P.pageHead({
       title: '授权中心',
-      sub: '监管授权申请 → 审批上链（APPROVE 上 ChainMaker 存证 / DENY 本地不上链）→ 持授权号到「密文核验」开箱' }));
+      sub: '监管授权申请 → 审批裁决 · 通过即上链存证 → 持授权号到「密文核验」开箱' }));
 
     /* --- 授权申请 --- */
     var rpAp = P.resultPanel();
@@ -46,23 +46,23 @@
       { name: 'regulator_id', label: '监管方', type: 'text', required: true, value: 'REG-01' },
       { name: 'scope', label: '授权范围（多选，至少 1 项）', type: 'multi', required: true,
         options: SCOPES, value: ['ROUTE', 'PAYLOAD'],
-        hint: '重复元素→6002；核验开箱需含 MISSION（明文视图）、申报轨迹需 ROUTE、申报载荷需 PAYLOAD' },
+        hint: '核验开箱需含 MISSION（明文视图）、申报轨迹需 ROUTE、申报载荷需 PAYLOAD' },
       { name: 'target_type', label: '目标类型', type: 'select', required: true, value: 'MISSION',
         options: ['MISSION', 'UAV', 'ALERT'] },
       { name: 'target_id', label: '目标单号', type: 'text', required: true,
-        value: slotM ? slotM.id : '', placeholder: 'MISSION-2026-…（MISSION 上下文 chip 自动预填）' },
+        value: slotM ? slotM.id : '', placeholder: 'MISSION-2026-…（可自动预填）' },
       { name: 'authorization_id', label: '授权号（可选）', type: 'text',
         placeholder: '留空自动生成 AUTH-…' },
       { name: 'reason', label: '申请理由', type: 'textarea', rows: 2,
         placeholder: '如：核查告警 ALERT-2026-001 涉及的医疗运输任务',
         hint: 'ALERT 目标可省；建议始终填写（进审计）' },
       { name: 'valid_from', label: '生效时间', type: 'text', value: UI.datetimeLocal(-60),
-        hint: '相对时间惯例：当前−1 小时（Global Constraints #17）' },
+        hint: '默认预填：当前时间 −1 小时' },
       { name: 'valid_to', label: '失效时间', type: 'text', value: UI.datetimeLocal(240),
-        hint: '当前+4 小时；窗口外核验 → 5004（惰性迁 EXPIRED）' }
+        hint: '默认预填：当前时间 +4 小时；有效期外不可核验，授权将转为 EXPIRED' }
     ]);
     var fRv = null;   /* 审批表单前向声明（申请成功回调预填） */
-    var applyCard = card('授权申请 authorize/apply',
+    var applyCard = card('授权申请',
       fAp.root,
       P.actionBar([{ label: '提交授权申请', kind: 'primary', run: P.runOp({
         path: '/api/authorize/apply',
@@ -76,7 +76,7 @@
           });
           return body;
         },
-        rp: rpAp, successText: '授权申请已提交（status=PENDING，audit_hash 预生成）',
+        rp: rpAp, successText: '授权申请已提交（状态 PENDING，审计摘要已预生成）',
         render: function (d) { return authKv(d); },
         note: { kind: 'AUTHORIZATION', id: function (d) { return d.authorization_id; },
           extra: function (d) { return { target_id: d.target_id }; } },
@@ -94,11 +94,11 @@
       { name: 'reviewer_id', label: '审批人', type: 'text', required: true, value: 'REG-ADMIN' },
       { name: 'comment', label: '批注', type: 'textarea', rows: 2, placeholder: '如：情况属实，同意开箱核验' }
     ]);
-    var reviewCard = card('授权审批 authorize/review（复审已裁决授权 → 6002；上链失败 → 2001 停留 PENDING 可同单重试）',
+    var reviewCard = card('授权审批（已裁决的授权不可复审；上链失败将停留 PENDING，支持重试）',
       fRv.root,
       P.actionBar([{ label: '裁决', kind: 'primary',
         confirm: { title: '授权审批',
-          msg: 'APPROVE 将上链存证（ChainMaker），不可撤销；DENY 仅本地记录不上链。',
+          msg: 'APPROVE 将上链存证，不可撤销；DENY 仅本地记录，不上链。',
           ok: '确认裁决' },
         run: P.runOp({
           path: '/api/authorize/review',
@@ -118,12 +118,12 @@
                 value: denied ? '✕ DENIED（不上链）' : '✓ AUTHORIZED（已上链）',
                 tone: denied ? 'critical' : 'good' }]),
               authKv(d.auth),
-              h('div', { class: 'd-section' }, '审计留痕（RegAudit）'),
+              h('div', { class: 'd-section' }, '审计留痕'),
               P.kv([
                 ['审计号', h('code', { class: 'p-mono' }, d.audit.audit_id)],
                 ['动作', P.badge(d.audit.action)],
                 ['审批人', d.audit.operator_id],
-                ['目标（target 单键）', h('code', { class: 'p-mono' }, d.audit.target || '—')],
+                ['目标', h('code', { class: 'p-mono' }, d.audit.target || '—')],
                 ['裁决原文', h('code', { class: 'p-mono' }, UI.trunc(String(d.audit.result || '—'), 60))],
                 ['链上存证', d.chain_tx_id
                   ? h('span', { class: 'd-row' }, P.chainTag('chainmaker'),
@@ -138,12 +138,12 @@
     root.append(h('div', { class: 'd-grid-2' }, applyCard, reviewCard));
     root.append(card('授权生命周期',
       P.kv([
-        ['PENDING', '已申请待裁决（audit_hash 已预生成）'],
-        ['AUTHORIZED', 'APPROVE 裁决 + ChainMaker 上链存证（chain_tx_id 留痕）'],
-        ['DENIED', 'DENY 裁决——本地记录，不上链（chain_tx_id 为空）'],
-        ['EXPIRED', 'valid_to 已过——惰性迁移：下次核验触发 5004 时才落状态']
+        ['PENDING', '已申请，待裁决（审计摘要已预生成）'],
+        ['AUTHORIZED', 'APPROVE 裁决通过，已上链存证留痕'],
+        ['DENIED', 'DENY 裁决——本地留痕，不上链'],
+        ['EXPIRED', '有效期已过，授权失效，不可再用于核验']
       ]),
-      h('p', { class: 'd-small d-muted' }, '拿到 AUTHORIZED 授权号后，到「密文核验」页填 mission_id + authorization_id 开箱；授权范围决定能看到什么：无 MISSION → decrypted_view 为空（未开箱），申报轨迹/载荷需 ROUTE/PAYLOAD 在范围内（否则 5003）。')));
+      h('p', { class: 'd-small d-muted' }, '拿到 AUTHORIZED 授权号后，到「密文核验」页填入任务号与授权号即可开箱；授权范围决定可见内容——无 MISSION 授权则明文不开箱，申报轨迹需 ROUTE、申报载荷需 PAYLOAD 授权。')));
   }
 
   RG.authz = { render: render };

@@ -31,7 +31,7 @@
     var lastSeen = {};    /* 上轮在图无人机（demo/reset 后同步清图标） */
     var busy = false;
 
-    var statsBox = h('div', {}, P.empty('⏳ dashboard/summary 加载中…'));
+    var statsBox = h('div', {}, P.empty('⏳ 监管概览加载中…'));
     var hbarsBox = h('div', {}, P.empty('—'));
     var recentBox = h('div', {}, P.empty('—'));
     var pinBox = h('div', {}, P.empty('点击地图上的告警落点查看详情'));
@@ -42,7 +42,7 @@
 
     root.append(P.pageHead({
       title: '监管驾驶舱',
-      sub: '跨域态势大屏 — 统计带 + 态势真地图（航线/节点/虫洞边/在飞无人机/告警落点）' }));
+      sub: '跨域态势大屏——航线、节点、在飞无人机与告警落点，一屏总览' }));
     root.append(statsBox);
     root.append(h('div', { class: 'd-toolbar' },
       h('label', { class: 'd-small' }, autoEl, ' 自动刷新(5s)'),
@@ -52,10 +52,10 @@
       genEl));
     root.append(h('div', { class: 'd-grid-side' },
       h('div', { class: 'd-col' }, mapEl,
-        h('div', { class: 'd-map-hint' }, '✈️ = 在飞无人机（朝向=遥测 heading）；红虚线 = 虫洞伪造边；红色落点 = 告警（点击→详情卡）。ATTACKER 节点监管端全量可见。自动刷新只拉遥测（轻量）；统计/落点随「立即刷新」更新。无遥测或坐标未设的航空器不画——不猜测。')),
+        h('div', { class: 'd-map-hint' }, '✈️ = 在飞无人机；红虚线 = 虫洞伪造链路；红色落点 = 告警，点击查看详情。ATTACKER 节点监管端全量可见。自动刷新更新在飞无人机位置；统计与告警落点随「立即刷新」更新。暂无遥测数据的航空器不在图上显示。')),
       h('div', { class: 'd-col' },
-        card('告警类型分布 by_type', hbarsBox),
-        card('最近告警 recent_alerts（前 5）', recentBox),
+        card('告警类型分布', hbarsBox),
+        card('最近告警（前 5）', recentBox),
         card('告警落点详情', pinBox))));
     /* --- 能力态势：三大绩效目标能力卡（实时证据 + 一键实验自证，高危实验有门禁）--- */
     root.append(CAPX.section('cockpit'));
@@ -112,7 +112,7 @@
           mx.clear('zones'); mx.clear('routes');
           mx.drawZones(routes);
           mx.drawRoutes(routes, { opacity: 0.8 });
-          if (!routes.length) mx.setEmpty('无航段数据——demo/init 灌种后出现');
+          if (!routes.length) mx.setEmpty('暂无航段数据');
           else mx.clearEmpty();
         }
       }

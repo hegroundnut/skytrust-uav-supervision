@@ -13,7 +13,7 @@
   function render(root) {
     root.append(P.pageHead({
       title: '证照总览',
-      sub: '第四链 IRITA 证照链门户：四链心跳 · 通行证计数 · 待签发任务 —— 数据全部来自实时 API，空台账如实显示 0'
+      sub: '国密证照链门户：四链运行状态 · 证照计数 · 待签发任务 —— 数据实时刷新，空台账如实显示 0'
     }));
     var strip = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 证照总览加载中…'));
     root.append(strip);
@@ -43,12 +43,12 @@
         else if (p.status === 'REVOKED') revoked++;
       });
       cards.push({ label: '有效证照', value: String(valid), tone: valid > 0 ? 'good' : null,
-        sub: 'pass/list · VALID（最近 200 条内，台账共 ' + (passR.data.total || 0) + ' 条）' });
+        sub: 'VALID（最近 200 条内，台账共 ' + (passR.data.total || 0) + ' 条）' });
       cards.push({ label: '已吊销证照', value: String(revoked), tone: revoked > 0 ? 'critical' : null,
-        sub: 'pass/list · REVOKED（最近 200 条内）' });
+        sub: 'REVOKED（最近 200 条内）' });
     } else {
-      cards.push({ label: '有效证照', value: '--', sub: 'pass/list' });
-      cards.push({ label: '已吊销证照', value: '--', sub: 'pass/list' });
+      cards.push({ label: '有效证照', value: '--', sub: '实时数据获取失败' });
+      cards.push({ label: '已吊销证照', value: '--', sub: '实时数据获取失败' });
     }
 
     /* --- 待签发任务：APPROVED 且 pass/list 最近 200 条内无同 mission_id 证照记录 --- */
@@ -62,7 +62,7 @@
       cards.push({ label: '待签发任务', value: String(pending), tone: pending > 0 ? 'warning' : null,
         sub: 'APPROVED 未签发 · 最近 200 条内' });
     } else {
-      cards.push({ label: '待签发任务', value: '--', sub: 'mission/list ⋈ pass/list' });
+      cards.push({ label: '待签发任务', value: '--', sub: '实时数据获取失败' });
     }
 
     strip.append(P.statCards(cards));

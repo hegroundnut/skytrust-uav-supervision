@@ -130,13 +130,13 @@
     var state = { candidates: [], selected: null, okKinds: [] };   /* selected = 候选对象引用；okKinds = 本端查询且成功的 kind */
 
     var pickerBox = h('div', { class: 'd-cxv-jn-picker' },
-      h('div', { class: 'p-empty' }, '⏳ pass/mission/uav list 加载中…'));
+      h('div', { class: 'p-empty' }, '⏳ 业务对象列表加载中…'));
     var metaSlot = h('div', {});
     var jhdrBox = h('div', {});
     var tlBox = h('div', {});
     root.append(h('section', { class: 'p-card d-cxv-jn-sec' },
       h('h3', { class: 'p-card-title' },
-        '业务对象全链旅程 · explorer/journey（选择器 = 三 list 端点实时合并·时间倒序；时间线 = 等宽节点列 + 链色带（CM 中继窄段·非旁路）；节点点击下钻四段存证）'),
+        '业务对象全链旅程（点击节点查看四段存证详情）'),
       pickerBox, metaSlot, jhdrBox, tlBox));
 
     function notify(data) { if (typeof onSelect === 'function') onSelect(data); }
@@ -149,7 +149,7 @@
       dot.style.background = chainVar(src);
       var card = h('button', {
         type: 'button', class: 'd-cxv-jn-card',
-        title: '点击打开该跳四段存证详情 openCxDetail' + (portal === 'rg' ? '（监管端 CHAINMAKER 中继段高亮）' : ''),
+        title: '点击查看该跳四段存证详情',
         onClick: function () { window.CXV.SHARED.openCx(hop.cross_tx_id, portal); }
       },
         h('b', {}, circled(seq) + ' ' + msgName(hop.message_type)),
@@ -182,7 +182,7 @@
         biz.style.background = chainVar(hop.source_chain);
         var cm = h('div', {
           class: 'd-cxv-jn-seg d-cxv-jn-seg-cm',
-          title: '监管链 ChainMaker 签收/验签/中继——Fabric↔FISCO↔IRITA 跨链必经监管链，非旁路'
+          title: '监管链 ChainMaker 签收/验签/中继——跨链必经监管链，非旁路'
         }, 'CM 中继');
         cm.style.background = chainVar('chainmaker');
         rail.append(biz, cm);
@@ -190,7 +190,7 @@
       });
       tlBox.append(rail, stops,
         h('div', { class: 'd-cxv-jn-hint' },
-          '节点可点 → 该跳四段存证详情；等宽节点列按链上 created_at 升序排布（非时间比例轴），时间戳/时延见卡内文字'));
+          '节点可点击查看该跳四段存证详情；节点按链上时间先后排布，时间戳与时延见卡内文字'));
     }
     function renderTimelineError(r) {
       jhdrBox.innerHTML = '';
@@ -211,7 +211,7 @@
         metaSlot.append(P.metaLine(probeErrs[0].r));
         tlBox.append(h('div', { class: 'd-cxv-jn-partial' },
           probeErrs.map(function (f) {
-            return h('div', {}, '⚠ 候选 ' + f.cand.id + ' 旅程探测失败（code=' + f.r.code + '）：' + (f.r.message || '') + '——该候选旅程状态未知，不以空态断言');
+            return h('div', {}, '⚠ 候选 ' + f.cand.id + ' 旅程探测失败（code=' + f.r.code + '）：' + (f.r.message || '') + '——该候选旅程状态未知，如实披露');
           })));
       }
     }
@@ -232,14 +232,13 @@
         /* 空态口径只对本端实际查询且成功的 list 断言（op/ct 不查 uav；失败 kind 由下方
            .d-cxv-jn-partial 警示行如实披露，绝不以「三 list 均空」以偏概全） */
         pickerBox.append(h('span', { class: 'd-cxv-jn-note' },
-          '暂无业务对象（' + state.okKinds.map(function (k) { return k + '/list'; }).join('、') +
-          ' 实时响应均空——如实展示，绝不虚构记录）'));
+          '暂无业务对象（实时查询结果为空——如实展示，绝不虚构记录）'));
         return;
       }
       state.candidates.forEach(function (cand) {
         var el = h('button', {
           type: 'button', class: 'd-cxv-jn-chip',
-          title: '点击查看该对象全链旅程（explorer/journey · anchor_kind=' + cand.kind + '）',
+          title: '点击查看该对象全链旅程',
           onClick: function () { selectAndLoad(cand); }
         },
           h('span', {}, KIND_ICON[cand.kind] || '·'),
@@ -265,7 +264,7 @@
       metaSlot.innerHTML = '';
       jhdrBox.innerHTML = '';
       tlBox.innerHTML = '';
-      tlBox.append(h('div', { class: 'p-empty' }, '⏳ explorer/journey 查询中…'));
+      tlBox.append(h('div', { class: 'p-empty' }, '⏳ 旅程查询中…'));
       var r = await API.call('/api/explorer/journey', { anchor_id: cand.id, anchor_kind: cand.kind });
       if (!pickerBox.isConnected) return;   /* 已导航离开/「刷新全部」卸载本区 → 弃填充 */
       if (state.selected !== cand) return;  /* 迟到响应归属守卫：等待期间用户已改选他芯片 → 弃填充（绝不把旧对象渲染进新选中态） */
@@ -342,7 +341,7 @@
       if (fails.length) {
         pickerBox.append(h('div', { class: 'd-cxv-jn-partial' },
           fails.map(function (f) {
-            return h('div', {}, '⚠ ' + f.kind + '/list 加载失败（code=' + f.r.code + '）：' + (f.r.message || '') + '——该 kind 如实缺席，不以他 kind 冒充');
+            return h('div', {}, '⚠ ' + f.kind + ' 类对象列表加载失败（code=' + f.r.code + '）：' + (f.r.message || '') + '——该类对象如实缺席，不以其他类型冒充');
           })));
       }
       autoSelect();

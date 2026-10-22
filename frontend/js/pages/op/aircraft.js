@@ -47,10 +47,10 @@
       { name: 'serial_no', label: '产品序列号', type: 'text', required: true, placeholder: '如 SN-A001' },
       { name: 'realname_id', label: '关联实名主体', type: 'text', value: prefillSubject(),
         placeholder: 'RNS-xxxxxxxx（可选）',
-        hint: '在「实名登记」页选定当前身份后自动预填；填写但主体不存在 → 7001 拒绝' }
+        hint: '在「实名登记」页选定当前身份后自动填写；所填主体须已完成实名登记' }
     ]);
     loadMasterData(f);
-    box.append(card('航空器登记 uav/register（注册即核验 · 登记即上链）', f.root,
+    box.append(card('航空器登记（登记即上链）', f.root,
       P.actionBar([{ label: '提交登记', kind: 'primary', run: P.runOp({
         path: '/api/uav/register',
         body: function () { return PORTAL.need(f.read(), 'manufacturer_id', 'operator_id', 'serial_no'); },
@@ -100,11 +100,11 @@
       PORTAL.renderQR(qrEl, qrPayload(u));       /* 失败自动变 .d-qr-none 兜底（Task 5 契约） */
     } else {
       qrEl.className = 'd-qr d-qr-none';
-      qrEl.textContent = '未发放登记标志（遗留数据），二维码不生成';
+      qrEl.textContent = '未发放登记标志，二维码不生成';
     }
     return h('div', {}, cert,
       x ? h('div', { class: 'd-mt' },
-          h('div', { class: 'd-section' }, '跨链存证 · 四段 TxID（运营链 fabric → 监管链 chainmaker 签收/中继 → 存证）'),
+          h('div', { class: 'd-section' }, '跨链存证 · 四段 TxID'),
           P.cxTrail(x))
         : null);
   }
@@ -133,7 +133,7 @@
   }
 
   async function openUav(uavId, tbl) {
-    var d = P.drawer('航空器 ' + uavId, h('div', { class: 'p-empty' }, '⏳ uav/query 查询中…'));
+    var d = P.drawer('航空器 ' + uavId, h('div', { class: 'p-empty' }, '⏳ 航空器详情查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/uav/query', { uav_id: uavId });
     body.innerHTML = '';
@@ -142,7 +142,7 @@
     STORE.note('UAV', u.uav_id, { operator_id: u.operator_id });   /* 旧页惯例（§29） */
     var qrEl = h('div', { class: 'd-qr' });
     if (u.registration_mark) PORTAL.renderQR(qrEl, qrPayload(u));
-    else { qrEl.className = 'd-qr d-qr-none'; qrEl.textContent = '未发放登记标志（遗留数据）'; }
+    else { qrEl.className = 'd-qr d-qr-none'; qrEl.textContent = '未发放登记标志'; }
     body.append(
       h('div', { class: 'd-row d-row-top d-mb' }, qrEl,
         h('div', { style: { flex: '1', 'min-width': '0' } }, P.kv([
@@ -169,7 +169,7 @@
     ]);
     return h('div', {},
       h('div', { class: 'd-section' }, '状态迁移与注销'),
-      h('p', { class: 'd-small d-muted' }, '提示：重复 VERIFY 已核验机 → 1004 非法迁移（VERIFY 仅允许 REGISTERED 起点——注册即核验已替你走完那一步）；非法迁移/不可注销状态 → 1004 —— 均为状态机设计内行为。'),
+      h('p', { class: 'd-small d-muted' }, '提示：注册成功的航空器已自动完成核验，无需重复核验；不符合状态流转条件的操作将被系统拒绝。'),
       f.root,
       P.actionBar([
         { label: '执行状态动作', kind: 'primary', run: P.runOp({
@@ -208,10 +208,10 @@
       box.innerHTML = '';
       if (!r.ok) { box.append(P.errCard(r)); return; }
       var hit = (r.data.records || []).filter(function (x) { return x.business_id === u.uav_id; })[0];
-      if (!hit) { box.append(P.empty('未找到该航空器的登记存证（可能为跨链域上线前的遗留数据）')); return; }
+      if (!hit) { box.append(P.empty('未找到该航空器的登记存证')); return; }
       box.append(P.cxTrail(hit));
     })();
-    return h('div', {}, h('div', { class: 'd-section' }, '登记跨链存证（fabric → chainmaker）'), box);
+    return h('div', {}, h('div', { class: 'd-section' }, '登记跨链存证'), box);
   }
 
   OP.aircraft = { render: render };

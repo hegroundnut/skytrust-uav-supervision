@@ -26,27 +26,27 @@
   function signerNote(sm9id) {
     if (sm9id === 'SM9-ID-REGISTRY-ADMIN') return 'REGISTRY-ADMIN · 证照链证照中心（现行签发身份）';
     if (sm9id === 'SM9-ID-FISCO-ADMIN') return 'FISCO-ADMIN · 管理链（2026-10-13 迁移前历史签发身份）';
-    return '未登记身份（原值如实展示，不猜测）';
+    return '未登记身份（原值展示）';
   }
 
   function render(root) {
     root.append(P.pageHead({
       title: '通行证签发',
-      sub: '证照链（IRITA）独立签发 · 签名身份 REGISTRY-ADMIN · FLIGHT_PASS 跨链：证照链 → 监管链签收/中继 → 运营链存证'
+      sub: '证照链源发签发 · 国密签名 · 跨链存证：证照链 → 监管链签收 → 运营链存证'
     }));
     var rp = P.resultPanel();
-    rp.root.append(P.empty('尚无签发操作 —— 在上方待签发表格点「签发」，回执（SM3 摘要 / QR 证面 / 四段 TxID）显示在此'));
+    rp.root.append(P.empty('尚无签发操作 —— 在上方待签发表格点「签发」，签发回执（电子证面与链上存证）显示在此'));
     var listBox = h('div', {});
-    root.append(card('待签发任务 mission/list(APPROVED) ⋈ pass/list（无证照记录）', listBox,
-      h('p', { class: 'd-small d-muted' }, '比对窗口：两侧各取最近 200 条（服务端 page_size 上限）——超出窗口的总量在计数行如实标注，不外推、不猜测。')));
-    root.append(card('签发结果 pass/issue（成功证面 + 权威 SM3 摘要；失败错误卡 + 重试语义）', rp.root));
+    root.append(card('待签发任务（已获批准、尚未发证）', listBox,
+      h('p', { class: 'd-small d-muted' }, '统计窗口：两侧各取最近 200 条比对——超出窗口的总量在计数行如实标注。')));
+    root.append(card('签发结果（成功展示电子证面，失败提示原因与重试入口）', rp.root));
     loadPending(listBox, rp);
   }
 
   /* ---------- 待签发表格（客户端 join，红线 #9：只渲染实时响应） ---------- */
   async function loadPending(box, rp) {
     box.innerHTML = '';
-    box.append(h('div', { class: 'p-empty' }, '⏳ 待签发任务加载中（mission/list ⋈ pass/list）…'));
+    box.append(h('div', { class: 'p-empty' }, '⏳ 待签发任务加载中…'));
     var mR = await API.call('/api/mission/list', { status: 'APPROVED', page: 1, page_size: 200 });
     var pR = await API.call('/api/pass/list', { page: 1, page_size: 200 });
     if (!box.isConnected) return;                      /* 加载中用户已离开本页 */
@@ -57,17 +57,17 @@
     (pR.data.records || []).forEach(function (p) { if (p.mission_id) issued[p.mission_id] = true; });
     var pend = (mR.data.records || []).filter(function (m) { return !issued[m.mission_id]; });
     box.append(h('div', { class: 'd-small d-muted d-mb' },
-      'APPROVED 任务共 ' + (mR.data.total || 0) + ' 条 · 证照台账共 ' + (pR.data.total || 0) +
-      ' 条（各取最近 200 条窗口内比对）→ 待签发 ' + pend.length + ' 条'),
+      '已批准任务共 ' + (mR.data.total || 0) + ' 条 · 证照台账共 ' + (pR.data.total || 0) +
+      ' 条（最近 200 条窗口内比对）→ 待签发 ' + pend.length + ' 条'),
       h('button', { class: 'p-btn p-btn-sm p-btn-ghost d-mb',
         onClick: function () { loadPending(box, rp); } }, '⟳ 刷新'));
     if (!pend.length) {
-      box.append(P.empty('暂无待签发任务 —— 任务经管理当局审核 APPROVED 且尚无证照记录时出现在此'));
+      box.append(P.empty('暂无待签发任务 —— 任务经管理当局审核批准、尚未发证时出现在此'));
       return;
     }
     box.append(h('div', { class: 'p-tbl-wrap' }, h('table', { class: 'p-tbl' },
       h('thead', {}, h('tr', {},
-        ['任务号 mission_id', '申请人 operator_id', '时间窗', '操作'].map(function (t) { return h('th', {}, t); }))),
+        ['任务号', '申请人', '时间窗', '操作'].map(function (t) { return h('th', {}, t); }))),
       h('tbody', {}, pend.map(function (m) {
         return h('tr', {},
           h('td', { class: 'p-mono' }, m.mission_id),
@@ -84,12 +84,12 @@
   function openIssueModal(m, rp, onDone, prefillPassId) {
     var f = P.form([
       { name: 'pass_id', label: '证照号（可选）', type: 'text', value: prefillPassId || '',
-        placeholder: '留空 = 自动生成 PASS-<年>-%03d',
-        hint: '显式同号且记录停留 GENERATING = 幂等续签重试（跨链失败恢复通道，不产生第二张证）' },
-      { name: 'valid_from', label: '生效时间 valid_from', type: 'datetime', value: UI.datetimeLocal(-60),
-        hint: 'YYYY-MM-DD HH:mm:ss（默认预填当前 −1h）' },
-      { name: 'valid_to', label: '失效时间 valid_to', type: 'datetime', value: UI.datetimeLocal(60),
-        hint: '默认预填当前 +1h；两键均清空 = 服务端回退任务时间窗' }
+        placeholder: '留空自动生成，如 PASS-2026-001',
+        hint: '证照生成中时填入同一证照号可续办签发，不会产生第二张证照' },
+      { name: 'valid_from', label: '生效时间', type: 'datetime', value: UI.datetimeLocal(-60),
+        hint: '默认预填当前时间前 1 小时' },
+      { name: 'valid_to', label: '失效时间', type: 'datetime', value: UI.datetimeLocal(60),
+        hint: '默认预填当前时间后 1 小时；两项均留空时按任务时间窗执行' }
     ]);
     var bodyBox = h('div', {},
       P.kv([
@@ -98,20 +98,20 @@
         ['航段', PORTAL.jp(m.route_segments, []).join(' → ') || '—'],
         ['任务时间窗', UI.trunc(m.start_time, 16) + ' → ' + UI.trunc(m.end_time, 16)],
         ['描述（脱敏）', m.masked_value || '—'],
-        ['签发人 issuer', h('b', { class: 'p-mono' }, ISSUER), ],
+        ['签发人', h('b', { class: 'p-mono' }, ISSUER), ],
       ]),
       h('p', { class: 'd-small d-muted' },
         '签发人身份固定 ', h('code', { class: 'p-mono' }, ISSUER),
-        '（证照链证照中心 · SM9 签名身份 SM9-ID-REGISTRY-ADMIN，只读不可改）。',
-        'SM3 摘要：由服务端在签发时对规范化材料（pass_id / mission_id / uav_id / route / valid_from / valid_to）计算——',
-        '提交前前端不预生成（前端无 SM3 实现，绝不伪造摘要）；签发成功后回执立即展示权威摘要 pass.sm3_hash 与 SM9 签名。'),
+        '（证照链证照中心，只读不可改）。',
+        '证照摘要于签发时以国密 SM3 算法权威计算——',
+        '签发成功后，回执即时展示摘要与 SM9 签名结果。'),
       f.root);
     var busy = false;
     var mask = h('div', { class: 'p-modal-mask' });
     var btnCancel = h('button', { class: 'p-btn p-btn-ghost', onClick: function () { if (!busy) close(); } }, '取消');
     var btnGo = h('button', { class: 'p-btn p-btn-primary', onClick: submit }, '确认签发');
     mask.append(h('div', { class: 'p-modal' },
-      h('div', { class: 'p-modal-title' }, '签发通行证 pass/issue'),
+      h('div', { class: 'p-modal-title' }, '签发通行证'),
       h('div', { class: 'p-modal-msg' }, bodyBox),
       h('div', { class: 'p-modal-btns' }, btnCancel, btnGo)));
     mask.addEventListener('click', function (e) { if (e.target === mask && !busy) close(); });
@@ -127,7 +127,7 @@
       var re = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
       if (v.valid_from && v.valid_to && re.test(v.valid_from) && re.test(v.valid_to) &&
           v.valid_to <= v.valid_from) {
-        UI.toast('valid_to 必须晚于 valid_from', 'err'); return;
+        UI.toast('失效时间必须晚于生效时间', 'err'); return;
       }
       busy = true;
       btnCancel.disabled = true; btnGo.disabled = true;
@@ -137,7 +137,7 @@
         h('div', { class: 'p-empty', style: { height: 'auto', padding: '18px 6px' } },
           '⏳ 跨链签发约 3-6s：证照链→监管链中继→运营链'),
         h('p', { class: 'd-small d-muted d-center' },
-          'FLIGHT_PASS · irita（源链上链）→ chainmaker（签收+中继）→ fabric（目标链存证）',
+          '证照链源发上链 → 监管链签收中继 → 运营链跨链存证',
           h('br', {}), '请勿重复提交；提交中不可关闭本弹窗。'));
       var body = { mission_id: m.mission_id, issuer: ISSUER };
       if (v.pass_id) body.pass_id = String(v.pass_id).trim();
@@ -168,17 +168,17 @@
       rp.root.append(h('div', {
         style: { marginTop: '10px', padding: '12px', background: 'var(--d-warning-soft)',
           border: '1px dashed var(--d-warning)', borderRadius: '6px', color: 'var(--d-warning)' } },
-        h('b', {}, '⚠ 证照停留 GENERATING（跨链腿未达）—— 同 pass_id 可重试：'),
+        h('b', {}, '⚠ 证照生成中（跨链存证未完成）—— 同证照号可重试：'),
         h('code', { class: 'p-mono' }, fd.pass.pass_id),
         h('div', { class: 'd-small', style: { color: 'var(--d-ink-2)' } },
-          '重试 = 幂等续签：复用上次 FAILED 跨链记录已确认的源链 TxID（prevFailedSourceTxID），不会产生第二张证。'),
+          '重试将复用上次已确认的源链 TxID 续办原证签发，不会产生第二张证照。'),
         h('div', { class: 'd-row d-mt' },
           h('button', { class: 'p-btn p-btn-sm p-btn-primary',
             onClick: function () { openIssueModal(m, rp, onDone, fd.pass.pass_id); } },
-            '同 pass_id 重试签发'))));
+            '同证照号重试签发'))));
     }
     if (fd.crosschain) {
-      rp.root.append(h('div', { class: 'd-small d-muted d-mt' }, '失败跨链留痕（如实展示，含 FAILED 状态与错误码）：'),
+      rp.root.append(h('div', { class: 'd-small d-muted d-mt' }, '失败的跨链留痕（如实展示）：'),
         P.cxTrail(fd.crosschain));
     }
   }
@@ -198,7 +198,7 @@
           ['航空器', h('code', { class: 'p-mono' }, p.uav_id || '—')],
           ['有效窗', p.valid_from + ' → ' + p.valid_to],
           ['许可航线', PORTAL.jp(p.route, []).join(' → ') || '—'],
-          ['SM3 摘要（服务端权威）', h('code', { class: 'p-mono', title: p.sm3_hash }, UI.trunc(p.sm3_hash, 48))],
+          ['SM3 摘要', h('code', { class: 'p-mono', title: p.sm3_hash }, UI.trunc(p.sm3_hash, 48))],
           ['SM9 签名', h('code', { class: 'p-mono', title: p.signature }, UI.trunc(p.signature, 48))],
           ['签发时间', p.created_at]
         ])),
@@ -206,19 +206,19 @@
       h('div', { class: 'd-seal' }, '证照链\n签发'));
     PORTAL.renderQR(qrEl, JSON.stringify({
       pass_id: p.pass_id, mission_id: p.mission_id, uav_id: p.uav_id, valid_to: p.valid_to }),
-      'QR 生成失败（qrcode 库不可用或内容超长）——证照号等以左侧文字为准，不虚构二维码');
+      'QR 生成失败——证照号等以左侧文字为准，不虚构二维码');
     return h('div', {},
       h('div', { class: 'p-ok-line' }, '✓ 证照已签发并上链（状态以回执为准：' + (p.status || '—') + '）'),
       cert,
       cx ? h('div', {},
-        h('div', { class: 'd-section' }, 'FLIGHT_PASS 四段 TxID 存证（点击任一段打开 openCxDetail 全量证据）'),
+        h('div', { class: 'd-section' }, '四段 TxID 跨链存证（点击任一段查看全量证据）'),
         P.kv([
           ['SM9 签名身份', h('div', {},
             h('code', { class: 'p-mono' }, cx.sm9_identity || '—'),
             h('div', { class: 'd-small d-muted' }, signerNote(cx.sm9_identity)))]
         ]),
         P.cxTrail(cx))
-       : h('p', { class: 'd-small d-muted' }, '响应未携带跨链留痕（crosschain 为空）——可在证照台账 / 跨链台账回查，不猜测。'));
+       : h('p', { class: 'd-small d-muted' }, '本次签发未携带跨链留痕信息——可在证照台账 / 跨链台账回查。'));
   }
 
   CT.issue = { render: render };

@@ -9,12 +9,12 @@
   var mx = null;   /* 模块级地图引用：重渲染入口先 destroy（Task 5 页面契约） */
 
   var ENTRIES = [
-    { page: 'realname', ico: 'id',    title: '实名登记',         desc: '个人/企业主体登记与操控员执照即申即发，选定身份后全端预填' },
+    { page: 'realname', ico: 'id',    title: '实名登记',         desc: '个人/企业主体登记与操控员执照即申即发，选定身份后信息自动填写' },
     { page: 'aircraft', ico: 'drone', title: '航空器登记',       desc: '登记标志与二维码注册即发，跨链四段 TxID 全程留痕' },
     { page: 'flight',   ico: 'map',   title: '飞行活动申请',     desc: '地图勾选航段建任务，跨链提交跨域申请，冲突协调可视' },
-    { page: 'license',  ico: 'cert',  title: '电子飞行许可',     desc: '电子许可卡 + 飞行前自查：valid 绿灯可以起飞，红灯列原因' },
-    { page: 'ops',      ico: 'radar', title: '运行识别·飞行动态', desc: '起飞报备（SM9 挑战认证），无人机沿航线实时移动，降落报备' },
-    { page: 'airspace', ico: 'globe', title: '空域查询',         desc: '全屏空域地图：zone 着色、航线网、网络节点图层开关' }
+    { page: 'license',  ico: 'cert',  title: '电子飞行许可',     desc: '电子许可卡 + 飞行前自查：绿灯可以起飞，红灯列明原因' },
+    { page: 'ops',      ico: 'radar', title: '运行识别·飞行动态', desc: '起飞报备，无人机沿航线实时移动，降落报备' },
+    { page: 'airspace', ico: 'globe', title: '空域查询',         desc: '全屏空域地图：空域着色、航线网、网络节点图层开关' }
   ];
 
   var NOTICES = [
@@ -101,9 +101,9 @@
       var st = (chainR.ok && chainR.data && chainR.data.chains) ? chainR.data.chains[c.key] : '未知';
       cards.push({ label: c.label, value: st || '未知', tone: st === 'ONLINE' ? 'good' : 'critical' });
     });
-    cards.push({ label: '空域走廊', value: routesR.ok ? String(routesR.data.total || 0) : '--', sub: 'route/list' });
-    cards.push({ label: '网络节点', value: topoR.ok ? String(visNodes.length) : '--', sub: 'topology/get（不含 ATTACKER）' });
-    cards.push({ label: '在飞航空器', value: String(drones), sub: 'telemetry/latest 有位置', tone: drones > 0 ? 'good' : null });
+    cards.push({ label: '空域走廊', value: routesR.ok ? String(routesR.data.total || 0) : '--', sub: '已发布走廊总数' });
+    cards.push({ label: '网络节点', value: topoR.ok ? String(visNodes.length) : '--', sub: '平台服务节点统计' });
+    cards.push({ label: '在飞航空器', value: String(drones), sub: '实时位置上报', tone: drones > 0 ? 'good' : null });
     strip.append(P.statCards(cards));
     if (!chainR.ok) strip.append(P.errCard(chainR));     /* -1 时 errCard 自带启动指引 */
     else if (!routesR.ok) strip.append(P.errCard(routesR));

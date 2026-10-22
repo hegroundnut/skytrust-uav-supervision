@@ -32,13 +32,13 @@
           tone: d.authorized ? 'good' : 'critical' },
         { label: '完整性双验证',
           value: (v.digest_match && v.signature_valid) ? '✓✓ 双通过' : '⚠ 验证未通过',
-          sub: 'digest_match=' + fmtBool(v.digest_match) + ' · signature_valid=' + fmtBool(v.signature_valid),
+          sub: '摘要匹配 ' + fmtBool(v.digest_match) + ' · 签名有效 ' + fmtBool(v.signature_valid),
           tone: (v.digest_match && v.signature_valid) ? 'good' : 'critical' },
         { label: '授权范围', value: (d.scope || []).length + ' 项',
           sub: (d.scope || []).join('、') || '—' }
       ]),
-      h('div', { class: 'd-section' }, '解密明文视图 decrypted_view（SM9 解密临时视图——仅本次响应，不落库）'),
-      h('div', { class: 'p-mono d-cert' }, d.decrypted_view || '（空 = scope 无 MISSION 或无密文——未开箱）'),
+      h('div', { class: 'd-section' }, '解密明文视图（国密解密 · 仅本次响应展示，不落库）'),
+      h('div', { class: 'p-mono d-cert' }, d.decrypted_view || '（未开箱——授权范围不含 MISSION，或任务暂无密文）'),
       P.kv([
         ['任务', h('code', { class: 'p-mono' }, m.mission_id || '—')],
         ['任务状态', P.badge(m.status)],
@@ -59,7 +59,7 @@
   /* 封缄态（5002/5003/5004/2001 的 data.sealed）：只可见元信息——这恰是最小授权的证明 */
   function sealedCard(s) {
     return h('div', {},
-      h('div', { class: 'd-section' }, '🔒 封缄视图 sealed-only（明文绝不进错误信封）'),
+      h('div', { class: 'd-section' }, '🔒 封缄视图——仅返回封缄元信息，明文内容绝不外泄'),
       P.kv([
         ['任务', h('code', { class: 'p-mono' }, s.mission_id || '—')],
         ['密文状态', P.badge(s.ciphertext_status)],
@@ -67,32 +67,32 @@
         ['脱敏值', s.masked_value || '—'],
         ['SM3 摘要', h('code', { class: 'p-mono' }, UI.trunc(s.sm3_hash, 32))]
       ]),
-      h('p', { class: 'd-small d-muted' }, '「看不到」本身就是监管结论：未授权/越权/过窗时系统只回封缄元信息——隐私保护由错误路径证明。'));
+      h('p', { class: 'd-small d-muted' }, '「看不到」本身就是监管结论：未授权、越权或授权过期时，系统只返回封缄元信息——数据最小化，隐私保护可见可证。'));
   }
 
   function render(root, ctx) {
     var slotM = STORE.get('MISSION'), slotAz = STORE.get('AUTHORIZATION');
-    var resultBox = h('div', {}, P.empty('填写左侧表单执行核验——双态结果（开箱/封缄）显示在这里'));
+    var resultBox = h('div', {}, P.empty('填写左侧表单执行核验——开箱或封缄结果显示在这里'));
 
     root.append(P.pageHead({
       title: '密文核验',
-      sub: 'SM9 任务密文：封缄（5002/5003/5004）↔ 开箱（授权+双验证+结论上链）双态' }));
+      sub: 'SM9 任务密文——未授权保持封缄，经授权方可开箱：国密双重完整性核验 · 结论上链存证' }));
 
     var fIn = P.form([
       { name: 'mission_id', label: '任务号', type: 'text', required: true,
-        value: slotM ? slotM.id : '', placeholder: 'MISSION-2026-…（MISSION 上下文 chip 自动预填）' },
+        value: slotM ? slotM.id : '', placeholder: 'MISSION-2026-…（可自动预填）' },
       { name: 'authorization_id', label: '授权号（可空）', type: 'text',
         value: slotAz ? slotAz.id : '',
-        placeholder: 'AUTH-…（AUTHORIZATION chip 自动预填）',
-        hint: '留空 → 5002 封缄拒绝——这正是最小授权的演示入口' },
+        placeholder: 'AUTH-…（可自动预填）',
+        hint: '留空将被以封缄态拒绝——数据最小化：未授权不见明文' },
       { name: 'regulator_id', label: '监管方（审计用）', type: 'text', value: 'REG-01' },
       { name: 'trajectory', label: '申报轨迹', type: 'select', value: '',
         options: [['', '（留空——不申报）'], ['NORMAL', 'NORMAL 正常申报'],
           ['DEVIATION', 'DEVIATION 偏航申报']],
-        hint: '严格枚举 ""|NORMAL|DEVIATION（非法值 6002）；申报需授权 scope 含 ROUTE（否则 5003）。演示全程留空——NORMAL 会撞硬编码基线必报偏航（Global Constraints #17）' },
+        hint: '申报需授权范围含 ROUTE；无需申报时请保持留空' },
       { name: 'payload_type', label: '申报载荷类型（可选）', type: 'text',
         placeholder: '如 MEDICAL_KIT（与任务载荷比对）',
-        hint: '申报需授权 scope 含 PAYLOAD（否则 5003）；不符 → conclusion.payload_verdict=MISSION_MISMATCH + 触发告警' }
+        hint: '申报需授权范围含 PAYLOAD；与任务载荷不符将被裁定并触发告警' }
     ]);
 
     /* 手写 run：5002/5003/5004/2001 的 data.sealed 补渲必须直接访问错误响应 */
@@ -124,14 +124,14 @@
 
     root.append(h('div', { class: 'd-grid-side' },
       h('div', { class: 'd-col' },
-        card('发起核验 inspect/ciphertext',
+        card('发起核验',
           fIn.root,
           P.actionBar([{ label: '执行核验', kind: 'primary', run: doInspect }])),
-        card('双态说明',
+        card('核验规则说明',
           P.kv([
-            ['封缄（拒绝路径）', '5002 未授权 / 5003 scope·目标违规 / 5004 窗口外（惰性迁 EXPIRED）/ 2001 结论上链失败——只回封缄五键'],
-            ['开箱（授权路径)', 'scope 定可见性：MISSION→明文视图、ROUTE→轨迹比对、PAYLOAD→载荷比对'],
-            ['核验即审计', '开箱与拒绝都写 RegAudit（INSPECT）；开箱结论上链 ChainMaker（chain_tx_id）']
+            ['封缄（拒绝路径）', '未授权、越权、授权过期或结论上链失败——一律只返回封缄元信息，不见明文'],
+            ['开箱（授权路径)', '授权范围决定可见内容：MISSION→明文视图、ROUTE→轨迹比对、PAYLOAD→载荷比对'],
+            ['核验即审计', '开箱与拒绝均写入审计留痕；开箱结论上链存证']
           ]))),
       card('核验结果', resultBox)));
   }

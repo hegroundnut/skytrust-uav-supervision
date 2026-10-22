@@ -31,14 +31,14 @@
         ['审计号', h('code', { class: 'p-mono' }, r.audit_id)],
         ['动作', P.badge(r.action)],
         ['操作方', r.operator_id],
-        ['目标（target 单键）', h('code', { class: 'p-mono' }, r.target || '—')],
+        ['目标', h('code', { class: 'p-mono' }, r.target || '—')],
         ['告警号', r.alert_id || '—'],
         ['授权号', r.authorization_id || '—'],
         ['链上存证', r.chain_tx_id ? h('code', { class: 'p-mono' }, r.chain_tx_id) : '—（DENY 不上链）'],
         ['审计摘要', h('code', { class: 'p-mono' }, UI.trunc(r.audit_hash, 32))],
         ['时间', r.created_at]
       ]),
-      h('div', { class: 'd-section' }, '结果原文（result JSON 字符串）'),
+      h('div', { class: 'd-section' }, '结果原文'),
       UI.jsonBlock(PORTAL.jp(r.result, r.result), 160));
   }
 
@@ -70,12 +70,12 @@
       onRow: function (r) { regDrawer(r); },
       emptyText: '暂无监管动作留痕——先去「密文核验」或「授权中心」产生动作'
     });
-    box.append(card('监管审计导出 regulatory/audit/export（过滤键同台账四维，无分页）',
+    box.append(card('监管审计导出（过滤条件同台账，导出全量）',
       h('div', { class: 'd-row d-row-wrap' }, fEx.root,
         P.csvExport({ endpoint: '/api/regulatory/audit/export',
           filters: function () { return fEx.read(); },
           filename: 'regulatory-audit.csv', label: '⤓ 导出 CSV' }))));
-    box.append(card('监管动作台账 regulatory/audit/list（INSPECT / AUTH_APPROVE / AUTH_DENY；TRACE_IDENTITY_BROKEN 见全局台账页签）', tbl));
+    box.append(card('监管动作台账（密文核验与授权裁决动作全程留痕；身份追踪动作见「全局审计台账」页签）', tbl));
   }
 
   /* --- 页签二：全局审计台账（audit/query·export） --- */
@@ -95,7 +95,7 @@
       ],
       columns: [
         { title: 'ID', key: 'id', num: true },
-        { title: 'trace_id', render: function (r) { return UI.trunc(r.trace_id, 18); }, mono: true },
+        { title: '追踪 ID', render: function (r) { return UI.trunc(r.trace_id, 18); }, mono: true },
         { title: '行为方', key: 'actor' },
         { title: '动作', render: function (r) { return P.badge(r.action); } },
         { title: '目标', render: function (r) {
@@ -107,29 +107,29 @@
       onRow: function (r) {
         P.drawer('审计日志 #' + r.id,
           P.kv([
-            ['ID / trace', h('span', { class: 'd-row' }, String(r.id),
+            ['编号 / 追踪 ID', h('span', { class: 'd-row' }, String(r.id),
               h('code', { class: 'p-mono' }, r.trace_id || '—'))],
             ['行为方 / 动作', h('span', { class: 'd-row' }, r.actor || '—', P.badge(r.action))],
             ['目标', (r.target_type || '—') + ' : ' + (r.target_id || '—')],
             ['时间', r.created_at]
           ]),
-          h('div', { class: 'd-section' }, '明细原文（detail JSON 字符串）'),
+          h('div', { class: 'd-section' }, '明细原文'),
           UI.jsonBlock(PORTAL.jp(r.detail, r.detail), 200));
       },
       emptyText: '暂无全局审计记录'
     });
-    box.append(card('全局审计导出 audit/export（过滤键 business_id/action/actor，无分页）',
+    box.append(card('全局审计导出（按业务单号、动作、行为方过滤，导出全量）',
       h('div', { class: 'd-row d-row-wrap' }, fEx.root,
         P.csvExport({ endpoint: '/api/audit/export',
           filters: function () { return fEx.read(); },
           filename: 'audit-all.csv', label: '⤓ 导出 CSV' }))));
-    box.append(card('全局审计台账 audit/query（响应无 page/page_size 回显——dataTable 兼容；排序 id DESC）', tbl));
+    box.append(card('全局审计台账（全平台行为留痕，按时间倒序）', tbl));
   }
 
   function render(root, ctx) {
     root.append(P.pageHead({
       title: '监管审计',
-      sub: '双台账：监管动作留痕（RegAudit，含链上存证）+ 全局审计（AuditLog，三维过滤）——均可导 CSV' }));
+      sub: '双台账：监管动作留痕（含链上存证）+ 全局审计（多维过滤）——均可导出 CSV' }));
     root.append(P.tabs([
       { key: 'reg', label: '监管审计台账', render: tabReg },
       { key: 'all', label: '全局审计台账', render: tabAll }

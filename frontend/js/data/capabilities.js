@@ -11,8 +11,8 @@
 (function () {
   'use strict';
 
-  var WORMHOLE_WARN = '该实验会在当前生产网络激活虫洞攻防：运行后 NODE-X/NODE-Y 可能遗留 ISOLATED 隔离残留，' +
-    '正式演示剧本将被 4001 拦截；残留只能由「演示重置 demo/reset」清理（P6-R6：重置永不触碰真实链，链上数据不受影响）。确认现在运行？';
+  var WORMHOLE_WARN = '该实验会在当前生产网络激活虫洞攻防：运行后 NODE-X/NODE-Y 可能遗留 ISOLATED 隔离状态，' +
+    '正式演示将被安全拦截；隔离状态仅可通过「演示重置」清理（重置不影响真实链，链上数据不受任何影响）。确认现在运行？';
   var REALCHAIN_WARN = '该实验每次迭代都会真实写入三条链（13 步跨链协议：Fabric→ChainMaker→FISCO BCOS），' +
     '耗时以十秒计，并新增跨链台账记录（真实 TxID 可回溯）。确认现在运行？';
 
@@ -42,7 +42,7 @@
           { endpoint: '/api/crosschain/list', body: { page: 1, page_size: 1 }, chips: function (d) {
               var r = (d && d.records && d.records[0]) || null;
               return [
-                { label: '累计跨链存证', value: (d && d.total) || 0, sub: '全量台账 · 幂等去重', tone: 'info' },
+                { label: '累计跨链存证', value: (d && d.total) || 0, sub: '全量台账 · 自动去重', tone: 'info' },
                 r ? { label: '最近存证', value: r.message_type || '—',
                     sub: r.status + ' · ' + (r.latency_ms != null ? r.latency_ms + 'ms' : '—'),
                     tone: r.status === 'SUCCESS' ? 'good' : 'critical' } : null
@@ -60,7 +60,7 @@
       {
         id: 'cap2', goalNo: '绩效目标二', ico: 'shield',
         title: '抗虫洞 · 秒级链下可信网络',
-        pitch: 'Dijkstra 可信路由 + SM9 挑战-响应会话认证的链下消息网络：消息毫秒级送达、不逐条上链；' +
+        pitch: '可信路由 + SM9 挑战-响应会话认证的链下消息网络：消息毫秒级送达、不逐条上链；' +
           '虫洞隧道五维特征实时检测，受染节点隔离后自动重算干净路径恢复通信——攻防全程可实验复现。',
         points: ['链下消息毫秒级送达，实测均延见证据', '虫洞攻击五维风险检测 + 节点隔离', '路径重算自动恢复，攻防闭环一键复现'],
         claim: { text: '秒级链下交易' },
@@ -81,7 +81,7 @@
                 { label: '可信网络拓扑', value: (d.nodes || []).length + ' 节点 · ' + (d.edges || []).length + ' 边',
                   sub: '活跃会话 ' + (d.active_sessions != null ? d.active_sessions : '—') + ' 个', tone: 'info' },
                 { label: '虫洞演练 / 隔离', value: (d.wormhole_enabled ? '已激活' : '关闭') + ' / ' + iso,
-                  sub: iso > 0 ? 'ISOLATED 残留待 demo/reset 清理' : '无隔离残留', tone: iso > 0 ? 'critical' : 'good' }
+                  sub: iso > 0 ? '存在隔离残留，可经「演示重置」清理' : '无隔离残留', tone: iso > 0 ? 'critical' : 'good' }
               ];
             } },
           { endpoint: '/api/dashboard/summary', chips: function (d) {
@@ -105,9 +105,9 @@
       {
         id: 'cap3', goalNo: '绩效目标三', ico: 'search',
         title: '秒级追踪 · 密文内容监管',
-        pitch: '7 级跨链身份追踪：化名→实名逐级回溯，断链即断点留痕（5001），禁止拼造；' +
-          'SM9 密文任务内容监管核验：未授权只见封缄（5002），授权开箱全程上链留痕——追踪与核验均秒级出结果。',
-        points: ['化名→实名 7 级追踪链路，断链诚实留痕', '未授权核验只返回密文封缄，明文绝不进错误信封', '授权批准/核验动作全程跨链上链留痕'],
+        pitch: '7 级跨链身份追踪：化名→实名逐级回溯，断链即断点留痕，禁止拼造；' +
+          'SM9 密文任务内容监管核验：未授权只见封缄，授权开箱全程上链留痕——追踪与核验均秒级出结果。',
+        points: ['化名→实名 7 级追踪链路，断链诚实留痕', '未授权核验只返回密文封缄，明文绝不外泄', '授权批准/核验动作全程跨链上链留痕'],
         claim: { text: '秒级身份追踪' },
         evidence: [
           { endpoint: '/api/dashboard/summary', chips: function (d) {
@@ -128,10 +128,10 @@
         experiments: [
           { type: 'TRACE_BATCH', label: '批量身份追踪', count: 10 },
           { type: 'INSPECT_UNAUTHORIZED', label: '未授权封缄核验', count: 5,
-            note: '断言设计拒绝 5002 命中（封缄语义自证）' },
+            note: '验证未授权访问被设计性安全拒绝（封缄保护自证）' },
           { type: 'INSPECT_AUTHORIZED', label: '授权密文开箱', count: 5,
             note: '每次开箱核验上链留痕' },
-          { type: 'ALERT_BATCH', label: '告警状态机批量流转', count: 5 }
+          { type: 'ALERT_BATCH', label: '告警状态批量流转', count: 5 }
         ]
       }
     ]

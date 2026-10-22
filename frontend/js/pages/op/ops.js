@@ -29,7 +29,7 @@
 
     root.append(P.pageHead({
       title: '运行识别 · 飞行动态',
-      sub: '实时遥测轮询（3s）· 运行识别 RID 信息卡 —— 数据源 telemetry/latest（null=暂无遥测，属正常）' }));
+      sub: '实时遥测刷新（3 秒）· 运行识别 RID 信息卡 —— 飞行动态全程可见' }));
 
     var mapEl = h('div', { class: 'd-map d-map-xl' });
     var ridBox = h('div', { class: 'd-col' }, P.empty('选择航空器查看运行识别信息'));
@@ -48,10 +48,10 @@
           h('span', { class: 'd-spacer' }),
           h('span', { class: 'd-small d-muted' }, '在飞：'), flyingEl, h('span', { class: 'd-small d-muted' }, ' 架')),
         mapEl,
-        h('div', { class: 'd-map-hint' }, '✈️ 图标朝向 = 遥测 heading；底图 = 走廊/航段/网络节点（攻击节点属监管域，不在运营端展示）。无遥测或坐标未设的航空器不画——不猜测。')),
+        h('div', { class: 'd-map-hint' }, '✈️ 图标朝向即航空器实时航向；底图展示空域走廊、航段与网络节点。暂无位置上报的航空器不在地图显示。')),
       h('div', { class: 'd-col' },
         card('运行识别（RID）', ridBox),
-        card('最近遥测 telemetry/list', trailBox))));
+        card('最近遥测', trailBox))));
 
     /* --- 飞行报备（spec §5.1：session/open=起飞报备、session/close=降落报备） --- */
     var slotU = STORE.get('UAV'), slotM = STORE.get('MISSION'),
@@ -60,16 +60,16 @@
     var rpSo = P.resultPanel();
     var fSo = P.form([
       { name: 'uav_id', label: '航空器', type: 'text', required: true, value: slotU ? slotU.id : '',
-        placeholder: 'UAV-MED-01（顶栏 UAV 上下文 chip 可预填）',
-        hint: '源节点缺省 <uav_id>-NODE，须已注册（否则 6002）' },
+        placeholder: 'UAV-MED-01（可通过顶栏标签快速填入）',
+        hint: '须为已完成登记的航空器' },
       { name: 'mission_id', label: '关联任务（强烈建议）', type: 'text', value: slotM ? slotM.id : '',
-        hint: '关联后自动驾驶沿任务航段走廊生成遥测（地图无人机移动）；留空只建会话不飞' },
+        hint: '关联任务后，航空器沿任务航线飞行，地图实时展示动态；留空仅建立会话不产生飞行' },
       { name: 'pass_id', label: '关联许可（可选留档）', type: 'text', value: slotP ? slotP.id : '' },
-      { name: 'source_node', label: '源节点（可选）', type: 'text', placeholder: '缺省 <uav_id>-NODE' },
-      { name: 'target_node', label: '目标节点（可选）', type: 'text', placeholder: '缺省 MGR' }
+      { name: 'source_node', label: '源节点（可选）', type: 'text', placeholder: '留空自动分配' },
+      { name: 'target_node', label: '目标节点（可选）', type: 'text', placeholder: '留空自动分配' }
     ]);
     var tblS = null, tblM = null;   /* runOp/onRow 点击时才解引用，前向声明安全 */
-    var soCard = card('起飞报备 session/open（SM9 挑战认证；4002=认证失败、4004=无可达路径）',
+    var soCard = card('起飞报备',
       fSo.root,
       P.actionBar([{ label: '起飞报备 · 建立会话', kind: 'primary', run: P.runOp({
         path: '/api/session/open',
@@ -83,7 +83,7 @@
           if (v.target_node) body.target_node = v.target_node;
           return body;
         },
-        rp: rpSo, successText: '起飞报备完成（INIT→AUTHENTICATED→ACTIVE · SM9 挑战认证通过）',
+        rp: rpSo, successText: '起飞报备完成（INIT→AUTHENTICATED→ACTIVE · 国密认证通过）',
         render: function (d) {
           return h('div', {},
             P.kv([
@@ -91,13 +91,13 @@
               ['会话状态', P.badge(d.session.status)],
               ['航空器', d.session.uav_id],
               ['关联任务 / 许可', (d.session.mission_id || '—') + ' / ' + (d.session.pass_id || '—')],
-              ['SM9 认证', d.auth.verified ? '✓ 挑战-应答通过' : '✗ 未通过'],
+              ['SM9 认证', d.auth.verified ? '✓ 认证通过' : '✗ 未通过'],
               ['SM9 身份', h('code', { class: 'p-mono' }, d.auth.sm9_identity)],
-              ['Nonce', h('code', { class: 'p-mono' }, UI.trunc(d.auth.nonce, 40))],
+              ['认证随机数', h('code', { class: 'p-mono' }, UI.trunc(d.auth.nonce, 40))],
               ['签名', h('code', { class: 'p-mono' }, UI.trunc(d.auth.signature, 40))],
               ['初始可信路径', (d.path || []).join(' → ')]
             ]),
-            h('p', { class: 'd-small d-muted' }, '已关联任务时，自动驾驶随即沿航段走廊生成遥测——观察上方地图 ✈️ 图标实时移动（3s 轮询）。'));
+            h('p', { class: 'd-small d-muted' }, '已关联任务时，航空器随即沿任务航线飞行 —— 上方地图 ✈️ 图标实时展示飞行动态。'));
         },
         note: { kind: 'SESSION', id: function (d) { return d.session.session_id; },
           extra: function (d) { return { uav_id: d.session.uav_id, mission_id: d.session.mission_id }; } },
@@ -115,7 +115,7 @@
     async function doClose() {
       if (!curS) { UI.toast('暂无进行中的会话 —— 先起飞报备', 'err'); return; }
       var ok = await P.confirm('降落报备',
-        '关闭后自动驾驶停止生成遥测，地图图标停在降落位置；对该会话 message/send → 4002（设计内拒绝）。会话号：' + curS.session_id,
+        '关闭后航空器停止上报动态，地图图标停留在降落位置，该会话不可再发送消息。会话号：' + curS.session_id,
         '确认降落');
       if (!ok) return;
       var r = await API.call('/api/session/close',
@@ -131,7 +131,7 @@
       });
       if (r.ok) {
         STORE.note('SESSION', r.data.session_id);
-        UI.toast('降落报备完成（status=' + r.data.status + '）');
+        UI.toast('降落报备完成（' + r.data.status + '）');
         setCur(null);
         if (tblS) tblS.reload();
         tick();
@@ -157,10 +157,10 @@
 
     root.append(h('div', { class: 'd-grid-2 d-mt2' },
       soCard,
-      card('会话状态 · 降落报备 session/close', sessBox,
+      card('会话状态 · 降落报备', sessBox,
         h('div', { class: 'd-mt' }, closeBtn,
           h('span', { class: 'd-small d-muted', style: { 'margin-left': '8px' } },
-            '关闭后自动驾驶停止生成遥测；重复关闭 → 4002（设计内）')),
+            '关闭后航空器停止上报动态；已关闭的会话不可重复关闭')),
         rpCl.root)));
 
     tblS = P.dataTable({
@@ -204,8 +204,8 @@
       emptyText: '暂无消息（会话心跳/位置报会出现在这里）'
     });
     root.append(h('div', { class: 'd-grid-2 d-mt2' },
-      card('会话台账 session/list（六态全列；点在飞行接管为当前会话）', tblS),
-      card('会话消息 message/list（心跳/位置报流水）', tblM)));
+      card('会话台账（点击在飞行即可接管为当前会话）', tblS),
+      card('会话消息（心跳与位置报流水）', tblM)));
 
     mx = MAPX.create(mapEl, { view: GEO.DEFAULT_VIEW });
     loadBase().then(tick);
@@ -297,13 +297,13 @@
         ['位置', GEO.fmtCoordPair(t.lat, t.lon)],
         ['高度 / 速度', t.alt + ' m / ' + t.speed + ' m/s'],
         ['航向', t.heading + '°'],
-        ['序号 / 来源', 'seq ' + t.seq + ' · ' + t.source],
+        ['序号 / 来源', t.seq + ' · ' + t.source],
         ['会话', t.session_id ? h('code', { class: 'p-mono' }, UI.trunc(t.session_id, 24)) : '—'],
         ['上报时间', t.reported_at]
       ]));
     } else {
       ridBox.append(h('div', { class: 'd-section' }, '最新遥测'),
-        P.empty('暂无遥测（telemetry:null，code=0 合法数据形态）'));
+        P.empty('暂无遥测数据'));
     }
     loadTrail(uavId, trailBox);
   }
