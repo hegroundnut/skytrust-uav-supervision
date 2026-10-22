@@ -6,8 +6,10 @@
 (function () {
   'use strict';
 
-  /* 默认视图：武汉演示空域（seed 航线坐标域 30.510-30.620 / 114.310-114.420 取中） */
-  var DEFAULT_VIEW = { lat: 30.55, lon: 114.37, zoom: 11 };
+  /* 默认视图：浙江工业大学莫干山校区（30.55254 N, 120.036690 E）——2026-10-22 用户裁定；
+     原武汉演示空域取中值 30.55/114.37 弃用。seed 航线坐标仍在武汉域，页面 fitPoints
+     到数据坐标时会随数据走，本视图仅决定初始/无数据时的底图中心。 */
+  var DEFAULT_VIEW = { lat: 30.55254, lon: 120.03669, zoom: 14 };
 
   /* 走廊状态语义（RouteSegment.corridor_status） */
   var ZONES = ['OPEN', 'RESTRICTED', 'CLOSED'];
