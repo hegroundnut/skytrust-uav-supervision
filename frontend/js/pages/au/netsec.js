@@ -305,7 +305,7 @@
       { name: 'source_node', label: '源节点', type: 'text', required: true, value: 'UAV-A-001-NODE' },
       { name: 'target_node', label: '目标节点', type: 'text', required: true, value: 'MGR' },
       { name: 'payload', label: '载荷（可选，JSON 对象）', type: 'textarea', rows: 2,
-        placeholder: '{"lat":30.52,"lon":114.32}' }
+        placeholder: '{"lat":30.508,"lon":119.99}' }
     ]);
     var msCard = card('消息发送（会话须 ACTIVE；CLOSED 会话不可发送）',
       fMs.root,

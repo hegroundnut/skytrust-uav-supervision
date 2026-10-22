@@ -72,7 +72,7 @@
       { name: 'subject_type', label: '主体类型', type: 'select', required: true, value: 'ENTERPRISE',
         options: [['ENTERPRISE', '企业'], ['INDIVIDUAL', '个人']] },
       { name: 'name', label: '主体名称', type: 'text', required: true,
-        placeholder: '如：武汉应急医疗运输有限公司（演示）' },
+        placeholder: '如：杭州应急医疗运输有限公司（演示）' },
       { name: 'id_number', label: '证件号码（模拟）', type: 'text', required: true,
         placeholder: '企业 91420100DEMO001X / 个人 420100199001010011',
         hint: '仅收取演示用模拟证件号，系统不采集、不存储任何真实证件信息' },

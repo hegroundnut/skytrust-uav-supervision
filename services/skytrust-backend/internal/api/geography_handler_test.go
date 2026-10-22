@@ -94,8 +94,8 @@ func TestSeedRoutesAndNodesHaveCoords(t *testing.T) {
 		m := rec.(map[string]any)
 		if m["route_id"] == "R101" {
 			found = true
-			if m["start_lat"].(float64) != 30.510 || m["start_lon"].(float64) != 114.310 ||
-				m["end_lat"].(float64) != 30.540 || m["end_lon"].(float64) != 114.340 {
+			if m["start_lat"].(float64) != 30.498 || m["start_lon"].(float64) != 119.980 ||
+				m["end_lat"].(float64) != 30.528 || m["end_lon"].(float64) != 120.010 {
 				t.Errorf("R101 坐标 = %v", m)
 			}
 		}
@@ -110,7 +110,7 @@ func TestSeedRoutesAndNodesHaveCoords(t *testing.T) {
 		m := rec.(map[string]any)
 		if m["node_id"] == "MGR" {
 			seenMGR = true
-			if m["lat"].(float64) != 30.620 || m["lon"].(float64) != 114.420 {
+			if m["lat"].(float64) != 30.608 || m["lon"].(float64) != 120.090 {
 				t.Errorf("MGR 坐标 = %v", m)
 			}
 		}

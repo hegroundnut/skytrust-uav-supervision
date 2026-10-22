@@ -7,9 +7,9 @@
   'use strict';
 
   /* 默认视图：浙江工业大学莫干山校区（30.55254 N, 120.036690 E）——2026-10-22 用户裁定；
-     原武汉演示空域取中值 30.55/114.37 弃用。seed 航线坐标仍在武汉域，页面 fitPoints
-     到数据坐标时会随数据走，本视图仅决定初始/无数据时的底图中心。 */
-  var DEFAULT_VIEW = { lat: 30.55254, lon: 120.03669, zoom: 14 };
+     演示 seed 地理域已同步整体平移至校区周边（demo/seed.go：纬 −0.012 / 经 +5.670，
+     航段/节点/遥测轨迹几何关系不变，校区居中），fitPoints 页面随数据落在校区域。 */
+  var DEFAULT_VIEW = { lat: 30.55254, lon: 120.03669, zoom: 15 };
 
   /* 走廊状态语义（RouteSegment.corridor_status） */
   var ZONES = ['OPEN', 'RESTRICTED', 'CLOSED'];

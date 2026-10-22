@@ -173,7 +173,7 @@ api operator/register '{"operator_id":"Operator-MED","name":"紧急医疗运输�
 expect_code 0 "operator/register Operator-MED"
 api manufacturer/register '{"manufacturer_id":"Manufacturer-MED","name":"医疗航空装备厂商","adapter_type":""}'
 expect_code 0 "manufacturer/register Manufacturer-MED"
-api route/create '{"route_id":"R-MED-01","zone":"Zone-M","start_point":"S9(30.510,114.310)","end_point":"MED-CENTER(30.590,114.390)","altitude_min":60,"altitude_max":120,"start_lat":30.510,"start_lon":114.310,"end_lat":30.590,"end_lon":114.390}'
+api route/create '{"route_id":"R-MED-01","zone":"Zone-M","start_point":"S9(30.498,119.980)","end_point":"MED-CENTER(30.578,120.060)","altitude_min":60,"altitude_max":120,"start_lat":30.498,"start_lon":119.980,"end_lat":30.578,"end_lon":120.060}'
 expect_code 0 "route/create R-MED-01（显式四坐标）"
 assert_eq "$(jqr '.data.route_id')" "R-MED-01" "回执航段号"
 api realname/register '{"subject_type":"ENTERPRISE","name":"紧急医疗运输企业","id_number":"91420100MED0001X","contact":"027-88880002"}'
@@ -283,7 +283,7 @@ CTL=$(jqr "[.data.records[] | select(.business_id==\"$PASS_CT\") | .source_chain
 case "$CTL" in IRITA-*) ok "crosschain/list CT 留痕 source_chain_tx_id 前缀 IRITA-（$CTL）";; *) bad "crosschain/list CT 留痕源链 TxID 前缀异常：[$CTL]（期望 IRITA-）";; esac
 
 chapter "第 4 章 · 起飞（接入点注册 + 起飞报备 + SIM 遥测自动驾驶）"
-api node/register "{\"node_id\":\"$UAV_MED-NODE\",\"node_type\":\"UAV\",\"position\":{\"X\":0,\"Y\":0},\"neighbors\":[\"N1\"],\"lat\":30.510,\"lon\":114.310}"
+api node/register "{\"node_id\":\"$UAV_MED-NODE\",\"node_type\":\"UAV\",\"position\":{\"X\":0,\"Y\":0},\"neighbors\":[\"N1\"],\"lat\":30.498,\"lon\":119.980}"
 expect_code 0 "node/register $UAV_MED-NODE（session/open 前置）"
 assert_eq "$(jqr '.data.status')" "ONLINE" "节点状态"
 api session/open "{\"uav_id\":\"$UAV_MED\",\"mission_id\":\"$MED\",\"pass_id\":\"$PASS_MED\"}"
@@ -349,7 +349,7 @@ expect_code 4001 "隔离后重开虫洞（设计内拒绝·附录 B）"
 
 chapter "第 5b 章 · 虫洞拓扑数据面（WTOPO 坐标红线——按 plan「Task 9 校准实录」a/b/c 三断言）"
 # Task 9 校准实录（plan commit 3c3bccc，BINDING）：种子 NODE-X/Y 已回填真实模拟经纬度
-# （seed.go:120-121——X 30.556/114.356、Y 30.640/114.440）→ 合法同时出现在地理层（Leaflet）
+# （seed.go:120-121——X 30.544/120.026、Y 30.628/120.110）→ 合法同时出现在地理层（Leaflet）
 # 与 WTOPO 抽象层。本脚本**不断言** NODE-X/Y ∉ Leaflet 输入（旧前提已过时）；分裂机制改以
 # probe 实证：有 position、无 lat/lon → ∈WTOPO 布点集 ∧ ∉Leaflet 可绘集（lat/lon 双零 = 未设
 # 语义，GEO.nodeCoord 判 null——js/data/geo.js 唯一裁决）。无 position 节点被 API 数据面门拒绝
@@ -361,10 +361,10 @@ NXP=$(jqr '.data.nodes[] | select(.node_id=="NODE-X") | .position // empty')
 assert_ne "$NXP" "" "(a) NODE-X ∈ topology 且 position 非空（有 position 必入 WTOPO 布点集）"
 NYP=$(jqr '.data.nodes[] | select(.node_id=="NODE-Y") | .position // empty')
 assert_ne "$NYP" "" "(a) NODE-Y ∈ topology 且 position 非空"
-assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-X") | .lat')" "30.556" "(a) NODE-X lat=30.556（Task 9 校准后前提：真实模拟坐标——两层皆现属红线正确行为）"
-assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-X") | .lon')" "114.356" "(a) NODE-X lon=114.356"
-assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-Y") | .lat')" "30.64" "(a) NODE-Y lat=30.64（种子值 30.640 之 JSON 最短形态）"
-assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-Y") | .lon')" "114.44" "(a) NODE-Y lon=114.44（种子值 114.440）"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-X") | .lat')" "30.544" "(a) NODE-X lat=30.544（Task 9 校准后前提：真实模拟坐标——两层皆现属红线正确行为）"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-X") | .lon')" "120.026" "(a) NODE-X lon=120.026"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-Y") | .lat')" "30.628" "(a) NODE-Y lat=30.628"
+assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-Y") | .lon')" "120.11" "(a) NODE-Y lon=120.11（种子值 120.110 之 JSON 最短形态）"
 assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-X") | .status')" "ISOLATED" "(a) NODE-X 隔离后状态如实（第 5 章 ISOLATE 落地——WTOPO 红虚线描边+⛔ 数据源）"
 assert_eq "$(jqr '.data.nodes[] | select(.node_id=="NODE-Y") | .status')" "ISOLATED" "(a) NODE-Y 隔离后状态如实"
 api node/register '{"node_id":"NODE-PROBE-T11","node_type":"EDGE","position":{"X":62,"Y":8},"neighbors":[]}'

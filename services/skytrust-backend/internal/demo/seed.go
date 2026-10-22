@@ -96,11 +96,11 @@ func (s *Seeder) Init() (*SeedReport, error) {
 
 	// 4. 航路（altitude 60–150，corridor_status=OPEN）
 	routes := []model.RouteSegment{
-		{RouteID: "R101", Zone: "Zone-A", StartPoint: "A-ENTRY(30.510,114.310)", EndPoint: "A-EXIT(30.540,114.340)", StartLat: 30.510, StartLon: 114.310, EndLat: 30.540, EndLon: 114.340, AltitudeMin: 60, AltitudeMax: 120, CorridorStatus: "OPEN"},
-		{RouteID: "R205", Zone: "Zone-A", StartPoint: "A-EXIT(30.540,114.340)", EndPoint: "B-GATE(30.572,114.372)", StartLat: 30.540, StartLon: 114.340, EndLat: 30.572, EndLon: 114.372, AltitudeMin: 80, AltitudeMax: 120, CorridorStatus: "OPEN"},
-		{RouteID: "R208", Zone: "Zone-B", StartPoint: "B-WEST(30.570,114.370)", EndPoint: "B-EAST(30.590,114.390)", StartLat: 30.570, StartLon: 114.370, EndLat: 30.590, EndLon: 114.390, AltitudeMin: 60, AltitudeMax: 100, CorridorStatus: "OPEN"},
-		{RouteID: "R209", Zone: "Zone-B", StartPoint: "B-GATE(30.555,114.365)", EndPoint: "B-NORTH(30.600,114.410)", StartLat: 30.555, StartLon: 114.365, EndLat: 30.600, EndLon: 114.410, AltitudeMin: 90, AltitudeMax: 150, CorridorStatus: "OPEN"},
-		{RouteID: "R306", Zone: "Zone-B", StartPoint: "B-EAST(30.585,114.385)", EndPoint: "B-LAND(30.620,114.420)", StartLat: 30.585, StartLon: 114.385, EndLat: 30.620, EndLon: 114.420, AltitudeMin: 60, AltitudeMax: 120, CorridorStatus: "OPEN"},
+		{RouteID: "R101", Zone: "Zone-A", StartPoint: "A-ENTRY(30.498,119.980)", EndPoint: "A-EXIT(30.528,120.010)", StartLat: 30.498, StartLon: 119.980, EndLat: 30.528, EndLon: 120.010, AltitudeMin: 60, AltitudeMax: 120, CorridorStatus: "OPEN"},
+		{RouteID: "R205", Zone: "Zone-A", StartPoint: "A-EXIT(30.528,120.010)", EndPoint: "B-GATE(30.560,120.042)", StartLat: 30.528, StartLon: 120.010, EndLat: 30.560, EndLon: 120.042, AltitudeMin: 80, AltitudeMax: 120, CorridorStatus: "OPEN"},
+		{RouteID: "R208", Zone: "Zone-B", StartPoint: "B-WEST(30.558,120.040)", EndPoint: "B-EAST(30.578,120.060)", StartLat: 30.558, StartLon: 120.040, EndLat: 30.578, EndLon: 120.060, AltitudeMin: 60, AltitudeMax: 100, CorridorStatus: "OPEN"},
+		{RouteID: "R209", Zone: "Zone-B", StartPoint: "B-GATE(30.543,120.035)", EndPoint: "B-NORTH(30.588,120.080)", StartLat: 30.543, StartLon: 120.035, EndLat: 30.588, EndLon: 120.080, AltitudeMin: 90, AltitudeMax: 150, CorridorStatus: "OPEN"},
+		{RouteID: "R306", Zone: "Zone-B", StartPoint: "B-EAST(30.573,120.055)", EndPoint: "B-LAND(30.608,120.090)", StartLat: 30.573, StartLon: 120.055, EndLat: 30.608, EndLon: 120.090, AltitudeMin: 60, AltitudeMax: 120, CorridorStatus: "OPEN"},
 	}
 	for i := range routes {
 		rec := routes[i]
@@ -111,14 +111,14 @@ func (s *Seeder) Init() (*SeedReport, error) {
 
 	// 5. 网络节点（Neighbors/Position 为 JSON 文本；NODE-X/NODE-Y 为虫洞攻击节点，默认 OFFLINE）
 	nodes := []model.NetworkNode{
-		{NodeID: "UAV-A-001-NODE", NodeType: "UAV", SM9Identity: crypto.SM9IdentityOf("UAV-A-001-NODE"), Neighbors: `["N1"]`, Position: `{"x":0,"y":0}`, Lat: 30.510, Lon: 114.310, Status: "ONLINE"},
-		{NodeID: "N1", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N1"), Neighbors: `["UAV-A-001-NODE","N2"]`, Position: `{"x":10,"y":10}`, Lat: 30.530, Lon: 114.330, Status: "ONLINE"},
-		{NodeID: "N2", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N2"), Neighbors: `["N1","N3"]`, Position: `{"x":20,"y":20}`, Lat: 30.548, Lon: 114.348, Status: "ONLINE"},
-		{NodeID: "N3", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N3"), Neighbors: `["N2","N4"]`, Position: `{"x":30,"y":30}`, Lat: 30.572, Lon: 114.372, Status: "ONLINE"},
-		{NodeID: "N4", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N4"), Neighbors: `["N3","MGR"]`, Position: `{"x":40,"y":40}`, Lat: 30.598, Lon: 114.398, Status: "ONLINE"},
-		{NodeID: "MGR", NodeType: "MANAGEMENT", SM9Identity: crypto.SM9IdentityOf("MGR"), Neighbors: `["N4"]`, Position: `{"x":50,"y":50}`, Lat: 30.620, Lon: 114.420, Status: "ONLINE"},
-		{NodeID: "NODE-X", NodeType: "ATTACKER", SM9Identity: crypto.SM9IdentityOf("NODE-X"), Neighbors: `[]`, Position: `{"x":1,"y":50}`, Lat: 30.556, Lon: 114.356, Status: "OFFLINE"},
-		{NodeID: "NODE-Y", NodeType: "ATTACKER", SM9Identity: crypto.SM9IdentityOf("NODE-Y"), Neighbors: `[]`, Position: `{"x":99,"y":51}`, Lat: 30.640, Lon: 114.440, Status: "OFFLINE"},
+		{NodeID: "UAV-A-001-NODE", NodeType: "UAV", SM9Identity: crypto.SM9IdentityOf("UAV-A-001-NODE"), Neighbors: `["N1"]`, Position: `{"x":0,"y":0}`, Lat: 30.498, Lon: 119.980, Status: "ONLINE"},
+		{NodeID: "N1", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N1"), Neighbors: `["UAV-A-001-NODE","N2"]`, Position: `{"x":10,"y":10}`, Lat: 30.518, Lon: 120.000, Status: "ONLINE"},
+		{NodeID: "N2", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N2"), Neighbors: `["N1","N3"]`, Position: `{"x":20,"y":20}`, Lat: 30.536, Lon: 120.018, Status: "ONLINE"},
+		{NodeID: "N3", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N3"), Neighbors: `["N2","N4"]`, Position: `{"x":30,"y":30}`, Lat: 30.560, Lon: 120.042, Status: "ONLINE"},
+		{NodeID: "N4", NodeType: "EDGE", SM9Identity: crypto.SM9IdentityOf("N4"), Neighbors: `["N3","MGR"]`, Position: `{"x":40,"y":40}`, Lat: 30.586, Lon: 120.068, Status: "ONLINE"},
+		{NodeID: "MGR", NodeType: "MANAGEMENT", SM9Identity: crypto.SM9IdentityOf("MGR"), Neighbors: `["N4"]`, Position: `{"x":50,"y":50}`, Lat: 30.608, Lon: 120.090, Status: "ONLINE"},
+		{NodeID: "NODE-X", NodeType: "ATTACKER", SM9Identity: crypto.SM9IdentityOf("NODE-X"), Neighbors: `[]`, Position: `{"x":1,"y":50}`, Lat: 30.544, Lon: 120.026, Status: "OFFLINE"},
+		{NodeID: "NODE-Y", NodeType: "ATTACKER", SM9Identity: crypto.SM9IdentityOf("NODE-Y"), Neighbors: `[]`, Position: `{"x":99,"y":51}`, Lat: 30.628, Lon: 120.110, Status: "OFFLINE"},
 	}
 	for i := range nodes {
 		rec := nodes[i]
@@ -186,34 +186,34 @@ func (s *Seeder) Reset() (int, error) {
 
 // NormalTrajectory 正常轨迹（R101→R205→R306，12 点），供 Plan 3/4 使用。
 var NormalTrajectory = []map[string]any{
-	{"seq": 1, "route_segment": "R101", "lat": 30.510, "lon": 114.310, "alt": 80.0, "speed": 12.0},
-	{"seq": 2, "route_segment": "R101", "lat": 30.520, "lon": 114.320, "alt": 80.0, "speed": 12.0},
-	{"seq": 3, "route_segment": "R101", "lat": 30.530, "lon": 114.330, "alt": 85.0, "speed": 12.5},
-	{"seq": 4, "route_segment": "R101", "lat": 30.540, "lon": 114.340, "alt": 85.0, "speed": 12.5},
-	{"seq": 5, "route_segment": "R205", "lat": 30.548, "lon": 114.348, "alt": 90.0, "speed": 13.0},
-	{"seq": 6, "route_segment": "R205", "lat": 30.556, "lon": 114.356, "alt": 95.0, "speed": 13.0},
-	{"seq": 7, "route_segment": "R205", "lat": 30.564, "lon": 114.364, "alt": 95.0, "speed": 13.5},
-	{"seq": 8, "route_segment": "R205", "lat": 30.572, "lon": 114.372, "alt": 100.0, "speed": 13.5},
-	{"seq": 9, "route_segment": "R306", "lat": 30.585, "lon": 114.385, "alt": 90.0, "speed": 12.0},
-	{"seq": 10, "route_segment": "R306", "lat": 30.598, "lon": 114.398, "alt": 85.0, "speed": 12.0},
-	{"seq": 11, "route_segment": "R306", "lat": 30.610, "lon": 114.410, "alt": 75.0, "speed": 11.0},
-	{"seq": 12, "route_segment": "R306", "lat": 30.620, "lon": 114.420, "alt": 60.0, "speed": 10.0},
+	{"seq": 1, "route_segment": "R101", "lat": 30.498, "lon": 119.980, "alt": 80.0, "speed": 12.0},
+	{"seq": 2, "route_segment": "R101", "lat": 30.508, "lon": 119.990, "alt": 80.0, "speed": 12.0},
+	{"seq": 3, "route_segment": "R101", "lat": 30.518, "lon": 120.000, "alt": 85.0, "speed": 12.5},
+	{"seq": 4, "route_segment": "R101", "lat": 30.528, "lon": 120.010, "alt": 85.0, "speed": 12.5},
+	{"seq": 5, "route_segment": "R205", "lat": 30.536, "lon": 120.018, "alt": 90.0, "speed": 13.0},
+	{"seq": 6, "route_segment": "R205", "lat": 30.544, "lon": 120.026, "alt": 95.0, "speed": 13.0},
+	{"seq": 7, "route_segment": "R205", "lat": 30.552, "lon": 120.034, "alt": 95.0, "speed": 13.5},
+	{"seq": 8, "route_segment": "R205", "lat": 30.560, "lon": 120.042, "alt": 100.0, "speed": 13.5},
+	{"seq": 9, "route_segment": "R306", "lat": 30.573, "lon": 120.055, "alt": 90.0, "speed": 12.0},
+	{"seq": 10, "route_segment": "R306", "lat": 30.586, "lon": 120.068, "alt": 85.0, "speed": 12.0},
+	{"seq": 11, "route_segment": "R306", "lat": 30.598, "lon": 120.080, "alt": 75.0, "speed": 11.0},
+	{"seq": 12, "route_segment": "R306", "lat": 30.608, "lon": 120.090, "alt": 60.0, "speed": 10.0},
 }
 
 // DeviationTrajectory 偏航轨迹（R101→R209→R306，12 点）：第 5–8 点切入 R209 且坐标偏移。
 var DeviationTrajectory = []map[string]any{
-	{"seq": 1, "route_segment": "R101", "lat": 30.510, "lon": 114.310, "alt": 80.0, "speed": 12.0},
-	{"seq": 2, "route_segment": "R101", "lat": 30.520, "lon": 114.320, "alt": 80.0, "speed": 12.0},
-	{"seq": 3, "route_segment": "R101", "lat": 30.530, "lon": 114.330, "alt": 85.0, "speed": 12.5},
-	{"seq": 4, "route_segment": "R101", "lat": 30.540, "lon": 114.340, "alt": 85.0, "speed": 12.5},
-	{"seq": 5, "route_segment": "R209", "lat": 30.561, "lon": 114.372, "alt": 95.0, "speed": 15.0},
-	{"seq": 6, "route_segment": "R209", "lat": 30.574, "lon": 114.383, "alt": 105.0, "speed": 15.5},
-	{"seq": 7, "route_segment": "R209", "lat": 30.586, "lon": 114.395, "alt": 115.0, "speed": 15.5},
-	{"seq": 8, "route_segment": "R209", "lat": 30.598, "lon": 114.407, "alt": 120.0, "speed": 16.0},
-	{"seq": 9, "route_segment": "R306", "lat": 30.585, "lon": 114.385, "alt": 90.0, "speed": 12.0},
-	{"seq": 10, "route_segment": "R306", "lat": 30.598, "lon": 114.398, "alt": 85.0, "speed": 12.0},
-	{"seq": 11, "route_segment": "R306", "lat": 30.610, "lon": 114.410, "alt": 75.0, "speed": 11.0},
-	{"seq": 12, "route_segment": "R306", "lat": 30.620, "lon": 114.420, "alt": 60.0, "speed": 10.0},
+	{"seq": 1, "route_segment": "R101", "lat": 30.498, "lon": 119.980, "alt": 80.0, "speed": 12.0},
+	{"seq": 2, "route_segment": "R101", "lat": 30.508, "lon": 119.990, "alt": 80.0, "speed": 12.0},
+	{"seq": 3, "route_segment": "R101", "lat": 30.518, "lon": 120.000, "alt": 85.0, "speed": 12.5},
+	{"seq": 4, "route_segment": "R101", "lat": 30.528, "lon": 120.010, "alt": 85.0, "speed": 12.5},
+	{"seq": 5, "route_segment": "R209", "lat": 30.549, "lon": 120.042, "alt": 95.0, "speed": 15.0},
+	{"seq": 6, "route_segment": "R209", "lat": 30.562, "lon": 120.053, "alt": 105.0, "speed": 15.5},
+	{"seq": 7, "route_segment": "R209", "lat": 30.574, "lon": 120.065, "alt": 115.0, "speed": 15.5},
+	{"seq": 8, "route_segment": "R209", "lat": 30.586, "lon": 120.077, "alt": 120.0, "speed": 16.0},
+	{"seq": 9, "route_segment": "R306", "lat": 30.573, "lon": 120.055, "alt": 90.0, "speed": 12.0},
+	{"seq": 10, "route_segment": "R306", "lat": 30.586, "lon": 120.068, "alt": 85.0, "speed": 12.0},
+	{"seq": 11, "route_segment": "R306", "lat": 30.598, "lon": 120.080, "alt": 75.0, "speed": 11.0},
+	{"seq": 12, "route_segment": "R306", "lat": 30.608, "lon": 120.090, "alt": 60.0, "speed": 10.0},
 }
 
 // MissionB002Template 冲突任务模板（不落库），供 Plan 2 测试/API 使用。
