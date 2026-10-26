@@ -1,6 +1,6 @@
 /* portal.js — 三端共享薄壳（计划 B Task 5，spec §4.1）
    职责：boot() 接管全部页面 chrome 逻辑——导航构建、hash 路由（#/name?tab=… → registry）、
-   三链灯 + 后端徽章心跳（15s，复刻 app.js pollChains 语义）、上下文 chip 条挂载、
+   四链灯 + 后端徽章心跳（15s，复刻 app.js pollChains 语义）、上下文 chip 条挂载、
    天地图 key 引导（每会话一次，Global Constraints #8）。
    页面代码（js/pages/<portal>/<name>.js）只需注册 window.XX_PAGES.name = {render(root, ctx)}。
    依赖：ui.js(UI) / pui.js(PUI) / api.js(API) / map.js(MAPX)，加载顺序见三端 HTML。 */
@@ -70,7 +70,7 @@
     /* --- 上下文 chip 条（STORE 驱动；重绘/复制/清空由 pui.chipBar 自理） --- */
     if (chipsEl) chipsEl.append(window.PUI.chipBar({}));
 
-    /* --- 三链状态灯（.d-lampwrap > .d-lamp + 文字标签，永不单靠颜色） --- */
+    /* --- 四链状态灯（.d-lampwrap > .d-lamp + 文字标签，永不单靠颜色） --- */
     CHAINS.forEach(function (c) {
       lampsEl.append(h('span', { class: 'd-lampwrap' },
         h('span', { class: 'd-lamp', 'data-chain': c.key, title: c.label + '：状态探测中…' }),

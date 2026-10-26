@@ -1,4 +1,4 @@
-/* app.js —— SPA 路由与全局装裱：主题切换、三链状态灯、后端延迟徽章。 */
+/* app.js —— SPA 路由与全局装裱：主题切换、四链状态灯、后端延迟徽章。 */
 (function () {
   'use strict';
   const { h } = window.UI;
@@ -17,7 +17,7 @@
     route(); // 重绘当前页以应用新 var()（SVG 内联色等）
   });
 
-  /* ---------- 三链状态灯 + 后端徽章 ---------- */
+  /* ---------- 四链状态灯 + 后端徽章（lamps 由 #chain-lamps 子元素 data-chain 驱动，链数增减零改码） ---------- */
   async function pollChains() {
     const lamps = document.querySelectorAll('#chain-lamps .lamp');
     try {
@@ -58,10 +58,9 @@
     const qi = raw.indexOf('?');
     const name = (qi >= 0 ? raw.slice(0, qi) : raw) || 'overview';
     const query = new URLSearchParams(qi >= 0 ? raw.slice(qi + 1) : '');
-    const page = PAGES[name] || PAGES.overview || PAGES.dashboard;
+    const page = PAGES[name] || PAGES.overview;   // 未挂载/旧哈希路由（act/wb/explorer 等已下线）一律回落总览
     document.querySelectorAll('.nav-item').forEach(a =>
       a.classList.toggle('active', a.dataset.page === name));
-    expandFoldFor(name);
     const root = document.getElementById('page');
     root.innerHTML = '';
     hideTipSafe();
@@ -73,19 +72,6 @@
     }
     window.scrollTo(0, 0);
   }
-  /* 折叠组：当前页在组内则自动展开；开合状态 localStorage 持久化 */
-  const FOLDS = { ref: ['dashboard', 'act1', 'act2', 'act3'], tools: ['explorer'] };
-  function expandFoldFor(name) {
-    document.querySelectorAll('.nav-fold').forEach(d => {
-      const key = d.dataset.fold;
-      if (FOLDS[key] && FOLDS[key].includes(name)) d.open = true;
-      else if (localStorage.getItem('skytrust-fold-' + key) === '1') d.open = true;
-    });
-  }
-  document.querySelectorAll('.nav-fold').forEach(d => {
-    d.addEventListener('toggle', () =>
-      localStorage.setItem('skytrust-fold-' + d.dataset.fold, d.open ? '1' : '0'));
-  });
   function hideTipSafe() { try { window.UI.hideTip(); } catch (_) {} }
   window.addEventListener('hashchange', route);
   route();

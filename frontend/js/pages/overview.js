@@ -1,4 +1,4 @@
-/* overview.js —— 平台总览 #/overview：三链状态、核心指标、跨链流水、告警摘要、演示维护。 */
+/* overview.js —— 平台总览 #/overview：四链状态、核心指标、跨链流水、告警摘要、演示维护。 */
 (function () {
   'use strict';
   const { h } = UI, P = PUI;
@@ -15,16 +15,16 @@
   function render(root) {
     root.append(P.pageHead({
       title: '平台总览',
-      sub: '三链状态 · 核心指标 · 跨链流水 · 告警摘要 · 演示维护',
+      sub: '四链状态 · 核心指标 · 跨链流水 · 告警摘要 · 演示维护',
       actions: [h('button', { class: 'p-btn',
         onClick: () => { root.innerHTML = ''; render(root); } }, '刷新全部')],
     }));
     root.append(P.chipBar());
 
-    /* --- 三链状态条 --- */
-    const chainBox = h('div', { class: 'p-stats' }, P.empty('正在加载三链状态…'));
+    /* --- 四链状态条 --- */
+    const chainBox = h('div', { class: 'p-stats' }, P.empty('正在加载四链状态…'));
     const rpHealth = P.resultPanel();
-    root.append(card('三链运行状态', chainBox,
+    root.append(card('四链运行状态', chainBox,
       P.actionBar([{ label: '健康自检', run: async () => {
         const r = await API.call('/api/health/check', {});
         rpHealth.show(r, d => P.kv([
@@ -32,6 +32,7 @@
           ['Fabric 运营链', d.chains && d.chains.fabric],
           ['ChainMaker 监管链', d.chains && d.chains['chainmaker']],
           ['FISCO BCOS 管理链', d.chains && d.chains['fisco-bcos']],
+          ['IRITA 证照链', d.chains && d.chains.irita],
         ]));
       } }]), rpHealth.root));
     API.call('/api/chain/status', {}).then(r => {
@@ -41,7 +42,8 @@
       chainBox.append(
         statChain('监管链（不可绕过的枢纽）', 'chainmaker', cs['chainmaker']),
         statChain('运营链', 'fabric', cs.fabric),
-        statChain('管理链', 'fisco-bcos', cs['fisco-bcos']));
+        statChain('管理链', 'fisco-bcos', cs['fisco-bcos']),
+        statChain('证照链（通行证源发链 · SM2）', 'irita', cs.irita));
     });
 
     /* --- 核心指标：dashboard/summary + 三本台账 total --- */

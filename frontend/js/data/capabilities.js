@@ -28,16 +28,17 @@
     caps: [
       {
         id: 'cap1', goalNo: '绩效目标一', ico: 'globe',
-        title: '三链异构 · 国密跨链存证',
-        pitch: '长安链（监管）× Fabric（运营）× FISCO BCOS（管理）三条异构链真实部署、协同在线：业务链之间不直连，' +
+        goal: '研制支持至少 3 种异构链的基于商密算法的原型跨链系统。',
+        title: '四链异构 · 国密跨链存证',
+        pitch: '长安链（监管）× Fabric（运营）× FISCO BCOS（管理）× IRITA（证照 · SM2）四条异构链真实部署、协同在线：业务链之间不直连，' +
           '必经监管链中转；SM3 摘要 + SM9 签名国密算法全程保障，四段 TxID 全程留痕可回溯。',
-        points: ['3 条异构链在网运行，状态实时可查', '13 步跨链协议 · 四段 TxID 存证台账', 'SM3 完整性 + SM9 验签双重国密保障'],
+        points: ['4 条异构链在网运行（含 IRITA 证照链），状态实时可查', '13 步跨链协议 · 四段 TxID 存证台账', 'SM3 完整性 + SM9 验签双重国密保障'],
         claim: null,   /* 官方目标一不含「秒级」主张 —— 不出秒级判定，不谎称 */
         evidence: [
           { endpoint: '/api/chain/status', chips: function (d) {
-              var n = onlineCount(d), total = (d && d.count) || 3;
+              var n = onlineCount(d), total = (d && d.count) || 4;
               return [{ label: '异构链在线', value: n + ' / ' + total,
-                sub: 'ChainMaker · Fabric · FISCO BCOS', tone: n === total ? 'good' : 'critical' }];
+                sub: 'ChainMaker · Fabric · FISCO BCOS · IRITA', tone: n === total ? 'good' : 'critical' }];
             } },
           { endpoint: '/api/crosschain/list', body: { page: 1, page_size: 1 }, chips: function (d) {
               var r = (d && d.records && d.records[0]) || null;
@@ -59,6 +60,7 @@
       },
       {
         id: 'cap2', goalNo: '绩效目标二', ico: 'shield',
+        goal: '研制基于商密算法的能够抵抗虫洞攻击的秒级链下交易网络原型系统。',
         title: '抗虫洞 · 秒级链下可信网络',
         pitch: '可信路由 + SM9 挑战-响应会话认证的链下消息网络：消息毫秒级送达、不逐条上链；' +
           '虫洞隧道五维特征实时检测，受染节点隔离后自动重算干净路径恢复通信——攻防全程可实验复现。',
@@ -104,6 +106,7 @@
       },
       {
         id: 'cap3', goalNo: '绩效目标三', ico: 'search',
+        goal: '研制秒级身份追踪及密文内容监管原型系统。',
         title: '秒级追踪 · 密文内容监管',
         pitch: '7 级跨链身份追踪：化名→实名逐级回溯，断链即断点留痕，禁止拼造；' +
           'SM9 密文任务内容监管核验：未授权只见封缄，授权开箱全程上链留痕——追踪与核验均秒级出结果。',

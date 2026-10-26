@@ -127,10 +127,11 @@ for f in \
   frontend/js/pages/op/chainview.js frontend/js/pages/au/chainview.js \
   frontend/js/pages/rg/chainview.js frontend/js/pages/ct/chainview.js \
   frontend/js/pages/chainview.js \
+  frontend/js/pages/overview.js frontend/js/pages/demo.js \
   docs/demo-script.md ; do
   [ -f "$ROOT/$f" ] || { bad "缺文件 $f"; MISS=1; }
 done
-[ "$MISS" = "0" ] && ok "四端全部产物文件存在（5 HTML + 5 CSS + 共享底座含 shell-ct/CXV/WTOPO + vendor + 25 业务页 + 5 浏览器挂载页 + demo-script）"
+[ "$MISS" = "0" ] && ok "四端全部产物文件存在（5 HTML + 5 CSS + 共享底座含 shell-ct/CXV/WTOPO + vendor + 25 业务页 + 5 浏览器挂载页 + index 总览/演示说明页 + demo-script）"
 JSFAIL=0
 while IFS= read -r f; do
   node --check "$f" >/dev/null 2>&1 || { bad "node --check $f"; JSFAIL=1; }
@@ -147,6 +148,9 @@ grep -q 'shell-ct.js' "$SIM_DIR/license-center.html" && ok "license-center.html 
 for p in operator authority regulator license-center index; do
   grep -q 'js/chainview.js' "$SIM_DIR/$p.html" && ok "$p.html 挂载 CXV 浏览器共享模块（js/chainview.js）" || bad "$p.html 未挂载 js/chainview.js"
 done
+grep -q 'js/pages/demo.js' "$SIM_DIR/index.html" && ok "index.html 挂载演示说明页（js/pages/demo.js——立项三目标 21 步 API 实跑流程）" || bad "index.html 未挂载 js/pages/demo.js"
+grep -q 'data-chain="irita"' "$SIM_DIR/index.html" && ok "index.html 顶栏四链状态灯（含 IRITA 证照链）" || bad "index.html 顶栏缺 IRITA 状态灯"
+! grep -q 'js/pages/act1.js' "$SIM_DIR/index.html" && ok "index.html 已卸载冻结脚本（act/wb/explorer/dashboard/pui-lab 不再挂载——文件保留在库）" || bad "index.html 仍挂载已冻结的 act1.js" 
 grep -q 'wormhole-topo.js' "$SIM_DIR/authority.html" && ok "authority.html 挂载 WTOPO（js/wormhole-topo.js）" || bad "authority.html 未挂载 wormhole-topo.js"
 grep -q '以下筛选仅覆盖最近 200 条记录' "$ROOT/frontend/js/chainview.js" \
   && ok "CXV 固定小字逐字存在「以下筛选仅覆盖最近 200 条记录」（Review Focus 5——chainview.js SMALL_PRINT）" \
@@ -578,7 +582,7 @@ cat <<'HUMAN'
   跨链失败黄条如实展示 + 补发 busy 态（sim 跨链恒成功无法自然构造——真链验收时看一眼）、
   3002 FailData 状态如实补展
 【四端浏览器（CXV · Task 8）】
-- 四端 + index 五处挂载 #/chainview JS 渲染后视觉（布局/间距/链卡边条色 = 链色语义：
+- 四端四处挂载 #/chainview JS 渲染后视觉（index 已卸载浏览器页、仅保留 js/chainview.js 共享模块；布局/间距/链卡边条色 = 链色语义：
   紫 ChainMaker / 蓝 Fabric / 青 FISCO BCOS / 绿 IRITA——icon+文字，绝不仅靠颜色）
 - 节点情况：四链卡（高度/节点数/共识/mode 徽章/状态）+ 选中链节点表 source 列
   （rpc / static+probe / sim 如实展示）
