@@ -32,10 +32,10 @@
       baseBody: { message_type: 'MISSION_APPLICATION', status: 'SUCCESS' },
       columns: [
         { title: '申请号', render: function (r) { return UI.trunc(r.business_id, 24); }, mono: true },
-        { title: 'cross_tx_id', render: function (r) { return UI.trunc(r.cross_tx_id, 18); }, mono: true },
-        { title: '时延(ms)', key: 'latency_ms', num: true },
-        { title: '申请时间', key: 'created_at' },
-        { title: '审核状态', render: function (r) { return h('span', { 'data-rv': r.business_id }, '⏳'); } },
+        { title: '跨链流水号', render: function (r) { return UI.trunc(r.cross_tx_id, 18); }, mono: true },
+        { title: '耗时', render: function (r) { return UI.fmtMs(r.latency_ms); }, num: true },
+        { title: '申请时间', render: function (r) { return UI.fmtDT(r.created_at); } },
+        { title: '审核状态', render: function (r) { return h('span', { class: 'd-small d-muted', 'data-rv': r.business_id }, '待审'); } },
         { title: '操作', render: function (r) {
           return h('span', { class: 'd-row' },
             h('button', { class: 'p-btn p-btn-sm p-btn-primary',
@@ -80,8 +80,8 @@
 
     root.append(h('div', { class: 'd-grid-side' },
       h('div', { class: 'd-col' },
-        card('跨链申请台账（MISSION_APPLICATION · SUCCESS）', tblA),
-        card('待审任务面板（SUBMITTED · 管理方只见脱敏值）', tblB)),
+        card('飞行任务申请台账 · 链上已确认', tblA),
+        card('待审任务 · 管理端仅显示脱敏信息', tblB)),
       h('div', { class: 'd-col' }, card('审核工作台', panel))));
   }
 
@@ -89,7 +89,7 @@
   async function openApplication(appId, cxId, panel, reloadAll) {
     if (mxMini) { mxMini.destroy(); mxMini = null; }
     panel.innerHTML = '';
-    panel.append(h('div', { class: 'p-empty' }, '⏳ 加载申请存证与审核历史…'));
+    panel.append(h('div', { class: 'p-empty' }, '加载申请存证与审核历史…'));
     var cxR = cxId ? await API.call('/api/crosschain/query', { cross_tx_id: cxId }) : null;
     var hR = await API.call('/api/review/query', { application_id: appId });
     if (!panel.isConnected) return;
@@ -98,7 +98,7 @@
 
     panel.append(P.kv([['申请号', h('code', { class: 'p-mono' }, appId)]]));
     if (cxR && cxR.ok) {
-      panel.append(h('div', { class: 'd-section' }, '跨链存证（fabric → chainmaker → fisco-bcos）'),
+      panel.append(h('div', { class: 'd-section' }, '跨链存证'),
         P.cxTrail(cxR.data));
     }
     var histWrap = h('div', {}, histBox(hR));
@@ -108,13 +108,13 @@
     var rp = P.resultPanel();
     var f = P.form([
       { name: 'result', label: '裁决', type: 'select', value: 'APPROVED',
-        options: ['APPROVED', 'REJECTED', 'NEED_COORDINATION'] },
+        options: [['APPROVED', '通过'], ['REJECTED', '驳回'], ['NEED_COORDINATION', '需协调']] },
       { name: 'reviewer', label: '审核员', type: 'text', required: true, value: 'Manager-A' },
       { name: 'rules_hit', label: '命中规则（逗号分隔，可留空）', type: 'text',
         placeholder: '如 R-ALT-001,TIME_WINDOW' },
       { name: 'comment', label: '审核意见', type: 'textarea', rows: 2 }
     ]);
-    panel.append(h('div', { class: 'd-section' }, '裁决（MISSION_REVIEW_RESULT 跨链回传源链）'),
+    panel.append(h('div', { class: 'd-section' }, '裁决 · 结果跨链回传源链'),
       f.root,
       P.actionBar([{ label: '提交裁决', kind: 'primary',
         confirm: { title: '提交裁决', msg: '裁决将跨链回传源链，并同步推进任务审批状态。', ok: '提交' },
@@ -168,7 +168,7 @@
         ['审核员', x.reviewer],
         ['规则', PORTAL.jp(x.rules_hit, []).join('、') || '—'],
         ['意见', x.comment || '—'],
-        ['时间', x.review_time]
+        ['时间', x.review_time ? UI.fmtDT(x.review_time, true) : '—']
       ]));
     });
     return box;
@@ -178,7 +178,7 @@
   async function openMission(mid, panel) {
     if (mxMini) { mxMini.destroy(); mxMini = null; }
     panel.innerHTML = '';
-    panel.append(h('div', { class: 'p-empty' }, '⏳ 任务详情查询中…'));
+    panel.append(h('div', { class: 'p-empty' }, '任务详情查询中…'));
     var r = await API.call('/api/mission/query', { mission_id: mid });
     if (!panel.isConnected) return;
     panel.innerHTML = '';

@@ -13,9 +13,9 @@
   function render(root) {
     root.append(P.pageHead({
       title: '证照总览',
-      sub: '国密证照链门户：四链运行状态 · 证照计数 · 待签发任务 —— 数据实时刷新，空台账如实显示 0'
+      sub: '国密证照链门户 · 四链运行状态 · 证照计数 · 待签发任务'
     }));
-    var strip = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 证照总览加载中…'));
+    var strip = h('div', {}, h('div', { class: 'p-empty' }, '证照总览加载中…'));
     root.append(strip);
     loadLive(strip);
   }
@@ -31,7 +31,7 @@
     /* --- 四链卡：PORTAL.CHAINS 固定次序驱动（chainmaker/fabric/fisco-bcos/irita） --- */
     PORTAL.CHAINS.forEach(function (c) {
       var st = (chainR.ok && chainR.data && chainR.data.chains) ? chainR.data.chains[c.key] : null;
-      cards.push({ label: c.label, value: st || '未知', tone: st === 'ONLINE' ? 'good' : 'critical' });
+      cards.push({ label: c.label, value: st ? P.statusZh(st) : '未知', tone: st === 'ONLINE' ? 'good' : 'critical' });
     });
 
     /* --- 证照计数：pass/list 最近 200 条内的 VALID / REVOKED（GENERATING/USED/EXPIRED 不计入两卡） --- */
@@ -43,9 +43,9 @@
         else if (p.status === 'REVOKED') revoked++;
       });
       cards.push({ label: '有效证照', value: String(valid), tone: valid > 0 ? 'good' : null,
-        sub: 'VALID（最近 200 条内，台账共 ' + (passR.data.total || 0) + ' 条）' });
+        sub: '最近 200 条内 · 台账共 ' + (passR.data.total || 0) + ' 条' });
       cards.push({ label: '已吊销证照', value: String(revoked), tone: revoked > 0 ? 'critical' : null,
-        sub: 'REVOKED（最近 200 条内）' });
+        sub: '最近 200 条内统计' });
     } else {
       cards.push({ label: '有效证照', value: '--', sub: '实时数据获取失败' });
       cards.push({ label: '已吊销证照', value: '--', sub: '实时数据获取失败' });
@@ -60,7 +60,7 @@
         return m.status === 'APPROVED' && !issued[m.mission_id];
       }).length;
       cards.push({ label: '待签发任务', value: String(pending), tone: pending > 0 ? 'warning' : null,
-        sub: 'APPROVED 未签发 · 最近 200 条内' });
+        sub: '已批准 · 未签发 · 最近 200 条内' });
     } else {
       cards.push({ label: '待签发任务', value: '--', sub: '实时数据获取失败' });
     }

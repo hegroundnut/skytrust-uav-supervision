@@ -18,6 +18,10 @@
   const card = (title, ...b) => h('section', { class: 'p-card' },
     h('h3', { class: 'p-card-title' }, title), ...b);
   var POLL_MS = 3000;
+  function ico(name) {
+    return h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+      h('use', { href: '#d-ico-' + name }));
+  }
   var mx = null, poll = null, busy = false;
   var uavs = [], latestCache = {}, lastSeen = {};
   var curS = null;   /* 当前飞行会话（起飞报备建立，或点台账在飞行接管）——降落报备前提 */
@@ -43,12 +47,12 @@
       h('div', { class: 'd-col' },
         h('div', { class: 'd-toolbar' },
           h('span', { class: 'd-small' }, '航空器'), selEl,
-          h('label', { class: 'd-small' }, autoEl, ' 自动刷新(3s)'),
+          h('label', { class: 'd-small' }, autoEl, ' 自动刷新（3 秒）'),
           h('button', { class: 'p-btn', onclick: function () { loadBase(); tick(); } }, '立即刷新'),
           h('span', { class: 'd-spacer' }),
           h('span', { class: 'd-small d-muted' }, '在飞：'), flyingEl, h('span', { class: 'd-small d-muted' }, ' 架')),
         mapEl,
-        h('div', { class: 'd-map-hint' }, '✈️ 图标朝向即航空器实时航向；底图展示空域走廊、航段与网络节点。暂无位置上报的航空器不在地图显示。')),
+        h('div', { class: 'd-map-hint' }, '无人机图标朝向即航空器实时航向；底图展示空域走廊、航段与网络节点。暂无位置上报的航空器不在地图显示。')),
       h('div', { class: 'd-col' },
         card('运行识别（RID）', ridBox),
         card('最近遥测', trailBox))));
@@ -83,7 +87,7 @@
           if (v.target_node) body.target_node = v.target_node;
           return body;
         },
-        rp: rpSo, successText: '起飞报备完成（INIT→AUTHENTICATED→ACTIVE · 国密认证通过）',
+        rp: rpSo, successText: '起飞报备完成（初始化 → 认证 → 活跃 · 国密认证通过）',
         render: function (d) {
           return h('div', {},
             P.kv([
@@ -91,13 +95,15 @@
               ['会话状态', P.badge(d.session.status)],
               ['航空器', d.session.uav_id],
               ['关联任务 / 许可', (d.session.mission_id || '—') + ' / ' + (d.session.pass_id || '—')],
-              ['SM9 认证', d.auth.verified ? '✓ 认证通过' : '✗ 未通过'],
+              ['SM9 认证', d.auth.verified
+                ? h('span', { style: { color: 'var(--d-good)' } }, ico('check'), ' 认证通过')
+                : h('span', { style: { color: 'var(--d-critical)' } }, ico('x'), ' 未通过')],
               ['SM9 身份', h('code', { class: 'p-mono' }, d.auth.sm9_identity)],
               ['认证随机数', h('code', { class: 'p-mono' }, UI.trunc(d.auth.nonce, 40))],
               ['签名', h('code', { class: 'p-mono' }, UI.trunc(d.auth.signature, 40))],
               ['初始可信路径', (d.path || []).join(' → ')]
             ]),
-            h('p', { class: 'd-small d-muted' }, '已关联任务时，航空器随即沿任务航线飞行 —— 上方地图 ✈️ 图标实时展示飞行动态。'));
+            h('p', { class: 'd-small d-muted' }, '已关联任务时，航空器随即沿任务航线飞行 —— 上方地图无人机图标实时展示飞行动态。'));
         },
         note: { kind: 'SESSION', id: function (d) { return d.session.session_id; },
           extra: function (d) { return { uav_id: d.session.uav_id, mission_id: d.session.mission_id }; } },
@@ -126,12 +132,12 @@
           ['会话状态', P.badge(d.status)],
           ['航空器', d.uav_id || '—'],
           ['降落报备方', 'Operator Portal'],
-          ['更新时间', d.updated_at || '—']
+          ['更新时间', UI.fmtDT(d.updated_at, true)]
         ]);
       });
       if (r.ok) {
         STORE.note('SESSION', r.data.session_id);
-        UI.toast('降落报备完成（' + r.data.status + '）');
+        UI.toast('降落报备完成（' + P.statusZh(r.data.status) + '）');
         setCur(null);
         if (tblS) tblS.reload();
         tick();
@@ -151,7 +157,7 @@
         ['航空器', s.uav_id || '—'],
         ['关联任务', s.mission_id || '—'],
         ['当前路径', PORTAL.jp(s.current_path, []).join(' → ') || '—'],
-        ['建立时间', s.created_at || '—']
+        ['建立时间', UI.fmtDT(s.created_at, true)]
       ]));
     }
 
@@ -166,13 +172,14 @@
     tblS = P.dataTable({
       endpoint: '/api/session/list', pageSize: 5,
       filters: [{ name: 'status', label: '状态', type: 'select',
-        options: ['INIT', 'AUTHENTICATED', 'ACTIVE', 'DEGRADED', 'RECOVERED', 'CLOSED'] }],
+        options: ['INIT', 'AUTHENTICATED', 'ACTIVE', 'DEGRADED', 'RECOVERED', 'CLOSED']
+          .map(function (s) { return [s, P.statusZh(s)]; }) }],
       columns: [
         { title: '会话号', render: function (r) { return UI.trunc(r.session_id, 20); }, mono: true },
         { title: '航空器', key: 'uav_id', mono: true },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
         { title: '关联任务', render: function (r) { return r.mission_id || '—'; } },
-        { title: '建立时间', key: 'created_at' }
+        { title: '建立时间', render: function (r) { return UI.fmtDT(r.created_at); } }
       ],
       onRow: function (r) {
         if (tblM) tblM.reload({ session_id: r.session_id });
@@ -190,22 +197,25 @@
       filters: [
         { name: 'session_id', label: '会话号', type: 'text', placeholder: 'SESS-…（点会话台账行自动过滤）' },
         { name: 'msg_type', label: '类型', type: 'select',
-          options: ['HEARTBEAT', 'POSITION_UPDATE', 'PASS_VERIFY', 'NODE_CHALLENGE', 'ROUTE_STATUS', 'EVENT_REPORT'] }
+          options: ['HEARTBEAT', 'POSITION_UPDATE', 'PASS_VERIFY', 'NODE_CHALLENGE', 'ROUTE_STATUS', 'EVENT_REPORT']
+            .map(function (s) { return [s, P.statusZh(s)]; }) }
       ],
       columns: [
         { title: '消息号', render: function (r) { return UI.trunc(r.message_id, 18); }, mono: true },
         { title: '类型', render: function (r) { return P.badge(r.msg_type); } },
         { title: '路由', render: function (r) { return r.source_node + ' → ' + r.target_node; }, mono: true },
         { title: '序号', key: 'seq', num: true },
-        { title: '时延(ms)', key: 'latency_ms', num: true },
+        { title: '耗时', render: function (r) { return UI.fmtMs(r.latency_ms); }, num: true },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
-        { title: '时间', key: 'created_at' }
+        { title: '时间', render: function (r) { return UI.fmtDT(r.created_at); } }
       ],
       emptyText: '暂无消息（会话心跳/位置报会出现在这里）'
     });
     root.append(h('div', { class: 'd-grid-2 d-mt2' },
-      card('会话台账（点击在飞行即可接管为当前会话）', tblS),
-      card('会话消息（心跳与位置报流水）', tblM)));
+      card('会话台账',
+        h('div', { class: 'p-card-sub' }, '点击在飞行即可接管为当前会话'), tblS),
+      card('会话消息',
+        h('div', { class: 'p-card-sub' }, '心跳与位置报流水'), tblM)));
 
     mx = MAPX.create(mapEl, { view: GEO.DEFAULT_VIEW });
     loadBase().then(tick);
@@ -258,7 +268,7 @@
         mx.drawNodes((tr.data.nodes || []).filter(function (n) { return n.node_type !== 'ATTACKER'; }));
       }
       var ur = await API.call('/api/uav/list', { page: 1, page_size: 200 });
-      if (!ur.ok) { UI.toast('航空器列表加载失败 code=' + ur.code, 'err'); return; }
+      if (!ur.ok) { UI.toast('航空器列表加载失败：' + (ur.message || ('code=' + ur.code)), 'err'); return; }
       uavs = (ur.data.records || []).filter(function (u) { return u.status !== 'REVOKED'; });
       var keep = selEl.value;
       selEl.innerHTML = '';
@@ -297,9 +307,9 @@
         ['位置', GEO.fmtCoordPair(t.lat, t.lon)],
         ['高度 / 速度', t.alt + ' m / ' + t.speed + ' m/s'],
         ['航向', t.heading + '°'],
-        ['序号 / 来源', t.seq + ' · ' + t.source],
+        ['序号 / 来源', '序号 ' + t.seq + ' · 来源 ' + (t.source || '—')],
         ['会话', t.session_id ? h('code', { class: 'p-mono' }, UI.trunc(t.session_id, 24)) : '—'],
-        ['上报时间', t.reported_at]
+        ['上报时间', UI.fmtDT(t.reported_at, true)]
       ]));
     } else {
       ridBox.append(h('div', { class: 'd-section' }, '最新遥测'),
@@ -320,7 +330,7 @@
         h('span', { class: 'd-num' }, '#' + t.seq),
         h('span', { class: 'p-mono' }, GEO.fmtCoordPair(t.lat, t.lon)),
         h('span', {}, t.alt + 'm · ' + t.speed + 'm/s · ' + t.heading + '°'),
-        h('span', { class: 'd-muted' }, t.reported_at)));
+        h('span', { class: 'd-muted' }, UI.fmtDT(t.reported_at, true))));
     });
   }
 

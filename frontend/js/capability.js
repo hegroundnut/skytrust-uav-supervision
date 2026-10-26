@@ -11,6 +11,21 @@
   'use strict';
   var h = UI.h, P = PUI;
 
+  /* 状态/判定图标：引用门户雪碧图（operator/authority/regulator/license-center 均含） */
+  function ico(name) {
+    return h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+      h('use', { href: '#d-ico-' + name }));
+  }
+  /* 实时证据 chip 的中文标签（端点路径不进界面文案——去 AI 味 §5.4） */
+  var EP_ZH = {
+    '/api/chain/status': '链状态',
+    '/api/crosschain/list': '跨链台账',
+    '/api/message/list': '消息台账',
+    '/api/topology/get': '协同拓扑',
+    '/api/dashboard/summary': '总览指标',
+    '/api/regulatory/audit/list': '监管审计',
+  };
+
   function fmtMs(x) {
     var n = Number(x);
     if (!isFinite(n)) return '—';
@@ -33,7 +48,8 @@
         if (cap.claim) {
           var ok = Number(row.p95_latency_ms) < window.CAPABILITIES.p95ClaimMs;
           parts.push(h('span', { class: 'd-cap-verdict ' + (ok ? 'ok' : 'bad') },
-            (ok ? '✓ ' + cap.claim.text + '达成' : '✗ 超出秒级阈值') + ' · p95 = ' + fmtMs(row.p95_latency_ms)));
+            ico(ok ? 'check' : 'x'),
+            (ok ? cap.claim.text + '达成' : '超出秒级阈值') + ' · p95 = ' + fmtMs(row.p95_latency_ms)));
         } else {
           parts.push(h('span', { class: 'd-small d-muted' }, 'p95 ' + fmtMs(row.p95_latency_ms)));
         }
@@ -47,7 +63,7 @@
     /* 非「秒级」主张能力（cap1）不出阈值判定——p95 列已展示原始毫秒，不谎称达标语义 */
     if (!cap.claim || !row || row.status !== 'DONE' || row.p95_latency_ms == null) return '—';
     var ok = Number(row.p95_latency_ms) < window.CAPABILITIES.p95ClaimMs;
-    return h('span', { class: 'd-cap-verdict ' + (ok ? 'ok' : 'bad') }, ok ? '✓ 秒级' : '✗ 超阈');
+    return h('span', { class: 'd-cap-verdict ' + (ok ? 'ok' : 'bad') }, ico(ok ? 'check' : 'x'), ok ? '秒级达标' : '超阈');
   }
 
   /* ---------- 实验历史（experiment/list 客户端按能力过滤；details 首次展开才拉取） ---------- */
@@ -56,8 +72,9 @@
     var types = {};
     cap.experiments.forEach(function (e) { types[e.type] = true; });
     function showRun(row) {
-      P.drawer('实验运行 ' + row.run_id,
+      P.drawer('实验运行记录',
         P.kv([
+          ['运行编号', h('code', { class: 'p-mono', title: row.run_id }, UI.trunc(row.run_id, 24))],
           ['实验类型', h('code', { class: 'p-mono' }, row.experiment_type)],
           row.scenario ? ['场景', row.scenario] : null,
           ['状态', P.badge(row.status)],
@@ -67,11 +84,11 @@
           row.failure_reasons ? ['失败原因', h('code', { class: 'p-mono' }, String(row.failure_reasons))] : null,
           ['起止', (row.started_at || '—') + ' → ' + (row.completed_at || '—')],
         ]),
-        h('details', { class: 'p-rawjson' }, h('summary', {}, '运行记录 JSON'), UI.jsonBlock(row)));
+        P.DEBUG ? h('details', { class: 'p-rawjson' }, h('summary', {}, '运行记录 JSON'), UI.jsonBlock(row)) : null);
     }
     async function load() {
       if (!box.isConnected) return;
-      box.innerHTML = ''; box.append(h('div', { class: 'p-empty' }, '⏳ 加载实验历史…'));
+      box.innerHTML = ''; box.append(h('div', { class: 'p-empty' }, '加载实验历史…'));
       var r = await API.call('/api/experiment/list', { page: 1, page_size: 50 });
       if (!box.isConnected) return;
       box.innerHTML = '';
@@ -104,13 +121,13 @@
       def.scenarios.map(function (s) { return h('option', { value: s.v }, s.t); })) : null;
     var cnt = h('input', { type: 'number', class: 'd-cap-cnt', value: def.count, min: 1, max: 1000, title: '迭代次数（1–1000）' });
     var slot = h('div', { class: 'd-cap-slot' });
-    var btn = h('button', { class: 'p-btn p-btn-sm' + (def.heavy ? '' : ' p-btn-primary') }, def.heavy ? '▶ 运行（真实上链）' : '▶ 运行');
+    var btn = h('button', { class: 'p-btn p-btn-sm' + (def.heavy ? '' : ' p-btn-primary') }, def.heavy ? '运行（真实上链）' : '运行');
     btn.addEventListener('click', async function () {
       var scenario = sel ? sel.value : '';   /* 无场景集的类型恒空串（P5-R5 双向严格） */
       var warn = def.warn || (sel ? ((def.scenarios.find(function (s) { return s.v === scenario; }) || {}).warn) : null);
       if (warn && !(await P.confirm('高危实验 · 二次确认', warn, '确认运行'))) return;
       var count = Math.min(1000, Math.max(1, Number(cnt.value) || def.count));
-      btn.disabled = true; var old = btn.textContent; btn.textContent = '⏳ 运行中…';
+      btn.disabled = true; var old = btn.textContent; btn.textContent = '运行中…';
       slot.innerHTML = '';
       var r = await API.call('/api/experiment/run',
         { experiment_type: def.type, scenario: scenario, count: count, concurrency: 1 });
@@ -119,17 +136,16 @@
       var row = (r.data && r.data.run_id) ? r.data : null;   /* OK 与 FailData 均携带运行行 */
       if (row) slot.append(verdictEl(cap, row));
       if (!r.ok) slot.append(P.errCard(r));
-      slot.append(P.metaLine(r));
+      var ml = P.metaLine(r); if (ml) slot.append(ml);
       if (afterRun) afterRun();
     });
     return h('div', { class: 'd-cap-exp-row' },
       h('div', { class: 'd-cap-exp-main' },
-        h('span', { class: 'd-cap-exp-label' }, def.label),
-        h('code', { class: 'p-mono d-cap-exp-type' }, def.type),
+        h('span', { class: 'd-cap-exp-label', title: def.type }, def.label),
         sel,
         h('label', { class: 'd-cap-cnt-wrap' }, '×', cnt),
         btn),
-      def.note ? h('div', { class: 'd-cap-exp-note' }, '⚠ ' + def.note) : null,
+      def.note ? h('div', { class: 'd-cap-exp-note' }, ico('triangle-alert'), def.note) : null,
       slot);
   }
 
@@ -137,12 +153,12 @@
   function expPanel(cap, open) {
     var hist = historyBox(cap);
     var det = h('details', { class: 'd-cap-exp', open: !!open },
-      h('summary', {}, '🧪 开展实验验证 · ' + cap.experiments.length + ' 类一键自证'),
+      h('summary', {}, '开展实验验证 · ' + cap.experiments.length + ' 项一键自证'),
       h('div', {},
         cap.experiments.map(function (def) { return expRow(cap, def, function () { hist.reload(); }); }),
         h('div', { class: 'd-cap-hist-head' },
           h('span', {}, '最近实验记录'),
-          h('button', { class: 'p-btn p-btn-sm p-btn-ghost', onClick: function () { hist.reload(); } }, '⟳ 刷新')),
+          h('button', { class: 'p-btn p-btn-sm p-btn-ghost', onClick: function () { hist.reload(); } }, '刷新')),
         hist));
     det.addEventListener('toggle', function () { if (det.open) hist.reload(); });
     if (open) hist.reload();
@@ -151,18 +167,19 @@
 
   /* ---------- 实时证据 chips（顺序拉取保证次序；失败降级为错误 chip，不阻断） ---------- */
   function evidenceBox(cap) {
-    var box = h('div', { class: 'd-cap-ev' }, h('div', { class: 'p-empty' }, '⏳ 实时证据加载中…'));
+    var box = h('div', { class: 'd-cap-ev' }, h('div', { class: 'p-empty' }, '实时证据加载中…'));
     (async function () {
       var chips = [];
       for (var i = 0; i < cap.evidence.length; i++) {
         var ev = cap.evidence[i];
+        var evName = EP_ZH[ev.endpoint] || '实时证据';
         var r = await API.call(ev.endpoint, ev.body || {});
         if (!box.isConnected) return;
         if (r.ok) {
           try { chips = chips.concat(ev.chips(r.data) || []); }
-          catch (e) { chips.push({ label: ev.endpoint, value: '解析失败', tone: 'warning' }); }
+          catch (e) { chips.push({ label: evName, value: '解析失败', tone: 'warning' }); }
         } else {
-          chips.push({ label: ev.endpoint, value: 'code=' + r.code, tone: 'critical' });
+          chips.push({ label: evName, value: '暂不可用', tone: 'critical', title: ev.endpoint + ' code=' + r.code });
         }
       }
       if (!box.isConnected) return;
@@ -185,7 +202,7 @@
       h('ul', { class: 'd-cap-points' }, cap.points.map(function (p) { return h('li', {}, p); })),
       evidenceBox(cap),
       h('details', { class: 'd-cap-goal' },
-        h('summary', {}, '📋 项目绩效目标'),
+        h('summary', {}, '项目绩效目标'),
         h('p', {}, cap.goal)),
       expPanel(cap, opts.expOpen));
   }

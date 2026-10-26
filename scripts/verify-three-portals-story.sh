@@ -148,8 +148,8 @@ for p in operator authority regulator license-center index; do
   grep -q 'js/chainview.js' "$SIM_DIR/$p.html" && ok "$p.html 挂载 CXV 浏览器共享模块（js/chainview.js）" || bad "$p.html 未挂载 js/chainview.js"
 done
 grep -q 'wormhole-topo.js' "$SIM_DIR/authority.html" && ok "authority.html 挂载 WTOPO（js/wormhole-topo.js）" || bad "authority.html 未挂载 wormhole-topo.js"
-grep -q '服务端仅支持状态/类型过滤，其余为最近 200 条内客户端筛选' "$ROOT/frontend/js/chainview.js" \
-  && ok "CXV 固定小字逐字存在「…最近 200 条内客户端筛选」（Review Focus 5——chainview.js SMALL_PRINT）" \
+grep -q '以下筛选仅覆盖最近 200 条记录' "$ROOT/frontend/js/chainview.js" \
+  && ok "CXV 固定小字逐字存在「以下筛选仅覆盖最近 200 条记录」（Review Focus 5——chainview.js SMALL_PRINT）" \
   || bad "chainview.js 未找到 CXV 固定小字「最近 200 条」"
 api_via_proxy=$(curl -sS -m 5 -X POST "$FRONTEND/api/health/ping" -H 'Content-Type: application/json' -d '{}' 2>/dev/null | jq -r '.code // "ERR"')
 assert_eq "$api_via_proxy" "0" "代理链路 :$FRONT_PORT/api/* → :$BACK_PORT"
@@ -585,7 +585,7 @@ cat <<'HUMAN'
 - 块浏览：最近 20 块新→旧、行点击块抽屉（hash/time/tx_count/proposer/tx 列表）、tx 点击详情、
   irita「Merkle 证明可用」标注（real 模式实际出现）
 - 链上数据追踪：message_type 五类 chip + 状态过滤、分页表、行点击 openCxDetail；直查表单
-  （链选 + TxID）；固定小字「服务端仅支持状态/类型过滤，其余为最近 200 条内客户端筛选」
+  （链选 + TxID）；固定小字「以下筛选仅覆盖最近 200 条记录」
   （本脚本已 grep 逐字）
 - rg 暗色 .d-cxv-reg-hl outline +「⇄ 监管中继段」对比度；chip ☑/☐ 字形各主题可读性；
   index 端无 drone.css 的降级观感（内容完整、装饰缺席）
@@ -595,8 +595,8 @@ cat <<'HUMAN'
 - 【浏览器新首屏·布局 E】三目标芯片活数（对照 goals 响应）/ 时间线几何对照归档 mockup（等宽节点列、单条链色带、CM 段窄、泳道列序 Fabric-CM-FISCO-IRITA）/ 节点下钻四段存证 / sim 空态文案 / rg 端 openCx CHAINMAKER 高亮 / ct 端 defaultChain=irita
 【虫洞拓扑（WTOPO · Task 9）】
 - au/netsec 拓扑页签 SVG 实render：position min-max 归一化布点、类型着色（紫 MANAGEMENT /
-  蓝 EDGE / 青 UAV / 红 ATTACKER + ⚠ 标签）、虫洞边红虚线 d-wormhole-flow 流动动画 + 中点 ⚠、
-  ISOLATED 红虚线描边 + ⛔ + d-pulse-hit 脉冲环、OFFLINE 空心、会话路径加粗（虫洞优先级最高）
+  蓝 EDGE / 青 UAV / 红 ATTACKER + 「攻击节点」文字标签）、虫洞边红虚线 d-wormhole-flow 流动动画 + 中点警示标、
+  ISOLATED 红虚线描边 + d-pulse-hit 脉冲环、OFFLINE 空心、会话路径加粗（虫洞优先级最高）
 - 「未布点」侧清单 DOM：无 position 节点不画不猜逐节点列出 +「涉及未布点/未知端点的边 N 条
   同步不画」如实计数（sim 数据面无法构造无-position 节点——本脚本已断言 API 6002 门；
   合成 fixture 下的侧清单目检归此项）

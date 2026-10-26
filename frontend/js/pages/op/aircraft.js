@@ -32,8 +32,8 @@
       title: '我的航空器',
       sub: '登记即上链 —— 注册成功即发登记标志与二维码，跨链存证四段 TxID 全程可溯' }));
     root.append(P.tabs([
-      { key: 'register', label: '航空器登记', render: tabRegister },
-      { key: 'fleet', label: '航空器台账', render: tabFleet }
+      { key: 'fleet', label: '航空器台账', render: tabFleet },
+      { key: 'register', label: '航空器登记', render: tabRegister }
     ]));
   }
 
@@ -50,7 +50,8 @@
         hint: '在「实名登记」页选定当前身份后自动填写；所填主体须已完成实名登记' }
     ]);
     loadMasterData(f);
-    box.append(card('航空器登记（登记即上链）', f.root,
+    box.append(card('航空器登记',
+      h('div', { class: 'p-card-sub' }, '登记即上链 —— 提交成功即发登记标志与二维码'), f.root,
       P.actionBar([{ label: '提交登记', kind: 'primary', run: P.runOp({
         path: '/api/uav/register',
         body: function () { return PORTAL.need(f.read(), 'manufacturer_id', 'operator_id', 'serial_no'); },
@@ -92,7 +93,7 @@
           ['型号 / 序列号', (u.model || '—') + ' / ' + (u.serial_no || '—')],
           ['实名主体', u.realname_id || '未关联'],
           ['SM9 身份', h('code', { class: 'p-mono' }, u.sm9_identity || '—')],
-          ['登记时间', u.created_at]
+          ['登记时间', UI.fmtDT(u.created_at, true)]
         ])),
         qrEl),
       h('div', { class: 'd-seal' }, '登记即上链'));
@@ -114,7 +115,8 @@
       endpoint: '/api/uav/list', pageSize: 10,
       filters: [
         { name: 'status', label: '状态', type: 'select',
-          options: ['REGISTERED', 'VERIFIED', 'ACTIVE', 'SUSPENDED', 'REVOKED'] },
+          options: ['REGISTERED', 'VERIFIED', 'ACTIVE', 'SUSPENDED', 'REVOKED']
+            .map(function (s) { return [s, P.statusZh(s)]; }) },
         { name: 'operator_id', label: '运营企业 ID', type: 'text' }
       ],
       columns: [
@@ -124,7 +126,7 @@
         { title: '运营企业', key: 'operator_id' },
         { title: '实名主体', render: function (r) { return r.realname_id || '未关联'; } },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
-        { title: '登记时间', key: 'created_at' }
+        { title: '登记时间', render: function (r) { return UI.fmtDT(r.created_at); } }
       ],
       onRow: function (r) { openUav(r.uav_id, tbl); },
       emptyText: '暂无航空器 —— 先在「航空器登记」页办理登记'
@@ -133,7 +135,7 @@
   }
 
   async function openUav(uavId, tbl) {
-    var d = P.drawer('航空器 ' + uavId, h('div', { class: 'p-empty' }, '⏳ 航空器详情查询中…'));
+    var d = P.drawer('航空器 ' + uavId, h('div', { class: 'p-empty' }, '航空器详情查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/uav/query', { uav_id: uavId });
     body.innerHTML = '';
@@ -153,7 +155,7 @@
           ['型号 / 序列号', (u.model || '—') + ' / ' + (u.serial_no || '—')],
           ['实名主体', u.realname_id || '未关联'],
           ['SM9 身份', h('code', { class: 'p-mono' }, u.sm9_identity || '—')],
-          ['创建 / 更新', u.created_at + ' → ' + u.updated_at]
+          ['创建 / 更新', UI.fmtDT(u.created_at, true) + ' → ' + UI.fmtDT(u.updated_at, true)]
         ]))),
       statePanel(u, tbl),
       cxPanel(u));
@@ -164,8 +166,8 @@
     var rp = P.resultPanel();
     var f = P.form([
       { name: 'action', label: '状态动作', type: 'select', required: true, value: 'ACTIVATE',
-        options: [['VERIFY', 'VERIFY 核验'], ['ACTIVATE', 'ACTIVATE 激活'],
-                  ['SUSPEND', 'SUSPEND 暂停'], ['RESUME', 'RESUME 恢复']] }
+        options: [['VERIFY', '核验'], ['ACTIVATE', '激活'],
+                  ['SUSPEND', '暂停'], ['RESUME', '恢复']] }
     ]);
     return h('div', {},
       h('div', { class: 'd-section' }, '状态迁移与注销'),
@@ -185,7 +187,7 @@
             onOk: function () { if (tbl) tbl.reload(); }
           }) },
         { label: '注销航空器', kind: 'danger',
-          confirm: { title: '确认注销', msg: '注销 ' + u.uav_id + ' 后状态变为 REVOKED，不可再用于任务申请。', ok: '确认注销' },
+          confirm: { title: '确认注销', msg: '注销 ' + u.uav_id + ' 后状态变为「已注销」，不可再用于任务申请。', ok: '确认注销' },
           run: P.runOp({
             path: '/api/uav/revoke',
             body: function () { return { uav_id: u.uav_id, reason: '运营方主动注销', operator: 'Operator Portal' }; },
@@ -201,7 +203,7 @@
   /* 登记跨链存证回查：crosschain/list 无 business_id 过滤（裁决 16）→ 拉回本地逐行匹配；
      段点击 → P.openCxDetail（内部走 crosschain/query，覆盖 spec §5.1 端点列） */
   function cxPanel(u) {
-    var box = h('div', { class: 'p-empty' }, '⏳ 登记跨链存证查询中…');
+    var box = h('div', { class: 'p-empty' }, '登记跨链存证查询中…');
     (async function () {
       var r = await API.call('/api/crosschain/list', { message_type: 'UAV_REGISTER_PROOF', page: 1, page_size: 200 });
       if (!box.isConnected) return;

@@ -13,6 +13,13 @@
   const card = (title, ...b) => h('section', { class: 'p-card' },
     h('h3', { class: 'p-card-title' }, title), ...b);
   var mx = null;
+  /* 任务/载荷类型为自由文本协议值——已知值给中文标签，未知值原样展示（不猜测） */
+  var MT_ZH = { MEDICAL: '医疗', POWER_INSPECTION: '电力巡检', LOGISTICS: '物流' };
+  var PT_ZH = { MEDICAL_KIT: '医疗箱', CAMERA: '摄像载荷', CARGO: '货运载荷' };
+  function typeZh(map, v) {
+    if (v == null || v === '') return '—';
+    return h('span', { title: String(v) }, map[v] || String(v));
+  }
 
   function render(root, ctx) {
     if (mx) { mx.destroy(); mx = null; }
@@ -35,9 +42,9 @@
       { name: 'operator_id', label: '运营企业', type: 'select', required: true, options: [['', '选择运营企业…']] },
       { name: 'uav_id', label: '航空器', type: 'select', required: true, options: [['', '选择航空器…']] },
       { name: 'mission_type', label: '任务类型', type: 'text', required: true, value: 'MEDICAL',
-        placeholder: 'MEDICAL / POWER_INSPECTION / LOGISTICS…' },
+        placeholder: 'MEDICAL 医疗 / POWER_INSPECTION 电力巡检 / LOGISTICS 物流…' },
       { name: 'payload_type', label: '载荷类型', type: 'text', required: true, value: 'MEDICAL_KIT',
-        placeholder: 'MEDICAL_KIT / CAMERA / CARGO…' },
+        placeholder: 'MEDICAL_KIT 医疗箱 / CAMERA 摄像 / CARGO 货运…' },
       { name: 'route_segments', label: '航段', type: 'multi', required: true, options: [],
         hint: '地图点选与勾选框双向同步' },
       { name: 'altitude_min', label: '高度下限(m)', type: 'number', value: 60 },
@@ -73,7 +80,7 @@
 
     box.append(h('div', { class: 'd-grid-side' },
       h('div', { class: 'd-col' },
-        h('div', { class: 'd-map-hint' }, '🗺️ 点击地图航线即可勾选或取消（高亮即入单）。走廊着色：绿色为开放 OPEN · 琥珀色为限制 RESTRICTED · 红色为关闭 CLOSED'),
+        h('div', { class: 'd-map-hint' }, '点击地图航线即可勾选或取消（高亮即入单）。走廊着色：绿色=开放 · 琥珀色=限制 · 红色=关闭'),
         mapEl),
       h('div', { class: 'd-col' },
         card('① 任务创建', f.root,
@@ -81,7 +88,7 @@
             path: '/api/mission/create',
             body: function () { return PORTAL.need(f.read(), 'operator_id', 'uav_id', 'mission_type',
               'payload_type', 'route_segments', 'altitude_max', 'start_time', 'end_time'); },
-            rp: rpCr, successText: '任务已创建（DRAFT），描述已加密存储',
+            rp: rpCr, successText: '任务已创建（草稿），描述已加密存储',
             render: function (d) {
               return h('div', {},
                 P.kv([
@@ -91,7 +98,7 @@
                   ['航段', PORTAL.jp(d.route_segments, []).join('、')],
                   ['涉及空域', PORTAL.jp(d.zones, []).join('、')],
                   ['高度带', d.altitude_min + '–' + d.altitude_max + ' m'],
-                  ['时间窗', d.start_time + ' → ' + d.end_time],
+                  ['时间窗', UI.fmtDT(d.start_time, true) + ' → ' + UI.fmtDT(d.end_time, true)],
                   ['关联执照', d.pilot_license_id || '未关联'],
                   ['SM3 摘要', h('code', { class: 'p-mono' }, UI.trunc(d.sm3_hash, 40))]
                 ]),
@@ -106,7 +113,7 @@
           }) }]),
           rpCr.root),
         card('② 冲突检测与协调',
-          h('p', { class: 'd-small d-muted' }, '同走廊重叠时窗会检出 TIME/ROUTE/ALTITUDE 冲突，主动方任务进入 COORDINATING；同一冲突不可重复消解。'),
+          h('p', { class: 'd-small d-muted' }, '同走廊重叠时窗会检出时窗重叠 / 航路交叉 / 高度冲突，主动方任务进入「协调中」；同一冲突不可重复消解。'),
           fCf.root,
           P.actionBar([{ label: '检测冲突', run: P.runOp({
             path: '/api/conflict/detect',
@@ -127,7 +134,7 @@
             run: P.runOp({
               path: '/api/mission/submit',
               body: function () { return PORTAL.need(fSb.read(), 'mission_id', 'operator'); },
-              rp: rpSb, successText: '跨域申请已提交（任务 DRAFT→SUBMITTED）',
+              rp: rpSb, successText: '跨域申请已提交（任务：草稿 → 已提交）',
               render: function (d) {
                 return h('div', {},
                   P.kv([['申请号', h('code', { class: 'p-mono' }, d.application.application_id)],
@@ -182,7 +189,7 @@
     }
     async function loadRoutes() {
       var r = await API.call('/api/route/list', { page: 1, page_size: 200 });
-      if (!r.ok) { if (mx) mx.setEmpty('航线加载失败 code=' + r.code + '（' + r.message + '）'); return; }
+      if (!r.ok) { if (mx) mx.setEmpty('航线加载失败：' + (r.message || ('code=' + r.code))); return; }
       routes = r.data.records || [];
       f.setOptions('route_segments', routes.map(function (x) {
         return [x.route_id, x.route_id + ' · ' + x.zone + ' · ' + (GEO.ZONE_LABEL[x.corridor_status] || x.corridor_status)];
@@ -199,7 +206,7 @@
     var list = d.conflicts || [];
     if (!list.length) return P.empty('无冲突（' + (d.count || 0) + ' 项）—— 可直接跨链提交');
     return h('div', {},
-      h('div', { class: 'd-small d-muted d-mb' }, '检出 ' + list.length + ' 项冲突。类型：TIME 时窗重叠 / ROUTE 航路交叉 / ALTITUDE 高度冲突。'),
+      h('div', { class: 'd-small d-muted d-mb' }, '检出 ' + list.length + ' 项冲突。类型：时窗重叠 / 航路交叉 / 高度冲突。'),
       h('div', { class: 'd-col' }, list.map(function (c) {
         var sug = PORTAL.jp(c.suggestion, null);
         return h('div', { class: 'p-card' },
@@ -224,7 +231,8 @@
       endpoint: '/api/mission/list', pageSize: 10,
       filters: [
         { name: 'status', label: '状态', type: 'select',
-          options: ['DRAFT', 'SUBMITTED', 'REVIEWING', 'COORDINATING', 'APPROVED', 'REJECTED', 'EXECUTING', 'COMPLETED', 'ABORTED'] },
+          options: ['DRAFT', 'SUBMITTED', 'REVIEWING', 'COORDINATING', 'APPROVED', 'REJECTED',
+            'EXECUTING', 'COMPLETED', 'ABORTED'].map(function (s) { return [s, P.statusZh(s)]; }) },
         { name: 'uav_id', label: '航空器 ID', type: 'text' }
       ],
       columns: [
@@ -233,8 +241,8 @@
         { title: '航空器', key: 'uav_id', mono: true },
         { title: '运营企业', key: 'operator_id' },
         { title: '脱敏描述', render: function (r) { return r.masked_value || '—'; } },
-        { title: '时间窗', render: function (r) { return r.start_time + ' → ' + r.end_time; } },
-        { title: '创建时间', key: 'created_at' }
+        { title: '时间窗', render: function (r) { return UI.fmtDT(r.start_time) + ' → ' + UI.fmtDT(r.end_time); } },
+        { title: '创建时间', render: function (r) { return UI.fmtDT(r.created_at); } }
       ],
       onRow: function (r) { openMission(r.mission_id, detail, tbl); },
       emptyText: '暂无任务 —— 在「新建申请」页地图勾选航段创建'
@@ -245,7 +253,7 @@
 
   async function openMission(mid, panel, tbl) {
     panel.innerHTML = '';
-    panel.append(h('div', { class: 'p-empty' }, '⏳ 任务详情查询中…'));
+    panel.append(h('div', { class: 'p-empty' }, '任务详情查询中…'));
     var r = await API.call('/api/mission/query', { mission_id: mid });
     if (!panel.isConnected) return;
     panel.innerHTML = '';
@@ -261,17 +269,17 @@
         ['航段', PORTAL.jp(m.route_segments, []).join('、') || '—'],
         ['涉及空域', PORTAL.jp(m.zones, []).join('、') || '—'],
         ['高度带', m.altitude_min + '–' + m.altitude_max + ' m'],
-        ['时间窗', m.start_time + ' → ' + m.end_time],
-        ['任务 / 载荷类型', m.mission_type + ' / ' + (m.payload_type || '—')],
+        ['时间窗', UI.fmtDT(m.start_time, true) + ' → ' + UI.fmtDT(m.end_time, true)],
+        ['任务 / 载荷类型', h('span', {}, typeZh(MT_ZH, m.mission_type), ' / ', typeZh(PT_ZH, m.payload_type))],
         ['关联执照', m.pilot_license_id || '未关联'],
         ['SM9 身份', h('code', { class: 'p-mono' }, m.sm9_identity || '—')],
         ['SM3 摘要', h('code', { class: 'p-mono' }, UI.trunc(m.sm3_hash, 40))],
-        ['创建 / 更新', m.created_at + ' → ' + m.updated_at]
+        ['创建 / 更新', UI.fmtDT(m.created_at, true) + ' → ' + UI.fmtDT(m.updated_at, true)]
       ]),
       h('p', { class: 'd-small d-muted' }, '任务描述经国密算法加密存储，本页与管理端仅见脱敏值 —— 数据可用不可见。'),
       P.actionBar([
         { label: '提交跨域申请', kind: 'primary',
-          confirm: { title: '提交跨域申请', msg: '任务 ' + m.mission_id + ' 将经运营链→监管链→管理链跨域提交，进入管理当局待审队列；仅 DRAFT 状态可提交。', ok: '确认提交' },
+          confirm: { title: '提交跨域申请', msg: '任务 ' + m.mission_id + ' 将经运营链→监管链→管理链跨域提交，进入管理当局待审队列；仅「草稿」状态可提交。', ok: '确认提交' },
           run: P.runOp({
             path: '/api/mission/submit',
             body: function () { return { mission_id: m.mission_id, operator: m.operator_id }; },

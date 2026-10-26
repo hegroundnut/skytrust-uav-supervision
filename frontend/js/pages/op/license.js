@@ -13,6 +13,10 @@
   const card = (title, ...b) => h('section', { class: 'p-card' },
     h('h3', { class: 'p-card-title' }, title), ...b);
   var mxMini = null;   /* 许可卡航线缩略图：页面级生命周期，render 入口与重建前必先 destroy */
+  function ico(name) {
+    return h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+      h('use', { href: '#d-ico-' + name }));
+  }
 
   function render(root, ctx) {
     if (mxMini) { mxMini.destroy(); mxMini = null; }
@@ -33,7 +37,8 @@
       endpoint: '/api/pass/list', pageSize: 10,
       filters: [
         { name: 'status', label: '状态', type: 'select',
-          options: ['GENERATING', 'VALID', 'USED', 'EXPIRED', 'REVOKED'] },
+          options: ['GENERATING', 'VALID', 'USED', 'EXPIRED', 'REVOKED']
+            .map(function (s) { return [s, P.statusZh(s)]; }) },
         { name: 'uav_id', label: '航空器 ID', type: 'text', value: (uavSlot && uavSlot.id) || '' },
         { name: 'mission_id', label: '任务号', type: 'text' }
       ],
@@ -42,8 +47,8 @@
         { title: '任务号', key: 'mission_id', mono: true },
         { title: '航空器', key: 'uav_id', mono: true },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
-        { title: '有效窗', render: function (r) { return r.valid_from + ' → ' + r.valid_to; } },
-        { title: '签发时间', key: 'created_at' }
+        { title: '有效窗', render: function (r) { return UI.fmtDT(r.valid_from) + ' → ' + UI.fmtDT(r.valid_to); } },
+        { title: '签发时间', render: function (r) { return UI.fmtDT(r.created_at); } }
       ],
       onRow: function (r) { showPass(r.pass_id, panel, fVerify); },
       emptyText: '暂无许可 —— 任务经管理当局审核签发后出现在此'
@@ -69,7 +74,8 @@
     if (d.valid) {
       return h('div', { class: 'd-cert' },
         h('div', { class: 'd-cert-head' },
-          h('span', { class: 'd-cert-title', style: { color: '#15803d' } }, '✓ 自查通过 · 可以起飞'),
+          h('span', { class: 'd-cert-title', style: { color: 'var(--d-good)' } },
+            ico('check'), ' 自查通过 · 可以起飞'),
           h('span', { class: 'd-cert-no' }, d.pass_id)),
         h('div', { class: 'd-cert-body' }, h('div', { class: 'd-cert-main' },
           P.kv([['许可状态', P.badge(d.status)], ['结论', '自查通过 · 无拒绝原因']])),
@@ -77,12 +83,13 @@
     }
     return h('div', { class: 'd-cert' },
       h('div', { class: 'd-cert-head' },
-        h('span', { class: 'd-cert-title', style: { color: '#b91c1c' } }, '⛔ 自查未通过 · 禁止起飞'),
+        h('span', { class: 'd-cert-title', style: { color: 'var(--d-critical)' } },
+          ico('x'), ' 自查未通过 · 禁止起飞'),
         h('span', { class: 'd-cert-no' }, d.pass_id)),
       h('div', { class: 'd-cert-body' }, h('div', { class: 'd-cert-main' },
         P.kv([['许可状态', P.badge(d.status)], ['结论', '自查未通过']]),
         h('ul', { class: 'd-mt' }, (d.reasons || []).map(function (x) {
-          return h('li', { style: { color: '#b91c1c' } }, x);
+          return h('li', { style: { color: 'var(--d-critical)' } }, x);
         })))));
   }
 
@@ -92,7 +99,7 @@
     if (fVerify) fVerify.set('pass_id', passId);
     if (mxMini) { mxMini.destroy(); mxMini = null; }
     panel.innerHTML = '';
-    panel.append(h('div', { class: 'p-empty' }, '⏳ 许可详情查询中…'));
+    panel.append(h('div', { class: 'p-empty' }, '许可详情查询中…'));
     var r = await API.call('/api/pass/query', { pass_id: passId });
     if (!panel.isConnected) return;
     panel.innerHTML = '';
@@ -116,7 +123,7 @@
             ['许可航线', ids.join(' → ') || '—'],
             ['SM3 摘要', h('code', { class: 'p-mono' }, UI.trunc(p.sm3_hash, 48))],
             ['SM9 签名', h('code', { class: 'p-mono' }, UI.trunc(p.signature, 48))],
-            ['签发 / 更新', p.created_at + ' → ' + p.updated_at]
+            ['签发 / 更新', UI.fmtDT(p.created_at, true) + ' → ' + UI.fmtDT(p.updated_at, true)]
           ])),
           qrEl),
         h('div', { class: 'd-seal' }, '管理当局签发')),

@@ -14,14 +14,15 @@
    min-max 线性归一化，边距 40px（单点/退化轴 → 居中）。
    视觉语义（图例块 icon+文字自述，永不仅靠颜色）：
    - 节点类型着色走 CSS var（drone.css Task 9 追加块 .d-wtopo-t-*）：紫 MANAGEMENT / 蓝 EDGE /
-     青 UAV / 红 ATTACKER（--d-critical + ⚠ ATTACKER 标签）。节点色=节点类型语义，与三链链色
+     青 UAV / 红 ATTACKER（--d-critical + 「攻击节点」文字标签）。节点色=节点类型语义，与三链链色
      无关——链色语义不挪用（链是另一根轴）；未知类型中性色不猜测。
    - 边三态：正常 p-topo-edge 灰实线 / 虫洞 p-topo-wormhole 红虚线 + d-wormhole-flow 流动动画 +
-     中点 ⚠ / 会话路径 p-topo-active（hlPath 相邻对）加粗；虫洞边同时在会话路径上 → 保持红虚线
+     中点警示标 / 会话路径 p-topo-active（hlPath 相邻对）加粗；虫洞边同时在会话路径上 → 保持红虚线
      流动 + d-wtopo-onpath 加粗（虫洞优先级最高——被诱入隧道的路径必须仍然显眼是攻击边）。
-   - ISOLATED 红虚线描边 + ⛔ 标签 + d-pulse-hit 检测命中脉冲环（隔离=risk/evaluate 检出落地）；
+   - ISOLATED 红虚线描边 + d-pulse-hit 检测命中脉冲环（隔离=risk/evaluate 检出落地）；
      OFFLINE 空心（描边保留类型色，与地理层 map.js drawNodes 同语义）。
-   - hover UI.showTip：边 distance/advertised_latency_ms/⚠ 虫洞伪造边；节点类型/状态/拓扑坐标/
+   - hover UI.showTip：边 distance/advertised_latency_ms/虫洞伪造边（预警）；节点类型/状态（中文
+     映射 TYPE_ZH/STATUS_ZH，未知值原样直出）/拓扑坐标/
      邻居/风险分/SM9。插值一律 UI.esc（node_id 可由注册表单写入）。
    依赖面：仅 document.createElementNS/createElement + UI（showTip/hideTip/esc/trunc，且只在
    事件回调内引用）；无 API/STORE/PORTAL/MAPX/PUI 依赖。DOM-less 核验经 WTOPO._pure 纯函数
@@ -34,6 +35,10 @@
   var W = 700, H = 470, PAD = 40;                 /* viewBox 与归一化边距（brief Produces 钉死） */
   var RADIUS = { MANAGEMENT: 13, ATTACKER: 11 };  /* 其余（EDGE/UAV/未知）= 10 */
   var R_DEFAULT = 10;
+  /* 中文映射（去 AI 味：界面文案不露英文枚举；未知值原样直出不猜测——本文件钉死零 PUI 依赖，
+     故本地持有，与 pui.js TYPE/statusZh 同口径） */
+  var TYPE_ZH = { MANAGEMENT: '管理节点', EDGE: '边缘节点', UAV: '无人机', ATTACKER: '攻击节点' };
+  var STATUS_ZH = { ONLINE: '在线', OFFLINE: '离线', ISOLATED: '已隔离' };
   var TYPE_CLS = {
     MANAGEMENT: 'd-wtopo-t-mgmt', EDGE: 'd-wtopo-t-edge',
     UAV: 'd-wtopo-t-uav', ATTACKER: 'd-wtopo-t-atk'
@@ -208,7 +213,7 @@
         return '<b>' + UI.esc(e.from) + ' ⇄ ' + UI.esc(e.to) + '</b><br>' +
           '距离 ' + (e.distance != null ? Number(e.distance).toFixed(1) : '—') +
           ' · 宣告时延 ' + (e.advertised_latency_ms != null ? UI.esc(e.advertised_latency_ms) + 'ms' : '—') +
-          (d.wormhole ? '<br>⚠ 虫洞伪造边（宣告时延为谎报值）' : '') +
+          (d.wormhole ? '<br>虫洞伪造边（预警）——宣告时延为谎报值' : '') +
           (d.onPath ? '<br>● 当前会话路径' : '');
       });
       root.append(line);
@@ -226,7 +231,7 @@
     pl.placed.forEach(function (d) {
       var n = d.node;
       var type = n.node_type, status = n.status;
-      var isolated = status === 'ISOLATED', offline = status === 'OFFLINE';
+      var isolated = status === 'ISOLATED';   /* OFFLINE 空心由 nodeClass 类承担，标签不加前缀 */
       var r = RADIUS[type] || R_DEFAULT;
       var g = svgEl('g', { class: 'p-topo-node d-wtopo-g' });
       if (isolated) {
@@ -235,16 +240,16 @@
       }
       g.append(svgEl('circle', { class: nodeClass(type, status), cx: d.x, cy: d.y, r: r }));
       if (type === 'ATTACKER') {
-        g.append(svgText('text', { class: 'd-wtopo-atk-tag', x: d.x, y: r2(d.y - r - 6) }, '⚠ ATTACKER'));
+        g.append(svgText('text', { class: 'd-wtopo-atk-tag', x: d.x, y: r2(d.y - r - 6) }, '攻击节点'));
       }
       g.append(svgText('text', {
         class: 'p-topo-label' + (isolated ? ' d-wtopo-label-hit' : ''),
         x: d.x, y: r2(d.y + 24)
-      }, (isolated ? '⛔ ' : offline ? '○ ' : '') + String(n.node_id)));
+      }, String(n.node_id)));
       tipOn(g, function () {
         var p = posOf(n);
         return '<b>' + UI.esc(n.node_id) + '</b><br>' +
-          '类型 ' + UI.esc(type || '—') + ' · 状态 ' + UI.esc(status || '—') + '<br>' +
+          '类型 ' + UI.esc(TYPE_ZH[type] || type || '—') + ' · 状态 ' + UI.esc(STATUS_ZH[status] || status || '—') + '<br>' +
           '拓扑坐标 (' + (p ? p.x + ', ' + p.y : '—') + ')<br>' +
           '邻居 ' + UI.esc(neighborsText(n.neighbors)) + '<br>' +
           '风险分 ' + (n.risk_score != null ? Number(n.risk_score).toFixed(2) : '—') + '<br>' +
@@ -284,15 +289,15 @@
   function legend() {
     var box = el('div', { class: 'd-wtopo-legend' });
     var items = [
-      [swatchDot('d-wtopo-t-mgmt'), 'MANAGEMENT 管理节点（紫）'],
-      [swatchDot('d-wtopo-t-edge'), 'EDGE 边缘中继（蓝）'],
-      [swatchDot('d-wtopo-t-uav'), 'UAV 航空器节点（青）'],
-      [swatchDot('d-wtopo-t-atk'), 'ATTACKER 攻击节点（红 + ⚠ 标签）'],
-      [swatchDot('d-wtopo-offline'), 'OFFLINE 离线（空心）'],
+      [swatchDot('d-wtopo-t-mgmt'), '管理节点（紫）'],
+      [swatchDot('d-wtopo-t-edge'), '边缘中继（蓝）'],
+      [swatchDot('d-wtopo-t-uav'), '航空器节点（青）'],
+      [swatchDot('d-wtopo-t-atk'), '攻击节点（红 + 顶部标签）'],
+      [swatchDot('d-wtopo-offline'), '离线（空心）'],
       [swatchDot('d-wtopo-isolated', [svgEl('circle', { class: 'd-wtopo-hit', cx: 8, cy: 8, r: 6.5 })]),
-        'ISOLATED 隔离（⛔ 红虚线描边 + 脉冲环 = 检测命中）'],
+        '隔离（红虚线描边 + 脉冲环 = 检测命中）'],
       [swatchLine('p-topo-edge'), '正常边（灰实线）'],
-      [swatchLine('p-topo-edge p-topo-wormhole d-wtopo-flow'), '虫洞伪造边（红虚线流动 + 中点 ⚠）'],
+      [swatchLine('p-topo-edge p-topo-wormhole d-wtopo-flow'), '虫洞伪造边（红虚线流动 + 中点警示标）'],
       [swatchLine('p-topo-edge p-topo-active'), '当前会话路径（加粗）']
     ];
     items.forEach(function (it) {
@@ -306,7 +311,7 @@
   function unplacedAside(pl) {
     var box = el('div', { class: 'd-wtopo-unplaced' });
     box.append(el('div', {}, null,
-      '⚠ 未布点节点（无拓扑坐标，不入图）：'));
+      '未布点节点（无拓扑坐标，不入图）：'));
     var chips = el('div', { class: 'd-wtopo-unplaced-chips' });
     pl.unplaced.forEach(function (n) {
       chips.append(el('span', { class: 'd-wtopo-chip' }, null,
@@ -327,7 +332,7 @@
     var root = el('div', { class: 'd-wtopo' });
 
     /* 元信息行：全部计数来自本次响应/plan，不猜测 */
-    var whState = topo && topo.wormhole_enabled === true ? '⚠ 虫洞攻击开启中'
+    var whState = topo && topo.wormhole_enabled === true ? '虫洞攻击开启中'
       : topo && topo.wormhole_enabled === false ? '虫洞未开启' : '虫洞状态未知';
     var hl = (opts.hlPath && opts.hlPath.length > 1)
       ? '会话路径高亮：' + opts.hlPath.join(' → ')

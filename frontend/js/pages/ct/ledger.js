@@ -34,7 +34,7 @@
       endpoint: '/api/pass/list', pageSize: 10,
       filters: [
         { name: 'status', label: '状态', type: 'select',
-          options: ['GENERATING', 'VALID', 'USED', 'EXPIRED', 'REVOKED'] },
+          options: ['GENERATING', 'VALID', 'USED', 'EXPIRED', 'REVOKED'].map(function (s) { return [s, P.statusZh(s)]; }) },
         { name: 'mission_id', label: '任务号', type: 'text' },
         { name: 'uav_id', label: '航空器 ID', type: 'text' }
       ],
@@ -45,7 +45,7 @@
         { title: '状态', render: function (r) { return P.badge(r.status); } },
         { title: '有效窗', render: function (r) {
           return UI.trunc(r.valid_from, 16) + ' → ' + UI.trunc(r.valid_to, 16); } },
-        { title: '签发时间', key: 'created_at' },
+        { title: '签发时间', render: function (r) { return UI.fmtDT(r.created_at); } },
         { title: '操作', render: function (r) {
           return h('button', { class: 'p-btn p-btn-sm p-btn-ghost',
             onClick: function (e) { e.stopPropagation(); openLedger(r.pass_id); } }, '展开详情'); } }
@@ -53,12 +53,13 @@
       onRow: function (r) { openLedger(r.pass_id); },
       emptyText: '暂无证照 —— 在「通行证签发」页签发后出现在此'
     });
-    root.append(card('证照台账（点击行或「展开详情」查看证照卡、签名身份与链上存证）', tbl));
+    root.append(card('证照台账',
+      h('div', { class: 'p-card-sub' }, '点击行或「展开详情」查看证照卡、签名身份与链上存证'), tbl));
   }
 
   /* ---------- 行展开抽屉：pass/query 详情 + QR + 签名身份 + 跨链留痕 ---------- */
   async function openLedger(passId) {
-    var d = P.drawer('证照 ' + passId, h('div', { class: 'p-empty' }, '⏳ 证照详情查询中…'));
+    var d = P.drawer('证照 ' + passId, h('div', { class: 'p-empty' }, '证照详情查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/pass/query', { pass_id: passId });
     if (!body.isConnected) return;                       /* 抽屉已被关闭 */
@@ -81,7 +82,7 @@
             ['许可航线', PORTAL.jp(p.route, []).join(' → ') || '—'],
             ['SM3 摘要', h('code', { class: 'p-mono', title: p.sm3_hash }, UI.trunc(p.sm3_hash, 48))],
             ['SM9 签名', h('code', { class: 'p-mono', title: p.signature }, UI.trunc(p.signature, 48))],
-            ['签发 / 更新', p.created_at + ' → ' + p.updated_at]
+            ['签发 / 更新', UI.fmtDT(p.created_at, true) + ' → ' + UI.fmtDT(p.updated_at, true)]
           ])),
           qrEl),
         h('div', { class: 'd-seal' }, '证照链\n签发')),
@@ -91,14 +92,14 @@
       pass_id: p.pass_id, mission_id: p.mission_id, uav_id: p.uav_id, valid_to: p.valid_to }),
       'QR 生成失败——证照号等以左侧文字为准，不虚构二维码');
 
-    var cxBox = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 链上存证查询中…'));
+    var cxBox = h('div', {}, h('div', { class: 'p-empty' }, '链上存证查询中…'));
     body.append(h('div', { class: 'd-section' },
       'SM9 签名身份 + 四段 TxID 链上存证（点击任一段查看全量证据）'), cxBox);
     await fillCx(cxBox, 'FLIGHT_PASS', p.pass_id, true);
     if (!cxBox.isConnected) return;
 
     if (p.status === 'REVOKED') {
-      var rvBox = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 吊销存证查询中…'));
+      var rvBox = h('div', {}, h('div', { class: 'p-empty' }, '吊销存证查询中…'));
       body.append(h('div', { class: 'd-section' }, '吊销链上存证（失败或待补发记录如实展示）'), rvBox);
       await fillCx(rvBox, 'PASS_REVOKE', p.pass_id, false);
     }
@@ -132,7 +133,7 @@
     recs.forEach(function (x) {
       box.append(
         h('div', { class: 'd-small d-muted d-mt' },
-          '留痕 · ', x.created_at, x.retry_of ? ' · 重试自 ' + x.retry_of : '',
+          '留痕 · ', UI.fmtDT(x.created_at, true), x.retry_of ? ' · 重试自 ' + x.retry_of : '',
           ' · ', P.badge(x.status)),
         P.cxTrail(x));
     });

@@ -45,7 +45,8 @@
         var v = PORTAL.need(f.read(), 'pass_id');
         if (v) await doVerify(String(v.pass_id).trim(), rp);
       } }])));
-    root.append(card('查验结果（查验结论、签名身份与链上证据）', rp.root));
+    root.append(card('查验结果',
+      h('div', { class: 'p-card-sub' }, '查验结论、签名身份与链上证据'), rp.root));
   }
 
   async function doVerify(passId, rp) {
@@ -53,13 +54,13 @@
     if (!rp.root.isConnected) return;                    /* 用户已离开本页 */
     var slots = {};
     rp.show(v, function (d) {
-      var win = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 有效时间窗读取中…'));
-      var ev = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 链上证据检索中…'));
+      var win = h('div', {}, h('div', { class: 'p-empty' }, '有效时间窗读取中…'));
+      var ev = h('div', {}, h('div', { class: 'p-empty' }, '链上证据检索中…'));
       slots.win = win; slots.ev = ev;
       return h('div', {}, verdictCard(d), win,
         h('p', { class: 'd-small d-muted' }, '签名身份说明：', TRANSITION_NOTE,
           '，存量证照不失效。'),
-        h('div', { class: 'd-section' }, '链上证据区 · 四段存证时间线（REVOKED 证照自动附加吊销存证）'),
+        h('div', { class: 'd-section' }, '链上证据区 · 四段存证时间线（已吊销证照自动附加吊销存证）'),
         ev);
     });
     if (!v.ok) return;                                   /* 6002：errCard + EXPLAIN 已渲染，不追加证据区 */
@@ -73,7 +74,9 @@
     if (d.valid) {
       return h('div', { class: 'd-cert' },
         h('div', { class: 'd-cert-head' },
-          h('span', { class: 'd-cert-title', style: { color: 'var(--d-good)' } }, '✓ 查验通过 · 证照有效'),
+          h('span', { class: 'd-cert-title', style: { color: 'var(--d-good)' } },
+            h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, h('use', { href: '#d-ico-check' })),
+            ' 查验通过 · 证照有效'),
           h('span', { class: 'd-cert-no' }, d.pass_id || '—')),
         h('div', { class: 'd-cert-body' }, h('div', { class: 'd-cert-main' }, P.kv([
           ['证照状态', P.badge(d.status)],
@@ -85,7 +88,9 @@
     var rs = d.reasons || [];
     return h('div', { class: 'd-cert' },
       h('div', { class: 'd-cert-head' },
-        h('span', { class: 'd-cert-title', style: { color: 'var(--d-critical)' } }, '⛔ 查验未通过 · 证照无效'),
+        h('span', { class: 'd-cert-title', style: { color: 'var(--d-critical)' } },
+          h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, h('use', { href: '#d-ico-x' })),
+          ' 查验未通过 · 证照无效'),
         h('span', { class: 'd-cert-no' }, d.pass_id || '—')),
       h('div', { class: 'd-cert-body' }, h('div', { class: 'd-cert-main' },
         P.kv([
@@ -138,7 +143,7 @@
     if (!slot.isConnected) return;
     if (!q.ok) slot.append(P.errCard(q));
     else slot.append(
-      h('div', { class: 'd-small d-muted d-mt' }, '主留痕 · ', primary.created_at,
+      h('div', { class: 'd-small d-muted d-mt' }, '主留痕 · ', UI.fmtDT(primary.created_at, true),
         primary.retry_of ? ' · 重试自 ' + primary.retry_of : ''),
       P.cxTrail(q.data));
     var others = recs.filter(function (x) { return x.cross_tx_id !== primary.cross_tx_id; });
@@ -148,7 +153,7 @@
       others.forEach(function (x) {
         slot.append(h('div', { class: 'd-row d-mt' },
           h('code', { class: 'p-mono' }, UI.trunc(x.cross_tx_id, 34)), P.badge(x.status),
-          h('span', { class: 'd-small d-muted' }, x.created_at),
+          h('span', { class: 'd-small d-muted' }, UI.fmtDT(x.created_at)),
           h('button', { class: 'p-btn p-btn-sm p-btn-ghost',
             onClick: function () { P.openCxDetail(x.cross_tx_id); } }, '证据')));
       });
@@ -158,7 +163,7 @@
 
   /* ---------- REVOKED 附加：PASS_REVOKE 吊销留痕（FAILED 待补发如实展示） ---------- */
   async function appendRevoke(slot, passId) {
-    var box = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 吊销存证查询中…'));
+    var box = h('div', {}, h('div', { class: 'p-empty' }, '吊销存证查询中…'));
     slot.append(h('div', { class: 'd-section' }, '吊销链上存证（失败或待补发记录如实展示）'), box);
     var r = await API.call('/api/crosschain/list', { message_type: 'PASS_REVOKE', page: 1, page_size: 200 });
     if (!box.isConnected) return;
@@ -174,13 +179,14 @@
     var q = await API.call('/api/crosschain/query', { cross_tx_id: primary.cross_tx_id });
     if (!box.isConnected) return;
     if (!q.ok) box.append(P.errCard(q));
-    else box.append(h('div', { class: 'd-small d-muted' }, '主留痕 · ', primary.created_at),
+    else box.append(h('div', { class: 'd-small d-muted' }, '主留痕 · ', UI.fmtDT(primary.created_at, true)),
       P.cxTrail(q.data));
     if (primary.status === 'FAILED') {
       box.append(h('div', { class: 'd-small',
         style: { marginTop: '8px', padding: '10px 12px', background: 'var(--d-warning-soft)',
           border: '1px dashed var(--d-warning)', borderRadius: '6px', color: 'var(--d-warning)' } },
-        '⚠ 链上吊销未达（待补发）—— 本地状态已是 REVOKED（吊销即时生效）；到「证照吊销」页可一键补发链上吊销，补发全程审计留痕，不重复变更状态。'));
+        h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, h('use', { href: '#d-ico-triangle-alert' })),
+        ' 链上吊销未达（待补发）—— 本地状态已是「已吊销」（吊销即时生效）；到「证照吊销」页可一键补发链上吊销，补发全程审计留痕，不重复变更状态。'));
     }
     var others = recs.filter(function (x) { return x.cross_tx_id !== primary.cross_tx_id; });
     others.forEach(function (x) {

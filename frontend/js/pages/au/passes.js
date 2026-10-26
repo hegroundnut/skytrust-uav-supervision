@@ -26,7 +26,7 @@
       ['许可航线', PORTAL.jp(p.route, []).join(' → ') || '—'],
       ['SM3 摘要', h('code', { class: 'p-mono' }, UI.trunc(p.sm3_hash, 48))],
       ['SM9 签名', h('code', { class: 'p-mono' }, UI.trunc(p.signature, 48))],
-      ['签发 / 更新', p.created_at + ' → ' + p.updated_at]
+      ['签发 / 更新', UI.fmtDT(p.created_at, true) + ' → ' + UI.fmtDT(p.updated_at, true)]
     ]);
   }
 
@@ -45,7 +45,7 @@
       endpoint: '/api/pass/list', pageSize: 10,
       filters: [
         { name: 'status', label: '状态', type: 'select',
-          options: ['GENERATING', 'VALID', 'USED', 'EXPIRED', 'REVOKED'] },
+          options: ['GENERATING', 'VALID', 'USED', 'EXPIRED', 'REVOKED'].map(function (s) { return [s, P.statusZh(s)]; }) },
         { name: 'mission_id', label: '任务号', type: 'text' },
         { name: 'uav_id', label: '航空器 ID', type: 'text' }
       ],
@@ -55,7 +55,7 @@
         { title: '航空器', key: 'uav_id', mono: true },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
         { title: '有效窗', render: function (r) { return UI.trunc(r.valid_from, 16) + ' → ' + UI.trunc(r.valid_to, 16); } },
-        { title: '签发时间', key: 'created_at' },
+        { title: '签发时间', render: function (r) { return UI.fmtDT(r.created_at); } },
         { title: '操作', render: function (r) {
           return h('button', { class: 'p-btn p-btn-sm p-btn-ghost',
             onClick: function (e) { e.stopPropagation(); passDrawer(r.pass_id); } }, '详情 · 验证');
@@ -64,13 +64,14 @@
       onRow: function (r) { passDrawer(r.pass_id); },
       emptyText: '暂无许可 —— 任务审核通过并经证照中心端签发后出现在此'
     });
-    root.append(card('许可台账（只读 · 点击行查看详情）', tbl,
+    root.append(card('许可台账',
+      h('div', { class: 'p-card-sub' }, '只读 · 点击行查看详情'), tbl,
       h('p', { class: 'd-small d-muted' },
-        'FLIGHT_PASS 跨链存证：证照链（irita）签发 → 运营链（fabric）存证 —— 签发/吊销操作请前往证照中心端，本页不提供任何变更入口。')));
+        '签发跨链存证：证照链签发 → 运营链存证 —— 签发/吊销操作请前往证照中心端，本页不提供任何变更入口。')));
   }
 
   async function passDrawer(passId) {
-    var d = P.drawer('许可 ' + passId, h('div', { class: 'p-empty' }, '⏳ 许可详情查询中…'));
+    var d = P.drawer('许可 ' + passId, h('div', { class: 'p-empty' }, '许可详情查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/pass/query', { pass_id: passId });
     if (!body.isConnected) return;
@@ -87,8 +88,8 @@
         rp: rpV, successText: '验证完成',
         render: function (x) {
           return h('div', {},
-            P.statCards([{ label: '有效性', value: x.valid ? '✓ 有效' : '✗ 无效',
-              tone: x.valid ? 'good' : 'critical', sub: x.status }]),
+            P.statCards([{ label: '有效性', value: x.valid ? '有效' : '无效',
+              tone: x.valid ? 'good' : 'critical', sub: P.statusZh(x.status) }]),
             x.reasons && x.reasons.length
               ? h('ul', {}, x.reasons.map(function (t) { return h('li', { style: { color: '#b91c1c' } }, t); }))
               : h('div', { class: 'd-small d-muted' }, '无拒绝原因'));

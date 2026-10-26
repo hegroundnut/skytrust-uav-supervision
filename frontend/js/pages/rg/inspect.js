@@ -18,7 +18,10 @@
   const card = (title, ...b) => h('section', { class: 'p-card' },
     h('h3', { class: 'p-card-title' }, title), ...b);
 
-  function fmtBool(b) { return b === true ? '✓' : b === false ? '✗' : '—'; }
+  function fmtBool(b) { return b === true ? '是' : b === false ? '否' : '—'; }
+  /* 授权范围枚举中文（ROUTE 在冲突域=航路交叉，全局字典撞域——本地自持） */
+  var SCOPE_ZH = { MISSION: '任务', ROUTE: '航路', PAYLOAD: '载荷', IDENTITY: '身份' };
+  function scopeZh(s) { return SCOPE_ZH[s] || String(s); }
 
   /* 开箱态（code=0）：授权+双验证+明文+双裁定+上链留痕 */
   function openedView(d) {
@@ -28,17 +31,18 @@
     var s = d.sealed || {};
     return h('div', {},
       P.statCards([
-        { label: '授权核验', value: d.authorized ? '✓ 已开箱' : '✗ 未授权',
+        { label: '授权核验', value: d.authorized ? '已开箱' : '未授权',
           tone: d.authorized ? 'good' : 'critical' },
         { label: '完整性双验证',
-          value: (v.digest_match && v.signature_valid) ? '✓✓ 双通过' : '⚠ 验证未通过',
+          value: (v.digest_match && v.signature_valid) ? '双通过' : '验证未通过',
           sub: '摘要匹配 ' + fmtBool(v.digest_match) + ' · 签名有效 ' + fmtBool(v.signature_valid),
           tone: (v.digest_match && v.signature_valid) ? 'good' : 'critical' },
         { label: '授权范围', value: (d.scope || []).length + ' 项',
-          sub: (d.scope || []).join('、') || '—' }
+          sub: (d.scope || []).map(scopeZh).join('、') || '—',
+          title: (d.scope || []).join('、') || '' }
       ]),
       h('div', { class: 'd-section' }, '解密明文视图（国密解密 · 仅本次响应展示，不落库）'),
-      h('div', { class: 'p-mono d-cert' }, d.decrypted_view || '（未开箱——授权范围不含 MISSION，或任务暂无密文）'),
+      h('div', { class: 'p-mono d-cert' }, d.decrypted_view || '（未开箱——授权范围不含「任务」，或任务暂无密文）'),
       P.kv([
         ['任务', h('code', { class: 'p-mono' }, m.mission_id || '—')],
         ['任务状态', P.badge(m.status)],
@@ -59,7 +63,7 @@
   /* 封缄态（5002/5003/5004/2001 的 data.sealed）：只可见元信息——这恰是最小授权的证明 */
   function sealedCard(s) {
     return h('div', {},
-      h('div', { class: 'd-section' }, '🔒 封缄视图——仅返回封缄元信息，明文内容绝不外泄'),
+      h('div', { class: 'd-section' }, '封缄视图——仅返回封缄元信息，明文内容绝不外泄'),
       P.kv([
         ['任务', h('code', { class: 'p-mono' }, s.mission_id || '—')],
         ['密文状态', P.badge(s.ciphertext_status)],
@@ -87,12 +91,12 @@
         hint: '留空将被以封缄态拒绝——数据最小化：未授权不见明文' },
       { name: 'regulator_id', label: '监管方（审计用）', type: 'text', value: 'REG-01' },
       { name: 'trajectory', label: '申报轨迹', type: 'select', value: '',
-        options: [['', '（留空——不申报）'], ['NORMAL', 'NORMAL 正常申报'],
-          ['DEVIATION', 'DEVIATION 偏航申报']],
-        hint: '申报需授权范围含 ROUTE；无需申报时请保持留空' },
+        options: [['', '（留空——不申报）'], ['NORMAL', '正常申报'],
+          ['DEVIATION', '偏航申报']],
+        hint: '申报需授权范围含「航路」；无需申报时请保持留空' },
       { name: 'payload_type', label: '申报载荷类型（可选）', type: 'text',
-        placeholder: '如 MEDICAL_KIT（与任务载荷比对）',
-        hint: '申报需授权范围含 PAYLOAD；与任务载荷不符将被裁定并触发告警' }
+        placeholder: '如 MEDICAL_KIT 医疗箱（与任务载荷比对）',
+        hint: '申报需授权范围含「载荷」；与任务载荷不符将被裁定并触发告警' }
     ]);
 
     /* 手写 run：5002/5003/5004/2001 的 data.sealed 补渲必须直接访问错误响应 */
@@ -130,7 +134,7 @@
         card('核验规则说明',
           P.kv([
             ['封缄（拒绝路径）', '未授权、越权、授权过期或结论上链失败——一律只返回封缄元信息，不见明文'],
-            ['开箱（授权路径)', '授权范围决定可见内容：MISSION→明文视图、ROUTE→轨迹比对、PAYLOAD→载荷比对'],
+            ['开箱（授权路径）', '授权范围决定可见内容：「任务」→明文视图、「航路」→轨迹比对、「载荷」→载荷比对'],
             ['核验即审计', '开箱与拒绝均写入审计留痕；开箱结论上链存证']
           ]))),
       card('核验结果', resultBox)));

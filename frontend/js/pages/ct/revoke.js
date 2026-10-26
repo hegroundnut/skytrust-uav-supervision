@@ -23,7 +23,7 @@
   function render(root) {
     root.append(P.pageHead({
       title: '证照吊销',
-      sub: '仅 VALID 证照可吊销 · 吊销即时生效 · 吊销结果同步链上存证，失败如实提示并支持补发'
+      sub: '仅有效证照可吊销 · 吊销即时生效 · 吊销结果同步链上存证，失败如实提示并支持补发'
     }));
     var rp = P.resultPanel();
     rp.root.append(P.empty('尚无吊销操作 —— 在上方列表点「吊销」，吊销结果与链上存证显示在此'));
@@ -41,15 +41,17 @@
         { title: '状态', render: function (r) { return P.badge(r.status); } },
         { title: '有效窗', render: function (r) {
           return UI.trunc(r.valid_from, 16) + ' → ' + UI.trunc(r.valid_to, 16); } },
-        { title: '签发时间', key: 'created_at' },
+        { title: '签发时间', render: function (r) { return UI.fmtDT(r.created_at); } },
         { title: '操作', render: function (r) {
           return h('button', { class: 'p-btn p-btn-sm p-btn-danger',
             onClick: function (e) { e.stopPropagation(); openRevokeModal(r, rp, tbl); } }, '吊销'); } }
       ],
-      emptyText: '暂无可吊销证照 —— VALID 证照签发后出现在此'
+      emptyText: '暂无可吊销证照 —— 有效证照签发后出现在此'
     });
-    root.append(card('可吊销证照（VALID 状态）', tbl));
-    root.append(card('吊销结果（吊销状态与链上吊销结果，失败如实提示）', rp.root));
+    root.append(card('可吊销证照',
+      h('div', { class: 'p-card-sub' }, '仅「有效」状态证照可吊销'), tbl));
+    root.append(card('吊销结果',
+      h('div', { class: 'p-card-sub' }, '吊销状态与链上吊销结果 · 失败如实提示'), rp.root));
   }
 
   /* ---------- 吊销确认弹窗：后果文案 + reason/operator 必填 + 进行中态 ---------- */
@@ -68,9 +70,9 @@
         ['当前状态', P.badge(rec.status)]
       ]),
       h('p', { class: 'd-small', style: { color: 'var(--d-warning)' } },
-        '吊销后果（如实告知）：① 确认后证照立即转为 REVOKED（终态，不可逆），',
+        '吊销后果（如实告知）：① 确认后证照立即转为「已吊销」（终态，不可逆），',
         '再次查验即判定无效（原因「许可已吊销」）；② 吊销信息同步跨链存证（证照链 → 监管链 → 运营链），',
-        '链上存证失败不影响本地吊销生效，将如实提示并支持一键补发；③ 仅 VALID 证照可吊销。'),
+        '链上存证失败不影响本地吊销生效，将如实提示并支持一键补发；③ 仅有效状态证照可吊销。'),
       f.root);
     var busy = false;
     var mask = h('div', { class: 'p-modal-mask' });
@@ -96,7 +98,7 @@
       bodyBox.innerHTML = '';
       bodyBox.append(
         h('div', { class: 'p-empty', style: { height: 'auto', padding: '18px 6px' } },
-          '⏳ 跨链吊销约 3-6s：证照链→监管链中继→运营链'),
+          '跨链吊销约 3-6 秒：证照链→监管链中继→运营链'),
         h('p', { class: 'd-small d-muted d-center' },
           '吊销信息源链上链 → 监管链签收中继 → 运营链跨链存证',
           h('br', {}), '本地吊销即时生效；提交中不可关闭本弹窗。'));
@@ -139,20 +141,23 @@
     ];
     if (cs === 'SUCCESS') {
       parts.push(h('div', { class: 'p-ok-line' },
-        '✓ 本地已吊销（REVOKED 终态，不可逆）且链上吊销存证成功（证照链 → 监管链 → 运营链）'));
+        h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, h('use', { href: '#d-ico-check' })),
+        '本地已吊销（终态，不可逆），链上吊销存证成功（证照链 → 监管链 → 运营链）'));
     } else {
       /* FAILED：brief 钉死黄条文案，绝不掩饰；补发语义如实说明（无后台定时任务） */
       parts.push(warnBox(
-        h('b', {}, '⚠ 本地已吊销，链上吊销未达——将自动补发'),
+        h('b', {},
+          h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, h('use', { href: '#d-ico-triangle-alert' })),
+          ' 本地已吊销，链上吊销未达——将自动补发'),
         h('div', { class: 'd-small', style: { color: 'var(--d-ink-2)' } },
-          '本地 REVOKED 已即时生效（安全优先：再次查验即返回「许可已吊销」）。',
+          '本地「已吊销」已即时生效（安全优先：再次查验即返回「许可已吊销」）。',
           '补发仅补充链上吊销存证，全程审计留痕、不重复变更证照状态；',
           '点下方按钮立即补发。')));
       parts.push(h('div', { class: 'd-row d-mt' },
         h('button', { class: 'p-btn p-btn-sm p-btn-primary',
           onClick: async function (e) {
             var btn = e.currentTarget;
-            btn.disabled = true; var old = btn.textContent; btn.textContent = '⏳ 补发中（约 3-6s）…';
+            btn.disabled = true; var old = btn.textContent; btn.textContent = '补发中（约 3-6 秒）…';
             var r2 = await API.call('/api/pass/revoke', args);
             btn.disabled = false; btn.textContent = old;
             showResult(r2, rp, tbl, args);               /* 补发结果重渲染同一结果面板 */

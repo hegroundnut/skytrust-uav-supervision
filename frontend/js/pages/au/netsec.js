@@ -16,12 +16,22 @@
   const card = (title, ...b) => h('section', { class: 'p-card' },
     h('h3', { class: 'p-card-title' }, title), ...b);
   var mx = null;   /* 拓扑真地图（tabTopo 专属；shell-au mapPages 含 netsec）：render 入口必先 destroy */
+  function ico(name) {
+    return h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+      h('use', { href: '#d-ico-' + name }));
+  }
+  function verdictZh(v) {
+    return v === 'PASS' ? '无异常' : v === 'DETECT' ? '检出攻击'
+      : v === 'BLOCK' ? '已阻断' : (v || '—');
+  }
+  /* 会话消息 6 类（session 层 msg_type，与跨链 5 类不同域） */
+  var MSG_TYPES = ['HEARTBEAT', 'POSITION_UPDATE', 'PASS_VERIFY', 'NODE_CHALLENGE', 'ROUTE_STATUS', 'EVENT_REPORT'];
 
   function render(root, ctx) {
     if (mx) { mx.destroy(); mx = null; }
     root.append(P.pageHead({
       title: '链网安全运营',
-      sub: '系统二 · 链下可信网络 — 拓扑 / 会话消息 / 攻防演练 / 性能实验（安全运营视角：ATTACKER 节点全量可见）' }));
+      sub: '系统二 · 链下可信网络 — 拓扑 / 会话消息 / 攻防演练 / 性能实验（安全运营视角：攻击节点全量可见）' }));
     root.append(P.tabs([
       { key: 'topo', label: '拓扑·节点', render: tabTopo },
       { key: 'traffic', label: '会话·消息', render: tabTraffic },
@@ -44,27 +54,22 @@
     if (!ks.length) return '—';
     return ks.map(function (k) { return k + '×' + o[k]; }).join('；');
   }
-  function verdictLabel(v) {
-    return v === 'PASS' ? '✓ PASS 无异常'
-      : v === 'DETECT' ? '⚠ DETECT 检出攻击'
-      : v === 'BLOCK' ? '⛔ BLOCK 已阻断' : (v || '—');
-  }
-
   /* ============ 页签 1：拓扑·节点 ============ */
   function tabTopo(box) {
-    var statsBox = h('div', {}, P.empty('⏳ 拓扑数据加载中…'));
+    var statsBox = h('div', {}, P.empty('拓扑数据加载中…'));
     var mapEl = h('div', { class: 'd-map d-map-xl' });
-    var wtopoBox = h('div', {}, P.empty('⏳ 抽象拓扑加载中…'));   /* Task 9 追加 */
+    var wtopoBox = h('div', {}, P.empty('抽象拓扑加载中…'));   /* Task 9 追加 */
     var tblNd = null;
 
     box.append(statsBox);
     box.append(h('div', { class: 'd-col' }, mapEl,
-      h('div', { class: 'd-map-hint' }, '节点着色：紫=MANAGEMENT · 蓝=EDGE · 青=UAV · 红=ATTACKER（空心=OFFLINE、红虚线⛔=ISOLATED）；红虚线边=虫洞伪造边。无经纬度的节点不上图。')));
-    /* ---- Task 9 追加：抽象拓扑（含攻击节点）区块 —— Leaflet 容器正下方；双层分工如标题 ----
+      h('div', { class: 'd-map-hint' }, '节点着色：紫=管理节点 · 蓝=边缘节点 · 青=无人机 · 红=攻击节点（空心=离线、红虚线描边=已隔离）；红虚线边=虫洞伪造边。无经纬度的节点不上图。')));
+    /* ---- Task 9 追加：抽象拓扑（含攻击节点）区块 —— Leaflet 容器正下方；双层分工如副题 ----
        Leaflet 地理层保留不动（只落有经纬度的节点）；WTOPO 落全部有拓扑坐标的节点（含攻击者），
        只消费服务端抽象 position{x,y}，绝不读写经纬度（红线）；无 position 节点列「未布点」清单。 */
-    box.append(card('抽象拓扑（含攻击节点）—— 上图：地理分布（未设坐标节点不落图）；下图：抽象拓扑（全节点含攻击者）',
-      P.actionBar([{ label: '⟳ 刷新拓扑', run: loadTopo }]),
+    box.append(card('抽象拓扑',
+      h('div', { class: 'p-card-sub' }, '含攻击节点 —— 上图：地理分布（未设坐标节点不落图）；下图：抽象拓扑（全节点含攻击者）'),
+      P.actionBar([{ label: '刷新拓扑', run: loadTopo }]),
       wtopoBox));
 
     mx = MAPX.create(mapEl, { view: GEO.DEFAULT_VIEW });
@@ -76,7 +81,7 @@
       { name: 'node_id', label: '节点 ID', type: 'text', required: true, placeholder: 'N5',
         hint: '无人机端节点约定命名为「航空器ID-NODE」，建立会话前须先注册' },
       { name: 'node_type', label: '节点类型', type: 'select', required: true, value: 'EDGE',
-        options: ['EDGE', 'MANAGEMENT', 'UAV', 'ATTACKER'] },
+        options: ['EDGE', 'MANAGEMENT', 'UAV', 'ATTACKER'].map(function (s) { return [s, P.statusZh(s)]; }) },
       { name: 'posX', label: '拓扑坐标 X（0-100）', type: 'number', required: true, value: 60 },
       { name: 'posY', label: '拓扑坐标 Y（0-100）', type: 'number', required: true, value: 60 },
       { name: 'neighbors', label: '邻居（逗号分隔，可空）', type: 'text', placeholder: 'N3,MGR' },
@@ -87,8 +92,10 @@
     tblNd = P.dataTable({
       endpoint: '/api/node/list', pageSize: 10,
       filters: [
-        { name: 'node_type', label: '类型', type: 'select', options: ['MANAGEMENT', 'EDGE', 'UAV', 'ATTACKER'] },
-        { name: 'status', label: '状态', type: 'select', options: ['ONLINE', 'OFFLINE', 'ISOLATED'] }
+        { name: 'node_type', label: '类型', type: 'select',
+          options: ['MANAGEMENT', 'EDGE', 'UAV', 'ATTACKER'].map(function (s) { return [s, P.statusZh(s)]; }) },
+        { name: 'status', label: '状态', type: 'select',
+          options: ['ONLINE', 'OFFLINE', 'ISOLATED'].map(function (s) { return [s, P.statusZh(s)]; }) }
       ],
       columns: [
         { title: '节点', key: 'node_id', mono: true },
@@ -156,7 +163,7 @@
 
     /* 拓扑加载：统计卡 + 真地图（虫洞伪造边入 marks 层，节点入 nodes 层）+ WTOPO 抽象拓扑。
        Task 9 联动刷新三路：① node/register onOk 直调本函数（既有钩子，WTOPO 随绘）；② 区块
-       ⟳ 按钮直调；③ drill 页签 wormhole/toggle、path/switch、risk/evaluate 操作后切回本页签
+       「刷新拓扑」按钮直调；③ drill 页签 wormhole/toggle、path/switch、risk/evaluate 操作后切回本页签
        ——tab 切换即 hashchange → route() 整页重渲染 → 本函数重拉最新拓扑，双层重绘，
        hlPath 取当前会话最新 current_path（风险 5 维评分沿用 drill 页签既有 P.scoreBars，不动）。 */
     async function loadTopo() {
@@ -172,7 +179,7 @@
               sub: '隔离集：' + ((t.isolated || []).join('、') || '无') },
             { label: '网络边', value: (t.edges || []).length,
               sub: '虫洞边：' + (t.edges || []).filter(function (e) { return e.wormhole_edge; }).length },
-            { label: '虫洞攻击', value: t.wormhole_enabled ? '⚠ 开启中' : '未开启',
+            { label: '虫洞攻击', value: t.wormhole_enabled ? '开启中' : '未开启',
               tone: t.wormhole_enabled ? 'critical' : 'good' }
           ]));
         }
@@ -187,7 +194,7 @@
           else wtopoBox.append(WTOPO.block(r.data, {
             hlPath: hl || undefined,
             onPickNode: function (n) {
-              UI.toast('抽象拓扑 ' + n.node_id + ' · ' + n.node_type + ' · ' + n.status +
+              UI.toast('抽象拓扑 ' + n.node_id + ' · ' + P.statusZh(n.node_type) + ' · ' + P.statusZh(n.status) +
                 (n.risk_score != null ? ' · 风险分 ' + Number(n.risk_score).toFixed(2) : ''), 'ok', 4200);
             }
           }));
@@ -197,7 +204,7 @@
       mx.clear('nodes'); mx.clear('marks');
       mx.drawWormholes(r.data.edges || [], r.data.nodes || []);
       mx.drawNodes(r.data.nodes || [], { onPick: function (n) {
-        UI.toast(n.node_id + ' · ' + n.node_type + ' · ' + n.status +
+        UI.toast(n.node_id + ' · ' + P.statusZh(n.node_type) + ' · ' + P.statusZh(n.status) +
           (n.risk_score != null ? ' · 风险分 ' + Number(n.risk_score).toFixed(2) : ''), 'ok', 4200);
       } });
       var pts = (r.data.nodes || []).map(function (n) { return GEO.nodeCoord(n); }).filter(Boolean);
@@ -214,14 +221,15 @@
     tblS = P.dataTable({
       endpoint: '/api/session/list', pageSize: 10,
       filters: [{ name: 'status', label: '状态', type: 'select',
-        options: ['INIT', 'AUTHENTICATED', 'ACTIVE', 'DEGRADED', 'RECOVERED', 'CLOSED'] }],
+        options: ['INIT', 'AUTHENTICATED', 'ACTIVE', 'DEGRADED', 'RECOVERED', 'CLOSED']
+          .map(function (s) { return [s, P.statusZh(s)]; }) }],
       columns: [
         { title: '会话号', render: function (r) { return UI.trunc(r.session_id, 22); }, mono: true },
         { title: '航空器', key: 'uav_id', mono: true },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
         { title: '当前路径', render: function (r) { return UI.trunc(PORTAL.jp(r.current_path, []).join(' → '), 40) || '—'; }, mono: true },
         { title: '关联任务', render: function (r) { return r.mission_id || '—'; } },
-        { title: '建立时间', key: 'created_at' },
+        { title: '建立时间', render: function (r) { return UI.fmtDT(r.created_at); } },
         { title: '操作', render: function (r) {
           var b = h('button', { class: 'p-btn p-btn-sm p-btn-danger', disabled: r.status === 'CLOSED' }, '关闭');
           b.addEventListener('click', function (e) { e.stopPropagation(); closeSession(r.session_id, tblS); });
@@ -240,10 +248,10 @@
         { session_id: sid, operator: 'SecOps', reason: '手动关闭' });
       if (r.ok) {
         STORE.note('SESSION', r.data.session_id);
-        UI.toast('会话已关闭（' + r.data.status + '）');
+        UI.toast('会话已关闭（' + P.statusZh(r.data.status) + '）');
         tbl.reload();
       } else {
-        UI.toast('关闭失败 code=' + r.code + '：' + r.message, 'err', 5200);
+        UI.toast('关闭失败：' + (r.message || ('code=' + r.code)), 'err', 5200);
       }
     }
 
@@ -257,7 +265,8 @@
       { name: 'mission_id', label: '关联任务（可选留档）', type: 'text', value: slotM ? slotM.id : '' },
       { name: 'pass_id', label: '关联许可（可选留档）', type: 'text', value: slotP ? slotP.id : '' }
     ]);
-    var soCard = card('建立会话（国密身份认证）',
+    var soCard = card('建立会话',
+      h('div', { class: 'p-card-sub' }, '国密身份认证 · 挑战-应答'),
       fSo.root,
       P.actionBar([{ label: '起飞报备 · 建立会话', kind: 'primary', run: P.runOp({
         path: '/api/session/open',
@@ -271,14 +280,16 @@
           if (v.pass_id) body.pass_id = v.pass_id;
           return body;
         },
-        rp: rpSo, successText: '会话已建立（INIT→AUTHENTICATED→ACTIVE，全程审计留痕）',
+        rp: rpSo, successText: '会话已建立（初始化 → 认证 → 活跃，全程审计留痕）',
         render: function (d) {
           return h('div', {},
             P.kv([
               ['会话号', h('code', { class: 'p-mono' }, d.session.session_id)],
               ['状态', P.badge(d.session.status)],
               ['航空器', d.session.uav_id],
-              ['SM9 认证', d.auth.verified ? '✓ 挑战-应答通过' : '✗ 未通过'],
+              ['SM9 认证', d.auth.verified
+                ? h('span', { style: { color: 'var(--d-good)' } }, ico('check'), ' 挑战-应答通过')
+                : h('span', { style: { color: 'var(--d-critical)' } }, ico('x'), ' 未通过')],
               ['SM9 身份', h('code', { class: 'p-mono' }, d.auth.sm9_identity)],
               ['Nonce', h('code', { class: 'p-mono' }, UI.trunc(d.auth.nonce, 40))],
               ['签名', h('code', { class: 'p-mono' }, UI.trunc(d.auth.signature, 40))],
@@ -301,13 +312,14 @@
       { name: 'session_id', label: '会话号', type: 'text', required: true, value: slotS ? slotS.id : '',
         placeholder: 'SESS-…（点上方会话行或新建会话自动预填）' },
       { name: 'msg_type', label: '消息类型', type: 'select', required: true, value: 'POSITION_UPDATE',
-        options: ['HEARTBEAT', 'POSITION_UPDATE', 'PASS_VERIFY', 'NODE_CHALLENGE', 'ROUTE_STATUS', 'EVENT_REPORT'] },
+        options: MSG_TYPES.map(function (s) { return [s, P.statusZh(s)]; }) },
       { name: 'source_node', label: '源节点', type: 'text', required: true, value: 'UAV-A-001-NODE' },
       { name: 'target_node', label: '目标节点', type: 'text', required: true, value: 'MGR' },
       { name: 'payload', label: '载荷（可选，JSON 对象）', type: 'textarea', rows: 2,
         placeholder: '{"lat":30.508,"lon":119.99}' }
     ]);
-    var msCard = card('消息发送（会话须 ACTIVE；CLOSED 会话不可发送）',
+    var msCard = card('消息发送',
+      h('div', { class: 'p-card-sub' }, '会话须处于「启用」状态；已关闭会话不可发送'),
       fMs.root,
       P.actionBar([{ label: '发送', kind: 'primary', run: P.runOp({
         path: '/api/message/send',
@@ -328,10 +340,10 @@
           return h('div', {},
             P.kv([
               ['消息号', h('code', { class: 'p-mono' }, UI.trunc(m.message_id, 28))],
-              ['类型 / 序号', m.msg_type + ' · seq=' + m.seq],
+              ['类型 / 序号', P.statusZh(m.msg_type) + ' · 序号 ' + m.seq],
               ['路由', m.source_node + ' → ' + m.target_node],
-              ['状态 / 时延', h('span', { class: 'd-row' }, P.badge(m.status),
-                (m.latency_ms != null ? m.latency_ms + ' ms' : '—'))],
+              ['状态 / 耗时', h('span', { class: 'd-row' }, P.badge(m.status),
+                UI.fmtMs(m.latency_ms))],
               ['路径', PORTAL.jp(m.path, []).join(' → ') || '—'],
               ['SM3 摘要', h('code', { class: 'p-mono' }, UI.trunc(m.sm3_hash, 32))]
             ]),
@@ -349,8 +361,9 @@
       endpoint: '/api/message/list', pageSize: 10,
       filters: [
         { name: 'msg_type', label: '类型', type: 'select',
-          options: ['HEARTBEAT', 'POSITION_UPDATE', 'PASS_VERIFY', 'NODE_CHALLENGE', 'ROUTE_STATUS', 'EVENT_REPORT'] },
-        { name: 'status', label: '状态', type: 'select', options: ['SUCCESS', 'FAILED'] },
+          options: MSG_TYPES.map(function (s) { return [s, P.statusZh(s)]; }) },
+        { name: 'status', label: '状态', type: 'select',
+          options: ['SUCCESS', 'FAILED'].map(function (s) { return [s, P.statusZh(s)]; }) },
         { name: 'session_id', label: '会话号', type: 'text' }
       ],
       columns: [
@@ -358,9 +371,9 @@
         { title: '类型', render: function (r) { return P.badge(r.msg_type); } },
         { title: '路由', render: function (r) { return r.source_node + ' → ' + r.target_node; }, mono: true },
         { title: '序号', key: 'seq', num: true },
-        { title: '时延(ms)', key: 'latency_ms', num: true },
+        { title: '耗时', render: function (r) { return UI.fmtMs(r.latency_ms); }, num: true },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
-        { title: '时间', key: 'created_at' }
+        { title: '时间', render: function (r) { return UI.fmtDT(r.created_at); } }
       ],
       onRow: function (r) { msgDrawer(r); },
       emptyText: '暂无消息'
@@ -377,10 +390,10 @@
         { label: '成功数', value: s.success_count != null ? s.success_count : '—' },
         { label: '成功率', value: PORTAL.fmtRate(s.success_rate),
           tone: (s.success_rate != null && s.success_rate < 1) ? 'critical' : 'good' },
-        { label: '平均时延', value: s.avg_latency_ms != null ? s.avg_latency_ms + ' ms' : '—' },
-        { label: 'p50 / p95',
+        { label: '平均时延', value: s.avg_latency_ms != null ? UI.fmtMs(s.avg_latency_ms) : '—' },
+        { label: 'p50 / p95（毫秒）',
           value: (s.p50_latency_ms != null ? s.p50_latency_ms : '—') + ' / ' + (s.p95_latency_ms != null ? s.p95_latency_ms : '—'),
-          sub: '最大 ' + (s.max_latency_ms != null ? s.max_latency_ms + ' ms' : '—') }
+          sub: '最大 ' + (s.max_latency_ms != null ? s.max_latency_ms : '—') }
       ]));
     }
 
@@ -390,20 +403,22 @@
           ['消息号', h('code', { class: 'p-mono' }, m.message_id)],
           ['会话', h('code', { class: 'p-mono' }, m.session_id || '—')],
           ['类型', P.badge(m.msg_type)],
-          ['序号 / 时延', 'seq=' + m.seq + ' · ' + (m.latency_ms != null ? m.latency_ms + ' ms' : '—')],
+          ['序号 / 耗时', '序号 ' + m.seq + ' · ' + UI.fmtMs(m.latency_ms)],
           ['路由', m.source_node + ' → ' + m.target_node],
           ['路径', PORTAL.jp(m.path, []).join(' → ') || '—'],
           ['状态', P.badge(m.status)],
           ['SM3 摘要', h('code', { class: 'p-mono' }, m.sm3_hash || '—')],
-          ['时间戳 / 入库', (m.timestamp || '—') + ' / ' + m.created_at]
+          ['时间戳 / 入库', (m.timestamp || '—') + ' / ' + UI.fmtDT(m.created_at, true)]
         ]),
-        h('div', { class: 'd-section' }, '存证原文（逐跳明细 · 网关代签 · 签名）'),
-        UI.jsonBlock(PORTAL.jp(m.evidence, m.evidence), 240));
+        P.DEBUG ? h('div', { class: 'd-section' }, '存证原文（逐跳明细 · 网关代签 · 签名）') : null,
+        P.DEBUG ? UI.jsonBlock(PORTAL.jp(m.evidence, m.evidence), 240) : null);
     }
 
     box.append(h('div', { class: 'd-grid-2' }, soCard, msCard));
-    box.append(card('会话台账（六态全列：INIT/AUTHENTICATED/ACTIVE/DEGRADED/RECOVERED/CLOSED）', tblS));
-    box.append(card('消息台账（点击行查看存证原文）',
+    box.append(card('会话台账',
+      h('div', { class: 'p-card-sub' }, '六态全列：初始化 / 已认证 / 启用 / 已降级 / 已恢复 / 已关闭'), tblS));
+    box.append(card('消息台账',
+      h('div', { class: 'p-card-sub' }, '点击行查看消息详情'),
       P.actionBar([{ label: '加载流量统计', run: loadStats }]),
       statsM, tblM));
   }
@@ -423,16 +438,16 @@
         successText: enabled ? '虫洞攻击已开启（NODE-X⇄NODE-Y 隧道边建立）' : '虫洞攻击已关闭',
         render: function (d) {
           return P.kv([
-            ['虫洞状态', d.wormhole_enabled ? '⚠ 开启中' : '未开启'],
+            ['虫洞状态', d.wormhole_enabled ? '开启中' : '未开启'],
             ['受影响节点', (d.nodes_affected || []).join('、') || '—']
           ]);
         }
       });
     }
     var whCard = card('虫洞攻击模拟',
-      h('p', { class: 'd-small d-muted' }, '开启后 NODE-X⇄NODE-Y 建立伪造隧道边（拓扑图红虚线）；节点一旦被隔离（ISOLATED），攻击不可重新开启——处置记录不可抹除。'),
+      h('p', { class: 'd-small d-muted' }, '开启后 NODE-X⇄NODE-Y 建立伪造隧道边（拓扑图红虚线）；节点一旦被隔离，攻击不可重新开启——处置记录不可抹除。'),
       P.actionBar([
-        { label: '⚠ 开启虫洞攻击', kind: 'danger',
+        { label: '开启虫洞攻击', kind: 'danger',
           confirm: { title: '开启虫洞攻击', msg: '将建立 NODE-X⇄NODE-Y 伪造隧道边；期间新建会话的初始路径可能经过隧道。', ok: '开启' },
           run: whRun(true) },
         { label: '关闭虫洞攻击',
@@ -449,7 +464,8 @@
       { name: 'node_x', label: '隧道端点 X（可选）', type: 'text', placeholder: '缺省取会话相关虫洞端点' },
       { name: 'node_y', label: '隧道端点 Y（可选）', type: 'text', placeholder: '缺省取会话相关虫洞端点' }
     ]);
-    var rkCard = card('风险评估（五维引擎：身份/邻接/时延/挑战/路径）',
+    var rkCard = card('风险评估',
+      h('div', { class: 'p-card-sub' }, '五维引擎：身份 / 邻接 / 时延 / 挑战 / 路径'),
       fRk.root,
       P.actionBar([{ label: '评估风险', kind: 'primary', run: P.runOp({
         path: '/api/risk/evaluate',
@@ -468,8 +484,9 @@
               { label: '风险分', value: Number(d.risk_score || 0).toFixed(2),
                 sub: '阈值 ' + d.threshold,
                 tone: d.verdict === 'PASS' ? 'good' : 'critical' },
-              { label: '裁定', value: verdictLabel(d.verdict) },
-              { label: '会话状态', value: d.session_status || '—' }
+              { label: '裁定', value: verdictZh(d.verdict), title: d.verdict || '',
+                tone: d.verdict === 'PASS' ? 'good' : 'critical' },
+              { label: '会话状态', value: P.statusZh(d.session_status), title: d.session_status || '' }
             ]),
             P.scoreBars(d.dimensions || {}, d.threshold),
             (d.events || []).length
@@ -481,14 +498,14 @@
                       ['动作', P.badge(ev.action)],
                       ['隧道端点', ev.node_x + ' ⇄ ' + ev.node_y],
                       ['风险分', Number(ev.risk_score || 0).toFixed(2)],
-                      ['时间', ev.created_at]
+                      ['时间', UI.fmtDT(ev.created_at, true)]
                     ]);
                   })))
               : P.empty('无联动事件'));
         }
       }) }]),
       rpRk.root,
-      h('p', { class: 'd-small d-muted' }, '评估检出攻击时，会话可能降级为 DEGRADED——可用下方「路径切换」恢复至 RECOVERED。'));
+      h('p', { class: 'd-small d-muted' }, '评估检出攻击时，会话可能降为「已降级」——可用下方「路径切换」恢复。'));
 
     /* --- 路径切换（仅 DEGRADED 会话；健康会话切换被拒 4002 是设计内） --- */
     var rpPs = P.resultPanel();
@@ -498,10 +515,11 @@
       { name: 'new_path', label: '新路径（逗号分隔，可空）', type: 'text',
         placeholder: '留空 = 自动重算避让路径', hint: '如 UAV-A-001-NODE,N1,N2,N3,N4,MGR' }
     ]);
-    var psCard = card('路径切换（仅 DEGRADED 会话可执行）',
+    var psCard = card('路径切换',
+      h('div', { class: 'p-card-sub' }, '仅「已降级」会话可执行'),
       fPs.root,
       P.actionBar([{ label: '切换路径', kind: 'primary',
-        confirm: { title: '切换路径', msg: '将重算避让路径并产生 RECOVER 安全事件（会话 → RECOVERED）。', ok: '切换' },
+        confirm: { title: '切换路径', msg: '将重算避让路径并产生「恢复」安全事件（会话转为「已恢复」）。', ok: '切换' },
         run: P.runOp({
           path: '/api/path/switch',
           body: function () {
@@ -512,14 +530,14 @@
               .map(function (s) { return s.trim(); }).filter(Boolean);
             return body;
           },
-          rp: rpPs, successText: '路径切换成功（会话 → RECOVERED）',
+          rp: rpPs, successText: '路径切换成功（会话已恢复）',
           render: function (d) {
             return P.kv([
               ['会话状态', P.badge(d.session ? d.session.status : '—')],
               ['原路径', pathText(d.original_path)],
               ['新路径', pathText(d.new_path)],
-              ['恢复时延', d.recovery_latency_ms != null ? d.recovery_latency_ms + ' ms' : '—'],
-              ['恢复事件', d.event ? (d.event.event_id + ' · ' + d.event.action) : '—']
+              ['恢复耗时', UI.fmtMs(d.recovery_latency_ms)],
+              ['恢复事件', d.event ? (d.event.event_id + ' · ' + P.statusZh(d.event.action)) : '—']
             ]);
           },
           note: { kind: 'SESSION', id: function (d) { return (d.session && d.session.session_id) || ''; } }
@@ -530,7 +548,8 @@
     var tblEv = P.dataTable({
       endpoint: '/api/event/list', pageSize: 10,
       filters: [
-        { name: 'action', label: '动作', type: 'select', options: ['DETECT', 'ISOLATE', 'RECOVER'] },
+        { name: 'action', label: '动作', type: 'select',
+          options: ['DETECT', 'ISOLATE', 'RECOVER'].map(function (s) { return [s, P.statusZh(s)]; }) },
         { name: 'session_id', label: '会话号', type: 'text' }
       ],
       columns: [
@@ -538,9 +557,9 @@
         { title: '动作', render: function (r) { return P.badge(r.action); } },
         { title: '隧道端点', render: function (r) { return r.node_x + ' ⇄ ' + r.node_y; }, mono: true },
         { title: '风险分', render: function (r) { return Number(r.risk_score || 0).toFixed(2); }, num: true },
-        { title: '恢复时延(ms)', render: function (r) { return r.recovery_latency_ms != null ? r.recovery_latency_ms : '—'; }, num: true },
+        { title: '恢复耗时', render: function (r) { return UI.fmtMs(r.recovery_latency_ms); }, num: true },
         { title: '会话', render: function (r) { return UI.trunc(r.session_id || '—', 20); }, mono: true },
-        { title: '时间', key: 'created_at' }
+        { title: '时间', render: function (r) { return UI.fmtDT(r.created_at); } }
       ],
       onRow: function (r) {
         P.drawer('安全事件 ' + r.event_id,
@@ -551,8 +570,8 @@
             ['会话', h('code', { class: 'p-mono' }, r.session_id || '—')],
             ['原路径', pathText(r.original_path)],
             ['新路径', pathText(r.new_path)],
-            ['恢复时延', r.recovery_latency_ms != null ? r.recovery_latency_ms + ' ms' : '—'],
-            ['时间', r.created_at]
+            ['恢复耗时', UI.fmtMs(r.recovery_latency_ms)],
+            ['时间', UI.fmtDT(r.created_at, true)]
           ]));
       },
       emptyText: '暂无安全事件（开启虫洞攻击并评估风险后出现）'
@@ -560,7 +579,8 @@
 
     box.append(h('div', { class: 'd-grid-2' }, whCard, rkCard));
     box.append(psCard);
-    box.append(card('安全事件台账（DETECT 检出 / ISOLATE 隔离节点 / RECOVER 路径恢复）', tblEv));
+    box.append(card('安全事件台账',
+      h('div', { class: 'p-card-sub' }, '检出 / 隔离节点 / 路径恢复 三类动作全列'), tblEv));
   }
 
   /* ============ 页签 4：性能实验 ============ */
@@ -572,17 +592,17 @@
     var rpEx = P.resultPanel();
     var fEx = P.form([
       { name: 'experiment_type', label: '实验类型', type: 'select', required: true, value: 'SM3_INTEGRITY',
-        options: EXP_TYPES },
+        options: EXP_TYPES.map(function (s) { return [s, P.statusZh(s)]; }) },
       { name: 'count', label: '次数（1-1000）', type: 'number', required: true, value: 5 },
       { name: 'scenario', label: '场景', type: 'select', value: '',
-        options: [['', '（留空）'], ['NORMAL', 'NORMAL 正常'],
-          ['ATTACK', 'ATTACK 攻击'], ['DEFENSE', 'DEFENSE 防御']],
-        hint: 'MESSAGE_FLOW 实验须选择场景（NORMAL/ATTACK/DEFENSE），其余类型请留空' },
+        options: [['', '（留空）'], ['NORMAL', '正常'], ['ATTACK', '攻击'], ['DEFENSE', '防御']],
+        hint: '「消息链路三场景」实验须选择场景（正常 / 攻击 / 防御），其余类型请留空' },
       { name: 'concurrency', label: '并发（可选，1-20）', type: 'number', placeholder: '缺省串行' }
     ]);
     var tblEx = null;
 
-    var runCard = card('运行实验（11 类）',
+    var runCard = card('运行实验',
+      h('div', { class: 'p-card-sub' }, '11 类实验一键运行 · 结果如实计数'),
       fEx.root,
       P.actionBar([{ label: '运行实验', kind: 'primary', run: P.runOp({
         path: '/api/experiment/run',
@@ -592,7 +612,7 @@
           var body = { experiment_type: v.experiment_type, count: Number(v.count) };
           if (v.experiment_type === 'MESSAGE_FLOW') {
             if (!v.scenario) {
-              UI.toast('MESSAGE_FLOW 必须选择场景（NORMAL/ATTACK/DEFENSE）', 'err', 5200);
+              UI.toast('「消息链路三场景」实验须选择场景（正常 / 攻击 / 防御）', 'err', 5200);
               return null;
             }
             body.scenario = v.scenario;
@@ -606,30 +626,32 @@
         onOk: function () { if (tblEx) tblEx.reload(); }
       }) }]),
       rpEx.root,
-      h('p', { class: 'd-small d-muted' }, 'MESSAGE_FLOW × ATTACK 场景下成功率偏低不是故障，而是虫洞检测正在生效；失败原因按「原因×次数」聚合展示。'));
+      h('p', { class: 'd-small d-muted' }, '「消息链路三场景」× 攻击场景下成功率偏低不是故障，而是虫洞检测正在生效；失败原因按「原因×次数」聚合展示。'));
 
     /* 导出过滤表单：experiment/export 过滤键只有 experiment_type/status（裁决 24：无 run_id） */
     var fEx2 = P.form([
       { name: 'experiment_type', label: '导出类型过滤', type: 'select', value: '',
-        options: [['', '全部类型']].concat(EXP_TYPES) },
+        options: [['', '全部类型']].concat(EXP_TYPES.map(function (s) { return [s, P.statusZh(s)]; })) },
       { name: 'status', label: '导出状态过滤', type: 'select', value: '',
-        options: [['', '全部状态'], 'DONE', 'FAILED'] }
+        options: [['', '全部状态'], ['DONE', P.statusZh('DONE')], ['FAILED', P.statusZh('FAILED')]] }
     ]);
 
     tblEx = P.dataTable({
       endpoint: '/api/experiment/list', pageSize: 10,
       filters: [
-        { name: 'experiment_type', label: '类型', type: 'select', options: EXP_TYPES },
-        { name: 'status', label: '状态', type: 'select', options: ['DONE', 'FAILED'] }
+        { name: 'experiment_type', label: '类型', type: 'select',
+          options: EXP_TYPES.map(function (s) { return [s, P.statusZh(s)]; }) },
+        { name: 'status', label: '状态', type: 'select',
+          options: ['DONE', 'FAILED'].map(function (s) { return [s, P.statusZh(s)]; }) }
       ],
       columns: [
-        { title: 'Run ID', render: function (r) { return UI.trunc(r.run_id, 20); }, mono: true },
+        { title: '运行编号', render: function (r) { return UI.trunc(r.run_id, 20); }, mono: true },
         { title: '类型', render: function (r) { return P.badge(r.experiment_type); } },
-        { title: '场景', render: function (r) { return r.scenario || '—'; } },
+        { title: '场景', render: function (r) { return r.scenario ? P.statusZh(r.scenario) : '—'; } },
         { title: '次数', key: 'count', num: true },
         { title: '成功率', render: function (r) { return PORTAL.fmtRate(r.success_rate); }, num: true },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
-        { title: '开始时间', key: 'started_at' },
+        { title: '开始时间', render: function (r) { return UI.fmtDT(r.started_at); } },
         { title: '操作', render: function (r) {
           return h('button', { class: 'p-btn p-btn-sm p-btn-ghost',
             onClick: function (e) { e.stopPropagation(); openExp(r.run_id); } }, '结果');
@@ -640,11 +662,12 @@
     });
 
     box.append(runCard);
-    box.append(card('实验台账（支持 CSV 导出）',
+    box.append(card('实验台账',
+      h('div', { class: 'p-card-sub' }, '支持 CSV 导出'),
       h('div', { class: 'd-row d-row-wrap' }, fEx2.root,
         P.csvExport({ endpoint: '/api/experiment/export',
           filters: function () { return fEx2.read(); },
-          filename: 'experiments.csv', label: '⤓ 导出 CSV' })),
+          filename: 'experiments.csv', label: '导出 CSV' })),
       tblEx));
   }
 
@@ -656,31 +679,34 @@
           tone: d.success_rate >= 1 ? 'good' : 'critical' },
         { label: '次数', value: d.count,
           sub: '成功 ' + d.success_count + ' / 失败 ' + d.failed_count },
-        { label: '状态', value: d.status === 'DONE' ? '✓ DONE' : '✗ FAILED',
+        { label: '状态', value: P.statusZh(d.status), title: d.status || '',
           tone: d.status === 'DONE' ? 'good' : 'critical' }
       ]),
       P.kv([
         ['实验编号', h('code', { class: 'p-mono' }, d.experiment_id)],
-        ['Run ID', h('code', { class: 'p-mono' }, d.run_id)],
-        ['类型 / 场景', d.experiment_type + (d.scenario ? ' · ' + d.scenario : '')],
-        ['时延 avg/p50/p95/max', [d.avg_latency_ms, d.p50_latency_ms, d.p95_latency_ms, d.max_latency_ms]
-          .map(function (x) { return x != null ? x + 'ms' : '—'; }).join(' / ')],
+        ['运行编号', h('code', { class: 'p-mono', title: d.run_id }, UI.trunc(d.run_id, 24))],
+        ['类型 / 场景', P.statusZh(d.experiment_type) + (d.scenario ? ' · ' + P.statusZh(d.scenario) : '')],
+        ['时延 平均/p50/p95/最大', [d.avg_latency_ms, d.p50_latency_ms, d.p95_latency_ms, d.max_latency_ms]
+          .map(function (x) { return UI.fmtMs(x); }).join(' / ')],
         ['失败原因', fmtReasons(d.failure_reasons)],
-        ['开始 / 完成', d.started_at + ' → ' + (d.completed_at || '—')]
+        ['开始 / 完成', UI.fmtDT(d.started_at, true) + ' → ' +
+          (d.completed_at ? UI.fmtDT(d.completed_at, true) : '—')]
       ]));
   }
 
   /* 实验结果抽屉：experiment/result（run_id required；6002 = run_id 不存在） */
   async function openExp(runId) {
-    var d = P.drawer('实验结果 ' + runId, h('div', { class: 'p-empty' }, '⏳ 实验结果查询中…'));
+    var d = P.drawer('实验结果 ' + runId, h('div', { class: 'p-empty' }, '实验结果查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/experiment/result', { run_id: runId });
     body.innerHTML = '';
     if (!r.ok) { body.append(P.errCard(r)); return; }
     var x = r.data;
     body.append(expView(x));
-    body.append(h('div', { class: 'd-section' }, '配置原文'));
-    body.append(UI.jsonBlock(PORTAL.jp(x.config, x.config), 200));
+    if (P.DEBUG) {   /* 配置原文 JSON 仅调试展示 */
+      body.append(h('div', { class: 'd-section' }, '配置原文'));
+      body.append(UI.jsonBlock(PORTAL.jp(x.config, x.config), 200));
+    }
   }
 
   AU.netsec = { render: render };

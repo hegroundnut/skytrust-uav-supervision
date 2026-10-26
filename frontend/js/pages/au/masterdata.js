@@ -13,6 +13,12 @@
   var mx = null;          /* 页面级地图（shell-au mapPages 含 masterdata）：render 入口必先 destroy */
   var routes = [];        /* 航线缓存（地图全量拉取） */
   var activeId = [];      /* 地图高亮航段 id */
+  /* 走廊状态为空域域语义（开放/限制/关闭），与告警域 OPEN=待处置 不同——领域徽章自持中文与色 */
+  var CORRIDOR = { OPEN: ['开放', 'good'], RESTRICTED: ['限制', 'warning'], CLOSED: ['关闭', 'critical'] };
+  function corridorBadge(s) {
+    var m = CORRIDOR[s];
+    return P.badgeZh(s, m ? m[0] : s, m ? m[1] : 'neutral');
+  }
 
   function render(root, ctx) {
     if (mx) { mx.destroy(); mx = null; }
@@ -92,7 +98,7 @@
                 return P.kv([
                   ['航段号', h('code', { class: 'p-mono' }, d.route_id)],
                   ['空域', d.zone],
-                  ['走廊', P.badge(d.corridor_status)],
+                  ['走廊', corridorBadge(d.corridor_status)],
                   ['起 → 止', d.start_point + ' → ' + d.end_point],
                   ['起点坐标', GEO.fmtCoordPair(d.start_lat, d.start_lon)],
                   ['终点坐标', GEO.fmtCoordPair(d.end_lat, d.end_lon)],
@@ -123,7 +129,8 @@
       endpoint: '/api/route/list', pageSize: 10,
       filters: [
         { name: 'zone', label: '空域', type: 'text', placeholder: 'Zone-A' },
-        { name: 'corridor_status', label: '走廊', type: 'select', options: ['OPEN', 'RESTRICTED', 'CLOSED'] }
+        { name: 'corridor_status', label: '走廊', type: 'select',
+          options: [['OPEN', '开放'], ['RESTRICTED', '限制'], ['CLOSED', '关闭']] }
       ],
       columns: [
         { title: '航段号', key: 'route_id', mono: true },
@@ -132,7 +139,7 @@
         { title: '起点坐标', render: function (r) { return GEO.fmtCoordPair(r.start_lat, r.start_lon); }, mono: true },
         { title: '终点坐标', render: function (r) { return GEO.fmtCoordPair(r.end_lat, r.end_lon); }, mono: true },
         { title: '高度带', render: function (r) { return r.altitude_min + '–' + r.altitude_max + ' m'; } },
-        { title: '走廊', render: function (r) { return P.badge(r.corridor_status); } }
+        { title: '走廊', render: function (r) { return corridorBadge(r.corridor_status); } }
       ],
       onRow: function (r) {
         activeId = [r.route_id];
@@ -142,7 +149,8 @@
       },
       emptyText: '暂无航段'
     });
-    root.append(card('航段台账（点击行地图高亮定位）', tblRt));
+    root.append(card('航段台账',
+      h('div', { class: 'p-card-sub' }, '点击行地图高亮定位'), tblRt));
 
     /* --- 厂商登记 --- */
     var tblMf = null;
@@ -170,7 +178,7 @@
           if (!v) return null;
           return { manufacturer_id: v.manufacturer_id, name: v.name, adapter_type: v.adapter_type || '' };
         },
-        rp: rpMf, successText: '厂商已注册（状态 ACTIVE）',
+        rp: rpMf, successText: '厂商已注册（状态「启用」）',
         render: function (d) {
           return P.kv([
             ['厂商 ID', h('code', { class: 'p-mono' }, d.manufacturer_id)],
@@ -212,7 +220,7 @@
           return { operator_id: v.operator_id, name: v.name,
             contact: v.contact || '', chain_org_id: v.chain_org_id || '' };
         },
-        rp: rpOp, successText: '运营商已注册（资质 QUALIFIED）',
+        rp: rpOp, successText: '运营商已注册（资质「合格」）',
         render: function (d) {
           return P.kv([
             ['运营商 ID', h('code', { class: 'p-mono' }, d.operator_id)],
@@ -234,7 +242,7 @@
     if (!mx) return;
     var r = await API.call('/api/route/list', { page: 1, page_size: 200 });
     if (!mx) return;
-    if (!r.ok) { mx.setEmpty('航线加载失败 code=' + r.code + '（' + r.message + '）'); return; }
+    if (!r.ok) { mx.setEmpty('航线加载失败：' + (r.message || ('code=' + r.code))); return; }
     routes = r.data.records || [];
     redraw();
   }

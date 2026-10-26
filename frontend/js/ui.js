@@ -3,16 +3,20 @@
 (function () {
   'use strict';
 
-  /* ---------- 元素构建 ---------- */
+  /* ---------- 元素构建（SVG 感知：svg/use/path 等必须走 createElementNS，
+     否则得到 HTMLUnknownElement——图标渲染的前提，全站共用） ---------- */
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const SVG_TAGS = new Set(['svg', 'use', 'path', 'circle', 'rect', 'line', 'ellipse',
+    'polyline', 'polygon', 'g', 'defs', 'symbol', 'text', 'tspan', 'clipPath', 'image']);
   function h(tag, attrs, ...kids) {
-    const el = document.createElement(tag);
+    const isSvg = SVG_TAGS.has(tag);
+    const el = isSvg ? document.createElementNS(SVG_NS, tag) : document.createElement(tag);
     if (attrs) for (const [k, v] of Object.entries(attrs)) {
       if (v === null || v === undefined || v === false) continue;
-      if (k === 'class') el.className = v;
-      else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+      if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
       else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
       else if (k === 'html') el.innerHTML = v;
-      else el.setAttribute(k, v);
+      else el.setAttribute(k, v);   /* SVG className 只读 → 统一 setAttribute */
     }
     for (const kid of kids.flat(9)) {
       if (kid === null || kid === undefined || kid === false) continue;
@@ -120,16 +124,24 @@
     return h('div', { class: 'card' }, kids);
   }
 
-  /* ---------- toast ---------- */
+  /* ---------- toast ----------
+     ok/err 带雪碧图小图标（去AI味 §10：d-ico-check / d-ico-x；页面无雪碧图时 <use> 静默不渲染） */
   function toast(msg, kind, ms) {
     const box = document.getElementById('toast-box');
-    const el = h('div', { class: 'toast ' + (kind || '') }, msg);
+    const icoName = kind === 'ok' ? 'check' : kind === 'err' ? 'x' : null;
+    const el = h('div', { class: 'toast ' + (kind || '') },
+      icoName ? h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+        h('use', { href: '#d-ico-' + icoName })) : null,
+      h('span', {}, msg));
     box.append(el);
     setTimeout(() => el.remove(), ms || 3600);
   }
   function toastResult(r, okMsg) {
-    if (r.ok) toast(okMsg || ('成功 ' + r.latencyMs + 'ms'), 'ok');
-    else toast('code=' + r.code + ' ' + r.message, 'err', 5200);
+    if (r.ok) toast(okMsg || ('成功 · 耗时 ' + fmtMs(r.latencyMs)), 'ok');
+    else {
+      console.warn('[API] code=' + r.code, r.message, r.trace_id || '');
+      toast('操作失败：' + (r.message || '请稍后重试'), 'err', 5200);
+    }
   }
 
   /* ---------- hover 提示浮层（全页共用一个） ---------- */
@@ -246,6 +258,17 @@
     return [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2, '0')).join('');
   }
   function pad2(n) { return String(n).padStart(2, '0'); }
+  /* ---------- 展示层时间/耗时格式化（表格列专用：协议原值 → 人读文本） ---------- */
+  function fmtDT(s, withSec) {
+    if (!s) return '—';
+    var t = String(s).replace('T', ' ').replace(/\.\d+/, '');
+    return withSec ? t : t.slice(0, 16);
+  }
+  function fmtMs(x) {
+    if (x === null || x === undefined || x === '' || isNaN(x)) return '—';
+    x = Number(x);
+    return x >= 1000 ? (x / 1000).toFixed(1) + ' 秒' : Math.round(x) + ' 毫秒';
+  }
   function datetimeLocal(offsetMin) {
     const d = new Date(Date.now() + (offsetMin || 0) * 60000);
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
@@ -398,6 +421,6 @@
   window.UI = {
     h, esc, trunc, mono, statusBadge, chainTag, chainVar, jsonBlock, metaLine, table, kv, card,
     toast, toastResult, showTip, hideTip, hbarChart, cxFlow, asyncBtn, readForm, field, fieldSelect,
-    tsSuffix, datetimeLocal, CHAIN_META, runMonitor, summarizeData,
+    tsSuffix, datetimeLocal, CHAIN_META, runMonitor, summarizeData, fmtDT, fmtMs,
   };
 })();

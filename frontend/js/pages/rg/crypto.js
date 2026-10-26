@@ -19,7 +19,7 @@
   function readPayload(txt) {
     var o = PORTAL.jp(txt, null);
     if (!o || typeof o !== 'object' || Array.isArray(o)) {
-      UI.toast('payload 必须是 JSON 对象（如 {"altitude_max":120,…}）', 'err');
+      UI.toast('数据内容必须是 JSON 对象（如 {"altitude_max":120,…}）', 'err');
       return null;
     }
     return o;
@@ -92,7 +92,7 @@
         value: DEFAULT_PAYLOAD }
     ]);
     var tamperBtn = h('button', { class: 'p-btn p-btn-danger', disabled: true,
-      title: '先完成一次签名' }, '⚠ 篡改数据并回填验签');
+      title: '先完成一次签名' }, '篡改数据并回填验签');
     var sgCard = card('SM9 签名',
       fSg.root,
       P.actionBar([
@@ -149,7 +149,8 @@
       fVf.set('signature', lastSigned.signature);
       UI.toast('已篡改并回填——点「验签」：预期验签不通过，篡改只能藏、不能通过核验', 'ok', 5200);
     });
-    var vfCard = card('SM9 验签（篡改检测）',
+    var vfCard = card('SM9 验签',
+      h('div', { class: 'p-card-sub' }, '篡改检测——数据一经改动，国密验签当即识破'),
       fVf.root,
       P.actionBar([{ label: '验签', kind: 'primary', run: P.runOp({
         path: '/api/crypto/sm9/verify',
@@ -164,7 +165,7 @@
         render: function (d) {
           return h('div', {},
             P.statCards([{ label: 'SM9 验签',
-              value: d.valid ? '✓ 验签通过' : '✗ 验签不通过',
+              value: d.valid ? '验签通过' : '验签不通过',
               sub: d.valid ? '签名与载荷一致' : '签名与载荷不一致（被篡改或用错身份）',
               tone: d.valid ? 'good' : 'critical' }]),
             h('p', { class: 'd-small d-muted' },

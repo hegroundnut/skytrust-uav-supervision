@@ -64,8 +64,29 @@
   };
   var KINDS_ALL = ['pass', 'mission', 'uav'];
 
-  /* kind 图标（归档 mockup 同款：✈ 许可 / 📋 任务 / 🛩 无人机；图标+文字永不仅靠颜色） */
-  var KIND_ICON = { pass: '✈', mission: '📋', uav: '🛩' };
+  /* kind 图标（内联 SVG 线条图标替代 emoji——去 AI 味 §5.5；图标+文字永不仅靠颜色） */
+  var KIND_ZH = { pass: '许可', mission: '任务', uav: '无人机' };
+  function kindIcon(kind) {
+    var a = { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' };
+    if (kind === 'pass') return h('svg', a,
+      h('path', { d: 'M6 3h8.5L19 7.5V21H6z' }), h('path', { d: 'M14.5 3v4.5H19' }),
+      h('line', { x1: '9', y1: '12', x2: '16', y2: '12' }), h('line', { x1: '9', y1: '16', x2: '13', y2: '16' }));
+    if (kind === 'mission') return h('svg', a,
+      h('path', { d: 'M9 4.5h6V7H9z' }),
+      h('path', { d: 'M15 5h2.5A1.5 1.5 0 0 1 19 6.5v13A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5v-13A1.5 1.5 0 0 1 6.5 5H9' }),
+      h('line', { x1: '9', y1: '11', x2: '15', y2: '11' }), h('line', { x1: '9', y1: '15', x2: '13', y2: '15' }));
+    if (kind === 'uav') return h('svg', a,
+      h('circle', { cx: '5.5', cy: '5.5', r: '2.6' }), h('circle', { cx: '18.5', cy: '5.5', r: '2.6' }),
+      h('circle', { cx: '5.5', cy: '18.5', r: '2.6' }), h('circle', { cx: '18.5', cy: '18.5', r: '2.6' }),
+      h('rect', { x: '9.5', y: '9.5', width: '5', height: '5', rx: '1.2' }),
+      h('line', { x1: '7.4', y1: '7.4', x2: '9.7', y2: '9.7' }), h('line', { x1: '16.6', y1: '7.4', x2: '14.3', y2: '9.7' }),
+      h('line', { x1: '7.4', y1: '16.6', x2: '9.7', y2: '14.3' }), h('line', { x1: '16.6', y1: '16.6', x2: '14.3', y2: '14.3' }));
+    return h('span', {}, '·');
+  }
+  function icoAlert() {
+    return h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+      h('use', { href: '#d-ico-triangle-alert' }));
+  }
 
   /* message_type → 业务动作中文名（固定架构文案非数据，口径 = 后端 README 端点表；
      未知类型原样直出不编造中文——同步注记：MSG_CN/CHAIN_CN 两表 lanes.js 存有逐字副本，
@@ -130,13 +151,13 @@
     var state = { candidates: [], selected: null, okKinds: [] };   /* selected = 候选对象引用；okKinds = 本端查询且成功的 kind */
 
     var pickerBox = h('div', { class: 'd-cxv-jn-picker' },
-      h('div', { class: 'p-empty' }, '⏳ 业务对象列表加载中…'));
+      h('div', { class: 'p-empty' }, '业务对象列表加载中…'));
     var metaSlot = h('div', {});
     var jhdrBox = h('div', {});
     var tlBox = h('div', {});
     root.append(h('section', { class: 'p-card d-cxv-jn-sec' },
-      h('h3', { class: 'p-card-title' },
-        '业务对象全链旅程（点击节点查看四段存证详情）'),
+      h('h3', { class: 'p-card-title' }, '业务对象全链旅程'),
+      h('div', { class: 'p-card-sub' }, '点击节点查看四段存证详情'),
       pickerBox, metaSlot, jhdrBox, tlBox));
 
     function notify(data) { if (typeof onSelect === 'function') onSelect(data); }
@@ -196,7 +217,7 @@
       jhdrBox.innerHTML = '';
       tlBox.innerHTML = '';
       tlBox.append(h('div', { class: 'd-cxv-jn-err' },
-        h('div', {}, h('b', {}, '⚠ 旅程加载失败（code=' + r.code + '）——时间线拒绝渲染任何编造节点')),
+        h('div', {}, h('b', {}, icoAlert(), ' 旅程数据加载失败 —— 时间线不渲染任何推测节点')),
         P.errCard(r)));
     }
     function renderTimelineEmpty(probeErrs) {
@@ -208,10 +229,10 @@
          失败响应的 metaLine（trace 可溯）。全成功探测的空态不附披露（确证无中继）。 */
       if (probeErrs && probeErrs.length) {
         metaSlot.innerHTML = '';
-        metaSlot.append(P.metaLine(probeErrs[0].r));
+        var mlP = P.metaLine(probeErrs[0].r); if (mlP) metaSlot.append(mlP);
         tlBox.append(h('div', { class: 'd-cxv-jn-partial' },
           probeErrs.map(function (f) {
-            return h('div', {}, '⚠ 候选 ' + f.cand.id + ' 旅程探测失败（code=' + f.r.code + '）：' + (f.r.message || '') + '——该候选旅程状态未知，如实披露');
+            return h('div', {}, icoAlert(), ' 候选 ' + f.cand.id + ' 旅程探测失败：' + (f.r.message || '') + '——该候选旅程状态未知，如实披露');
           })));
       }
     }
@@ -241,7 +262,7 @@
           title: '点击查看该对象全链旅程',
           onClick: function () { selectAndLoad(cand); }
         },
-          h('span', {}, KIND_ICON[cand.kind] || '·'),
+          h('span', {}, kindIcon(cand.kind)),
           h('span', { class: 'p-mono' }, cand.id),
           P.badge(cand.status));
         chipEls.push({ cand: cand, el: el });
@@ -256,7 +277,7 @@
       syncChips();
       if (preloaded) {
         metaSlot.innerHTML = '';
-        metaSlot.append(P.metaLine(preloaded));
+        var ml0 = P.metaLine(preloaded); if (ml0) metaSlot.append(ml0);
         renderJourney(preloaded.data || {});
         notify(preloaded.data || null);
         return;
@@ -264,12 +285,12 @@
       metaSlot.innerHTML = '';
       jhdrBox.innerHTML = '';
       tlBox.innerHTML = '';
-      tlBox.append(h('div', { class: 'p-empty' }, '⏳ 旅程查询中…'));
+      tlBox.append(h('div', { class: 'p-empty' }, '旅程查询中…'));
       var r = await API.call('/api/explorer/journey', { anchor_id: cand.id, anchor_kind: cand.kind });
       if (!pickerBox.isConnected) return;   /* 已导航离开/「刷新全部」卸载本区 → 弃填充 */
       if (state.selected !== cand) return;  /* 迟到响应归属守卫：等待期间用户已改选他芯片 → 弃填充（绝不把旧对象渲染进新选中态） */
       metaSlot.innerHTML = '';
-      metaSlot.append(P.metaLine(r));
+      var ml1 = P.metaLine(r); if (ml1) metaSlot.append(ml1);
       if (!r.ok) { renderTimelineError(r); notify(null); return; }
       renderJourney(r.data || {});
       notify(r.data || null);
@@ -295,7 +316,7 @@
       if (!probed && probeErrs.length) {
         /* 前 5 全部探测失败 → 如实错误态（绝不以空态文案冒充「无中继」） */
         metaSlot.innerHTML = '';
-        metaSlot.append(P.metaLine(probeErrs[0].r));
+        var mlE = P.metaLine(probeErrs[0].r); if (mlE) metaSlot.append(mlE);
         renderTimelineError(probeErrs[0].r);
         notify(null);
         return;
@@ -323,7 +344,7 @@
         /* 全部 list 失败 → 选择器/时间线如实错误态（空态文案语义 = 确实无中继，不可冒充） */
         pickerBox.innerHTML = '';
         pickerBox.append(h('div', { class: 'd-cxv-jn-err' },
-          h('div', {}, h('b', {}, '⚠ 业务对象列表加载失败——选择器拒绝显示任何编造对象')),
+          h('div', {}, h('b', {}, icoAlert(), ' 业务对象列表加载失败——选择器不显示任何推测对象')),
           fails.map(function (f) { return P.errCard(f.r); })));
         renderTimelineError(fails[0].r);
         notify(null);
@@ -341,7 +362,7 @@
       if (fails.length) {
         pickerBox.append(h('div', { class: 'd-cxv-jn-partial' },
           fails.map(function (f) {
-            return h('div', {}, '⚠ ' + f.kind + ' 类对象列表加载失败（code=' + f.r.code + '）：' + (f.r.message || '') + '——该类对象如实缺席，不以其他类型冒充');
+            return h('div', {}, icoAlert(), ' ' + (KIND_ZH[f.kind] || f.kind) + '类对象列表加载失败：' + (f.r.message || '') + '——该类对象如实缺席，不以其他类型冒充');
           })));
       }
       autoSelect();

@@ -15,6 +15,20 @@
   const card = (title, ...b) => h('section', { class: 'p-card' },
     h('h3', { class: 'p-card-title' }, title), ...b);
   var SOURCE_CHAIN = { CHAINMAKER_INDEX: 'chainmaker', FABRIC_DETAIL: 'fabric', FISCO_BCOS_DETAIL: 'fisco-bcos' };
+  /* 七级名称中文（与 pageHead 副题同律）；级别状态是追踪域语义（RESOLVED=已解析），
+     与告警域 RESOLVED=已处置 不同——领域徽章自持中文与色 */
+  var LEVEL_ZH = { PSEUDO: '航空器伪名', DEVICE_ADDRESS: '设备地址', PASS_ID: '通行许可',
+    SM9_IDENTITY: 'SM9 身份', UAV_ID: '航空器', OPERATOR_ID: '运营商', MANUFACTURER_ID: '厂商' };
+  function levelBadge(s) {
+    if (s === 'RESOLVED') return P.badgeZh(s, '已解析', 'good');
+    if (s === 'BROKEN') return P.badgeZh(s, '断链', 'critical');
+    return P.badge(s);
+  }
+  /* 后端固定机器串 "skipped: break at level N" → 中文；断点级 reason 本就是中文，原样透传 */
+  function reasonZh(r) {
+    var m = /^skipped: break at level (\d+)$/.exec(String(r || ''));
+    return m ? '已跳过——第 ' + m[1] + ' 级断链后不再拼造' : r;
+  }
 
   function render(root, ctx) {
     var slotA = STORE.get('ALERT');
@@ -59,37 +73,39 @@
       /* note:null——追踪结果不落 STORE（§29） */
     }
 
-    root.append(card('发起追踪（三入口任选其一）',
+    root.append(card('发起追踪',
+      h('div', { class: 'p-card-sub' }, '告警号 / 航空器伪名 / 设备地址 —— 三入口任选其一'),
       fTr.root,
       P.actionBar([{ label: '开始七级追踪', kind: 'primary', run: doTrace }]),
       h('p', { class: 'd-small d-muted' }, '断链不是失败——「查不到」本身就是可审计的监管结论；系统宁可展示断链，也不拼造身份。追踪行为全程纳入全局审计留痕。')));
-    root.append(card('追踪结果（七级时间线）', resultBox));
+    root.append(card('追踪结果',
+      h('div', { class: 'p-card-sub' }, '七级跨链身份解析时间线'), resultBox));
   }
 
   function traceView(d) {
     var levels = d.levels || [];
     return h('div', {},
       P.statCards([
-        { label: '追踪结论', value: d.resolved ? '✓ 全链可溯' : '⛔ 断链 L' + d.break_level,
-          sub: d.resolved ? '七级身份全部解析成功' : '第 ' + d.break_level + ' 级中断——后续级不拼造',
+        { label: '追踪结论', value: d.resolved ? '全链可溯' : '断链（第 ' + d.break_level + ' 级）',
+          sub: d.resolved ? '七级身份全部解析成功' : '中断级之后不再拼造',
           tone: d.resolved ? 'good' : 'critical' },
-        { label: '追踪时延', value: d.trace_latency_ms != null ? d.trace_latency_ms + ' ms' : '—' },
+        { label: '追踪时延', value: UI.fmtMs(d.trace_latency_ms) },
         { label: '解析伪名', value: d.pseudonym || '—' }
       ]),
       P.kv([
         ['入口', h('span', { class: 'd-row' }, P.badge(d.entry_type), h('code', { class: 'p-mono' }, d.entry))],
-        ['解析结果 / 中断级别', String(d.resolved) + ' / ' + String(d.break_level)]
+        ['解析结果', d.resolved ? '七级全部解析成功' : '第 ' + d.break_level + ' 级中断']
       ]),
       h('div', { class: 'd-col' }, levels.map(function (lv) {
         return h('div', { class: 'd-section' },
           h('div', { class: 'd-row' },
-            h('b', {}, 'L' + lv.level + ' · ' + lv.name),
-            P.badge(lv.status),
+            h('b', { title: lv.name }, 'L' + lv.level + ' · ' + (LEVEL_ZH[lv.name] || lv.name)),
+            levelBadge(lv.status),
             SOURCE_CHAIN[lv.source] ? P.chainTag(SOURCE_CHAIN[lv.source])
               : h('span', { class: 'd-small d-muted' }, lv.source || '—'),
-            h('span', { class: 'd-small d-muted' }, lv.latency_ms != null ? lv.latency_ms + ' ms' : '')),
+            h('span', { class: 'd-small d-muted' }, lv.latency_ms != null ? UI.fmtMs(lv.latency_ms) : '')),
           h('div', { class: 'p-mono d-small' }, lv.value || '—'),
-          lv.reason ? h('div', { class: 'd-small d-muted' }, '⛔ ' + lv.reason) : null);
+          lv.reason ? h('div', { class: 'd-small d-muted' }, reasonZh(lv.reason)) : null);
       })));
   }
 

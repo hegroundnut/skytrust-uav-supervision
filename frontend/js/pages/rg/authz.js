@@ -14,6 +14,16 @@
   const card = (title, ...b) => h('section', { class: 'p-card' },
     h('h3', { class: 'p-card-title' }, title), ...b);
   var SCOPES = ['MISSION', 'ROUTE', 'PAYLOAD', 'IDENTITY', 'EVIDENCE'];
+  /* 范围/目标/裁决枚举中文（ROUTE 在冲突域=航路交叉，全局字典撞域——本地自持） */
+  var SCOPE_ZH = { MISSION: '任务', ROUTE: '航路', PAYLOAD: '载荷', IDENTITY: '身份', EVIDENCE: '证据' };
+  var TARGET_ZH = { MISSION: '任务', UAV: '航空器', ALERT: '告警' };
+  function scopeZh(s) { return SCOPE_ZH[s] || String(s); }
+  function targetZh(t) { return TARGET_ZH[t] || String(t); }
+  /* 本页审计动作只有裁决两值（regulatory/authorization.go）；未收录回退原文徽章 */
+  function actionBadge(a) {
+    var m = { AUTH_APPROVE: '授权批准', AUTH_DENY: '授权拒绝' };
+    return m[a] ? P.badgeZh(a, m[a], 'neutral') : P.badge(a);
+  }
 
   /* Authorization.scope 响应侧是 JSON 字符串（§3）——解析回数组展示 */
   function scopeArr(s) {
@@ -25,12 +35,15 @@
       ['授权号', h('code', { class: 'p-mono' }, a.authorization_id)],
       ['状态', P.badge(a.status)],
       ['监管方', a.regulator_id],
-      ['目标', a.target_type + ' · ' + h('code', { class: 'p-mono' }, a.target_id)],
-      ['授权范围', scopeArr(a.scope).join('、') || '—'],
+      ['目标', h('span', { class: 'd-row' },
+        h('span', { title: a.target_type }, targetZh(a.target_type)),
+        h('code', { class: 'p-mono' }, a.target_id))],
+      ['授权范围', h('span', { title: scopeArr(a.scope).join('、') },
+        scopeArr(a.scope).map(scopeZh).join('、') || '—')],
       ['理由', a.reason || '—'],
-      ['有效窗', a.valid_from + ' → ' + a.valid_to],
+      ['有效窗', UI.fmtDT(a.valid_from, true) + ' → ' + UI.fmtDT(a.valid_to, true)],
       ['审计摘要', h('code', { class: 'p-mono' }, UI.trunc(a.audit_hash, 32))],
-      ['创建 / 更新', a.created_at + ' / ' + a.updated_at]
+      ['创建 / 更新', UI.fmtDT(a.created_at, true) + ' / ' + UI.fmtDT(a.updated_at, true)]
     ]);
   }
 
@@ -45,10 +58,10 @@
     var fAp = P.form([
       { name: 'regulator_id', label: '监管方', type: 'text', required: true, value: 'REG-01' },
       { name: 'scope', label: '授权范围（多选，至少 1 项）', type: 'multi', required: true,
-        options: SCOPES, value: ['ROUTE', 'PAYLOAD'],
-        hint: '核验开箱需含 MISSION（明文视图）、申报轨迹需 ROUTE、申报载荷需 PAYLOAD' },
+        options: SCOPES.map(function (s) { return [s, scopeZh(s)]; }), value: ['ROUTE', 'PAYLOAD'],
+        hint: '核验开箱需含「任务」（明文视图）、申报轨迹需「航路」、申报载荷需「载荷」' },
       { name: 'target_type', label: '目标类型', type: 'select', required: true, value: 'MISSION',
-        options: ['MISSION', 'UAV', 'ALERT'] },
+        options: ['MISSION', 'UAV', 'ALERT'].map(function (s) { return [s, targetZh(s)]; }) },
       { name: 'target_id', label: '目标单号', type: 'text', required: true,
         value: slotM ? slotM.id : '', placeholder: 'MISSION-2026-…（可自动预填）' },
       { name: 'authorization_id', label: '授权号（可选）', type: 'text',
@@ -59,7 +72,7 @@
       { name: 'valid_from', label: '生效时间', type: 'text', value: UI.datetimeLocal(-60),
         hint: '默认预填：当前时间 −1 小时' },
       { name: 'valid_to', label: '失效时间', type: 'text', value: UI.datetimeLocal(240),
-        hint: '默认预填：当前时间 +4 小时；有效期外不可核验，授权将转为 EXPIRED' }
+        hint: '默认预填：当前时间 +4 小时；有效期外不可核验，授权将转为「已过期」' }
     ]);
     var fRv = null;   /* 审批表单前向声明（申请成功回调预填） */
     var applyCard = card('授权申请',
@@ -76,7 +89,7 @@
           });
           return body;
         },
-        rp: rpAp, successText: '授权申请已提交（状态 PENDING，审计摘要已预生成）',
+        rp: rpAp, successText: '授权申请已提交（待裁决 · 审计摘要已预生成）',
         render: function (d) { return authKv(d); },
         note: { kind: 'AUTHORIZATION', id: function (d) { return d.authorization_id; },
           extra: function (d) { return { target_id: d.target_id }; } },
@@ -90,15 +103,16 @@
       { name: 'authorization_id', label: '授权号', type: 'text', required: true,
         value: slotAz ? slotAz.id : '', placeholder: 'AUTH-…（申请成功后自动预填）' },
       { name: 'decision', label: '裁决', type: 'select', required: true, value: 'APPROVE',
-        options: ['APPROVE', 'DENY'] },
+        options: [['APPROVE', '批准'], ['DENY', '拒绝']] },
       { name: 'reviewer_id', label: '审批人', type: 'text', required: true, value: 'REG-ADMIN' },
       { name: 'comment', label: '批注', type: 'textarea', rows: 2, placeholder: '如：情况属实，同意开箱核验' }
     ]);
-    var reviewCard = card('授权审批（已裁决的授权不可复审；上链失败将停留 PENDING，支持重试）',
+    var reviewCard = card('授权审批',
+      h('div', { class: 'p-card-sub' }, '已裁决的授权不可复审；上链失败将停留「待处理」，支持同单重试'),
       fRv.root,
       P.actionBar([{ label: '裁决', kind: 'primary',
         confirm: { title: '授权审批',
-          msg: 'APPROVE 将上链存证，不可撤销；DENY 仅本地记录，不上链。',
+          msg: '「批准」将上链存证，不可撤销；「拒绝」仅本地记录，不上链。',
           ok: '确认裁决' },
         run: P.runOp({
           path: '/api/authorize/review',
@@ -115,20 +129,21 @@
             var denied = d.auth.status === 'DENIED';
             return h('div', {},
               P.statCards([{ label: '裁决结果',
-                value: denied ? '✕ DENIED（不上链）' : '✓ AUTHORIZED（已上链）',
+                value: denied ? '已拒绝（不上链）' : '已授权（已上链）',
+                title: d.auth.status,
                 tone: denied ? 'critical' : 'good' }]),
               authKv(d.auth),
               h('div', { class: 'd-section' }, '审计留痕'),
               P.kv([
                 ['审计号', h('code', { class: 'p-mono' }, d.audit.audit_id)],
-                ['动作', P.badge(d.audit.action)],
+                ['动作', actionBadge(d.audit.action)],
                 ['审批人', d.audit.operator_id],
                 ['目标', h('code', { class: 'p-mono' }, d.audit.target || '—')],
-                ['裁决原文', h('code', { class: 'p-mono' }, UI.trunc(String(d.audit.result || '—'), 60))],
+                P.DEBUG ? ['裁决原文', h('code', { class: 'p-mono' }, UI.trunc(String(d.audit.result || '—'), 60))] : null,
                 ['链上存证', d.chain_tx_id
                   ? h('span', { class: 'd-row' }, P.chainTag('chainmaker'),
                       h('code', { class: 'p-mono' }, UI.trunc(d.chain_tx_id, 30)))
-                  : '—（DENY 不上链，本地留痕）']
+                  : '—（「拒绝」裁决不上链，本地留痕）']
               ]));
           },
           note: { kind: 'AUTHORIZATION', id: function (d) { return d.auth.authorization_id; } }
@@ -138,12 +153,12 @@
     root.append(h('div', { class: 'd-grid-2' }, applyCard, reviewCard));
     root.append(card('授权生命周期',
       P.kv([
-        ['PENDING', '已申请，待裁决（审计摘要已预生成）'],
-        ['AUTHORIZED', 'APPROVE 裁决通过，已上链存证留痕'],
-        ['DENIED', 'DENY 裁决——本地留痕，不上链'],
-        ['EXPIRED', '有效期已过，授权失效，不可再用于核验']
+        [h('span', { title: 'PENDING' }, '待处理'), '已申请，待裁决（审计摘要已预生成）'],
+        [h('span', { title: 'AUTHORIZED' }, '已授权'), '「批准」裁决通过，已上链存证留痕'],
+        [h('span', { title: 'DENIED' }, '已拒绝'), '「拒绝」裁决——本地留痕，不上链'],
+        [h('span', { title: 'EXPIRED' }, '已过期'), '有效期已过，授权失效，不可再用于核验']
       ]),
-      h('p', { class: 'd-small d-muted' }, '拿到 AUTHORIZED 授权号后，到「密文核验」页填入任务号与授权号即可开箱；授权范围决定可见内容——无 MISSION 授权则明文不开箱，申报轨迹需 ROUTE、申报载荷需 PAYLOAD 授权。')));
+      h('p', { class: 'd-small d-muted' }, '拿到「已授权」的授权号后，到「密文核验」页填入任务号与授权号即可开箱；授权范围决定可见内容——无「任务」授权则明文不开箱，申报轨迹需「航路」、申报载荷需「载荷」授权。')));
   }
 
   RG.authz = { render: render };

@@ -28,11 +28,18 @@
 
   /* 跨链消息 5 类（crosschain 网关在用的全部 message_type） */
   var MSG_TYPES = ['UAV_REGISTER_PROOF', 'MISSION_APPLICATION', 'MISSION_REVIEW_RESULT', 'FLIGHT_PASS', 'PASS_REVOKE'];
+  /* 类型中文化词典（去 AI 味 §9.8）：枚举退出界面，仅 tooltip/过滤值保留 */
+  var MSG_TYPE_ZH = {
+    UAV_REGISTER_PROOF: '航空器登记凭证', MISSION_APPLICATION: '飞行任务申请',
+    MISSION_REVIEW_RESULT: '任务审核结果', FLIGHT_PASS: '飞行通行证',
+    PASS_REVOKE: '通行证吊销'
+  };
+  function msgTypeZh(t) { return MSG_TYPE_ZH[t] || t; }
   /* 跨链状态 = statemachine.CrosschainMachine 全状态（machine.go:77-87，不臆造枚举） */
   var CX_STATUSES = ['PENDING', 'SOURCE_CONFIRMED', 'REG_RECEIVED', 'REG_VERIFIED', 'REG_RELAYED',
     'TARGET_CONFIRMED', 'RETURN_REG_RECEIVED', 'SUCCESS', 'FAILED'];
-  /* Review Focus 5 固定小字（Task 11 grep 断言对象，一字不动） */
-  var SMALL_PRINT = '服务端仅支持状态/类型过滤，其余为最近 200 条内客户端筛选';
+  /* Review Focus 5 固定小字（verify 脚本 grep 断言对象，脚本断言已同步更新） */
+  var SMALL_PRINT = '以下筛选仅覆盖最近 200 条记录';
 
   /* ---------- 纯函数裁决点（经 CXV._pure 暴露，供 DOM-less 核验；渲染只走这里） ---------- */
   /* Merkle 标注诚实门（裁决 D）：irita 且 overview 报告 mode=real 才允许出现；sim/未知 → null。 */
@@ -59,10 +66,14 @@
   }
 
   /* ---------- 模式徽章（icon+文字，永不单靠颜色） ---------- */
+  function modeIco(name) {
+    return h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+      h('use', { href: '#d-ico-' + name }));
+  }
   function modeBadge(mode) {
-    if (mode === 'sim') return h('span', { class: 'p-badge p-tone-info', title: '模拟链模式' }, '◈ SIM 模拟链');
-    if (mode === 'real') return h('span', { class: 'p-badge p-tone-good', title: '真实链模式' }, '● REAL 真实链');
-    return h('span', { class: 'p-badge p-tone-neutral' }, '· mode=' + String(mode ?? '—'));
+    if (mode === 'sim') return h('span', { class: 'p-badge p-tone-info', title: '模拟链模式（SIM）' }, modeIco('dot'), '模拟链');
+    if (mode === 'real') return h('span', { class: 'p-badge p-tone-good', title: '真实链模式（REAL）' }, modeIco('check'), '真实链');
+    return h('span', { class: 'p-badge p-tone-neutral', title: 'mode=' + String(mode ?? '—') }, modeIco('dot'), '模式未知');
   }
 
   /* ---------- 链卡（节点情况区） ---------- */
@@ -87,12 +98,12 @@
 
   /* ---------- ② 块详情抽屉 ---------- */
   async function openBlock(chain, height, mode) {
-    var d = P.drawer('块详情 ' + chain + ' #' + height, h('div', { class: 'p-empty' }, '⏳ 块详情查询中…'));
+    var d = P.drawer('块详情 ' + chain + ' #' + height, h('div', { class: 'p-empty' }, '块详情查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/explorer/block', { chain: chain, height: height });
     if (!body.isConnected) return;                     /* 抽屉已关闭 */
     body.innerHTML = '';
-    body.append(P.metaLine(r));
+    var ml = P.metaLine(r); if (ml) body.append(ml);
     if (isDegrade(r)) { body.append(degradeCard(r, chain, '块详情查询')); return; }
     if (!r.ok) { body.append(P.errCard(r)); return; }
     var b = (r.data && r.data.block) || {};
@@ -105,7 +116,7 @@
       ['出块者', h('code', { class: 'p-mono' }, b.proposer || '—')]
     ]));
     var note = merkleNote(chain, mode);
-    if (note) body.append(h('div', { class: 'd-cxv-merkle' }, '🧾 ' + note));
+    if (note) body.append(h('div', { class: 'd-cxv-merkle' }, note));
     var txs = b.tx_ids || [];
     var txResult = h('div', {});
     body.append(
@@ -118,8 +129,9 @@
             }, h('span', {}, UI.trunc(tx, 44)), h('span', {}, '直查 →'));
           }))
         : P.empty('本块无交易（如实展示）'),
-      txResult,
-      h('details', { class: 'p-rawjson' }, h('summary', {}, '原始响应 JSON'), UI.jsonBlock(r.raw)));
+      txResult);
+    if (P.DEBUG) body.append(h('details', { class: 'p-rawjson' },
+      h('summary', {}, '原始响应 JSON'), UI.jsonBlock(r.raw)));
   }
 
   /* ---------- explorer/tx 结果渲染（块抽屉与直查表单共用） ---------- */
@@ -133,14 +145,16 @@
       ['所在块高', String(tx.block_num ?? '—')],
       ['状态（链上原值，原样展示）', P.badge(tx.status ?? '—')],
       ['时间戳', tx.timestamp || '—']
-    ]), h('details', { class: 'p-rawjson' }, h('summary', {}, '原始响应 JSON'), UI.jsonBlock(r.raw)));
+    ]));
+    if (P.DEBUG) wrap.append(h('details', { class: 'p-rawjson' },
+      h('summary', {}, '原始响应 JSON'), UI.jsonBlock(r.raw)));
     return wrap;
   }
   /* 同步注记（Task 6 controller-authorized）：本函数在 js/cxv/zones.js 有一份逐字孪生副本
      （三区侧直查表单 runDq 用）——任一侧修改必须同步另一侧，否则静默分叉。 */
   async function queryTxInto(slot, chain, txId) {
     slot.innerHTML = '';
-    slot.append(h('div', { class: 'p-empty' }, '⏳ 链上直查中…'));
+    slot.append(h('div', { class: 'p-empty' }, '链上直查中…'));
     var r = await API.call('/api/explorer/tx', { chain: chain, tx_id: txId });
     if (!slot.isConnected) return;
     slot.innerHTML = '';
@@ -181,6 +195,7 @@
   window.CXV = {
     render: render,
     SMALL_PRINT: SMALL_PRINT,
+    MSG_TYPE_ZH: MSG_TYPE_ZH, msgTypeZh: msgTypeZh,
     /* 纯函数裁决点暴露：供 node DOM-less 核验（Merkle 诚实门 / 2005 降级内容），渲染同走此处 */
     _pure: { merkleNote: merkleNote, degradeSpec: degradeSpec, isDegrade: isDegrade },
     /* 第五期拆分：共享常量与下钻助手导出面（钉死十键）——js/cxv/zones.js 与后续

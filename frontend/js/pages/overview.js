@@ -17,15 +17,15 @@
       title: '平台总览',
       sub: '三链状态 · 核心指标 · 跨链流水 · 告警摘要 · 演示维护',
       actions: [h('button', { class: 'p-btn',
-        onClick: () => { root.innerHTML = ''; render(root); } }, '⟳ 刷新全部')],
+        onClick: () => { root.innerHTML = ''; render(root); } }, '刷新全部')],
     }));
     root.append(P.chipBar());
 
     /* --- 三链状态条 --- */
-    const chainBox = h('div', { class: 'p-stats' }, P.empty('⏳ 加载三链状态…'));
+    const chainBox = h('div', { class: 'p-stats' }, P.empty('正在加载三链状态…'));
     const rpHealth = P.resultPanel();
-    root.append(card('三链状态 chain/status', chainBox,
-      P.actionBar([{ label: '健康自检 health/check', run: async () => {
+    root.append(card('三链运行状态', chainBox,
+      P.actionBar([{ label: '健康自检', run: async () => {
         const r = await API.call('/api/health/check', {});
         rpHealth.show(r, d => P.kv([
           ['数据库', d.database],
@@ -45,7 +45,7 @@
     });
 
     /* --- 核心指标：dashboard/summary + 三本台账 total --- */
-    const kpiBox = h('div', {}, P.empty('⏳ 加载指标…'));
+    const kpiBox = h('div', {}, P.empty('正在加载指标…'));
     root.append(card('核心指标', kpiBox));
     Promise.all([
       API.call('/api/dashboard/summary', {}),
@@ -57,10 +57,10 @@
       if (!rs.ok) { kpiBox.append(P.errCard(rs)); return; }
       const s = rs.data;
       kpiBox.append(P.statCards([
-        { label: '任务', value: rm.ok ? rm.data.total : '—', sub: 'mission/list 台账' },
-        { label: '飞行许可', value: rp.ok ? rp.data.total : '—', sub: 'pass/list 台账' },
-        { label: '跨链交易', value: rc.ok ? rc.data.total : '—', sub: 'crosschain/list 台账' },
-        { label: '告警总数', value: s.alerts.total, sub: 'OPEN ' + s.alerts.open,
+        { label: '任务', value: rm.ok ? rm.data.total : '—', sub: '任务台账' },
+        { label: '飞行许可', value: rp.ok ? rp.data.total : '—', sub: '许可台账' },
+        { label: '跨链交易', value: rc.ok ? rc.data.total : '—', sub: '跨链台账' },
+        { label: '告警总数', value: s.alerts.total, sub: '待处置 ' + s.alerts.open,
           tone: s.alerts.high_open > 0 ? 'critical' : '' },
         { label: '高危待处置', value: s.alerts.high_open, tone: s.alerts.high_open > 0 ? 'critical' : 'good' },
         { label: '活跃会话', value: s.sessions.active, sub: '降级 ' + s.sessions.degraded,
@@ -68,34 +68,34 @@
         { label: '待批授权', value: s.authorizations.pending,
           tone: s.authorizations.pending > 0 ? 'warning' : '' },
         { label: '攻防事件', value: s.wormhole_events.total,
-          sub: 'DETECT ' + s.wormhole_events.detect + ' · ISOLATE ' + s.wormhole_events.isolate +
-               ' · RECOVER ' + s.wormhole_events.recover },
+          sub: '检测 ' + s.wormhole_events.detect + ' · 隔离 ' + s.wormhole_events.isolate +
+               ' · 恢复 ' + s.wormhole_events.recover },
       ]));
       if (s.alerts.by_type) {
         kpiBox.append(h('div', { class: 'p-card-sub' }, '告警类型分布'),
           P.hbars(Object.keys(s.alerts.by_type).map(k =>
-            ({ label: k, value: s.alerts.by_type[k] }))));
+            ({ label: P.statusZh(k), value: s.alerts.by_type[k] }))));
       }
     });
 
     /* --- 最近跨链流水 --- */
-    root.append(card('最近跨链流水（点行看四段 TxID 存证详情）',
+    root.append(card('最近跨链流水 · 点行查看四段存证详情',
       P.dataTable({
         endpoint: '/api/crosschain/list', pageSize: 8,
         columns: [
-          { title: 'cross_tx_id', render: r => UI.trunc(r.cross_tx_id, 24), mono: true },
-          { title: '类型', key: 'message_type' },
+          { title: '跨链流水号', render: r => UI.trunc(r.cross_tx_id, 24), mono: true },
+          { title: '类型', render: r => CXV.msgTypeZh(r.message_type) },
           { title: '业务单号', render: r => UI.trunc(r.business_id, 20), mono: true },
           { title: '状态', render: r => P.badge(r.status) },
           { title: '目标链', render: r => P.chainTag(r.final_target_chain) },
-          { title: '时延(ms)', key: 'latency_ms', num: true },
+          { title: '耗时', render: r => UI.fmtMs(r.latency_ms), num: true },
         ],
         onRow: rec => P.openCxDetail(rec.cross_tx_id),
         emptyText: '暂无跨链记录',
       })));
 
     /* --- 最近告警 --- */
-    root.append(card('最近告警 alert/list',
+    root.append(card('最近告警',
       P.dataTable({
         endpoint: '/api/alert/list', pageSize: 5,
         columns: [
@@ -113,21 +113,21 @@
     const rpDemo = P.resultPanel();
     root.append(card('演示维护',
       h('p', { class: 'p-field-hint' },
-        'demo/init 幂等灌注演示种子；demo/reset 仅清空本地业务库并复位模拟链状态——真实链模式下的链上账本数据永不受影响。'),
+        '灌注演示种子数据；复位仅清空本地业务库并还原模拟链状态——真实链上数据永不受影响。'),
       P.actionBar([
-        { label: '灌注演示数据 demo/init', run: P.runOp({
+        { label: '灌注演示数据', run: P.runOp({
           path: '/api/demo/init', body: () => ({}), rp: rpDemo, successText: '灌注完成',
           render: d => P.kv([
-            ['created', h('code', { class: 'p-mono' }, JSON.stringify(d.created))],
-            ['skipped', h('code', { class: 'p-mono' }, JSON.stringify(d.skipped))]]) }) },
-        { label: '复位演示数据 demo/reset', kind: 'danger',
+            ['新增记录', h('code', { class: 'p-mono' }, JSON.stringify(d.created))],
+            ['跳过', h('code', { class: 'p-mono' }, JSON.stringify(d.skipped))]]) }) },
+        { label: '复位演示数据', kind: 'danger',
           confirm: { title: '复位演示数据', ok: '确认复位',
             msg: '将清空全部业务表并复位模拟链状态（真实链上数据不受影响）。确认继续？' },
           run: P.runOp({
             path: '/api/demo/reset', body: () => ({}), rp: rpDemo, successText: '复位完成',
             render: d => P.kv([
-              ['tables_cleared', String(d.tables_cleared)],
-              ['reset_at', d.reset_at]]) }) },
+              ['清空业务表数', String(d.tables_cleared)],
+              ['复位时间', UI.fmtDT(d.reset_at, true)]]) }) },
       ]), rpDemo.root));
   }
 

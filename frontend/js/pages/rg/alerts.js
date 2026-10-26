@@ -17,6 +17,13 @@
   var EVENT_TYPES = ['ROUTE_DEVIATION', 'INVALID_PASS', 'UNKNOWN_NODE_ACCESS',
     'MISSION_MISMATCH', 'WORMHOLE_ALERT', 'IDENTITY_ANOMALY'];
   var STATUSES = ['OPEN', 'IDENTIFIED', 'TRACED', 'REVIEWED', 'RESOLVED', 'ARCHIVED'];
+  /* 来源系统中文（原表单 hint 即此映射——升级为选项标签，枚举原文降级为 tooltip） */
+  var SOURCE_ZH = { SYSTEM1: '任务协同', SYSTEM2: '链下攻防', SYSTEM3: '密文核查', MANUAL: '人工登记' };
+  function sourceZh(s) {
+    if (!s) return '—';
+    return h('span', { title: String(s) }, SOURCE_ZH[s] || String(s));
+  }
+  function pairs(list) { return list.map(function (s) { return [s, P.statusZh(s)]; }); }
 
   function render(root, ctx) {
     var slotA = STORE.get('ALERT');
@@ -31,13 +38,12 @@
         placeholder: 'PSEUDO-UAV-83921',
         hint: '对外只暴露伪名；真实身份经「身份追踪」七级解析' },
       { name: 'event_type', label: '事件类型', type: 'select', required: true, value: 'WORMHOLE_ALERT',
-        options: EVENT_TYPES,
+        options: pairs(EVENT_TYPES),
         hint: '从标准事件类型中选择' },
       { name: 'risk_level', label: '风险等级', type: 'select', required: true, value: 'HIGH',
-        options: ['LOW', 'MEDIUM', 'HIGH'] },
+        options: pairs(['LOW', 'MEDIUM', 'HIGH']) },
       { name: 'source_system', label: '来源系统', type: 'select', required: true, value: 'MANUAL',
-        options: ['SYSTEM1', 'SYSTEM2', 'SYSTEM3', 'MANUAL'],
-        hint: 'SYSTEM1=任务协同 SYSTEM2=链下攻防 SYSTEM3=密文核查 MANUAL=人工登记' },
+        options: Object.keys(SOURCE_ZH).map(function (s) { return [s, SOURCE_ZH[s]]; }) },
       { name: 'operator', label: '操作方', type: 'text', required: true, value: 'REG-01' },
       { name: 'alert_id', label: '告警号（可选）', type: 'text', placeholder: '留空自动生成 ALERT-…' },
       { name: 'mission_id', label: '关联任务（可选）', type: 'text',
@@ -45,7 +51,7 @@
       { name: 'evidence_hash', label: '证据摘要（可选）', type: 'text',
         placeholder: '可留空，系统自动生成国密摘要' },
       { name: 'wormhole_event_id', label: '虫洞事件号（可选）', type: 'text',
-        placeholder: '仅 WORMHOLE_ALERT 有意义' }
+        placeholder: '仅「虫洞告警」类型需要填写' }
     ]);
     var tblAl = null;
     var raiseCard = card('告警登记',
@@ -62,7 +68,7 @@
           });
           return body;
         },
-        rp: rpRa, successText: '告警已登记，初始状态 OPEN',
+        rp: rpRa, successText: '告警已登记（初始状态「待处置」）',
         render: function (d) { return alertKv(d); },
         note: { kind: 'ALERT', id: function (d) { return d.alert_id; },
           extra: function (d) { return { mission_id: d.mission_id }; } },
@@ -79,13 +85,14 @@
       { name: 'alert_id', label: '告警号', type: 'text', required: true,
         value: slotA ? slotA.id : '', placeholder: 'ALERT-…（登记后自动预填）' },
       { name: 'to_status', label: '目标状态（单步）', type: 'select', required: true, value: 'IDENTIFIED',
-        options: ['IDENTIFIED', 'TRACED', 'REVIEWED', 'RESOLVED', 'ARCHIVED'] },
+        options: pairs(['IDENTIFIED', 'TRACED', 'REVIEWED', 'RESOLVED', 'ARCHIVED']) },
       { name: 'operator', label: '操作方', type: 'text', required: true, value: 'REG-01' },
       { name: 'reason', label: '推进理由', type: 'textarea', rows: 2,
         placeholder: '如：初步研判成立，启动跨链追踪',
         hint: '逐段单步推进；跳级或重复推进将被系统显式拒绝并说明原因' }
     ]);
-    var statusCard = card('状态机推进（OPEN→IDENTIFIED→TRACED→REVIEWED→RESOLVED→ARCHIVED）',
+    var statusCard = card('状态机推进',
+      h('div', { class: 'p-card-sub' }, '待处置 → 已定位 → 已追踪 → 已复核 → 已处置 → 已归档 · 逐段单步'),
       fSt.root,
       P.actionBar([{ label: '推进状态', kind: 'primary', run: P.runOp({
         path: '/api/alert/status',
@@ -107,10 +114,11 @@
     tblAl = P.dataTable({
       endpoint: '/api/alert/list', pageSize: 10,
       filters: [
-        { name: 'event_type', label: '类型', type: 'select', options: EVENT_TYPES },
-        { name: 'status', label: '状态', type: 'select', options: STATUSES },
-        { name: 'risk_level', label: '风险', type: 'select', options: ['LOW', 'MEDIUM', 'HIGH'] },
-        { name: 'source_system', label: '来源', type: 'select', options: ['SYSTEM1', 'SYSTEM2', 'SYSTEM3', 'MANUAL'] },
+        { name: 'event_type', label: '类型', type: 'select', options: pairs(EVENT_TYPES) },
+        { name: 'status', label: '状态', type: 'select', options: pairs(STATUSES) },
+        { name: 'risk_level', label: '风险', type: 'select', options: pairs(['LOW', 'MEDIUM', 'HIGH']) },
+        { name: 'source_system', label: '来源', type: 'select',
+          options: Object.keys(SOURCE_ZH).map(function (s) { return [s, SOURCE_ZH[s]]; }) },
         { name: 'mission_id', label: '任务号', type: 'text' }
       ],
       columns: [
@@ -118,17 +126,18 @@
         { title: '伪名', render: function (r) { return UI.trunc(r.uav_pseudonym, 20); }, mono: true },
         { title: '事件类型', render: function (r) { return P.badge(r.event_type); } },
         { title: '风险', render: function (r) { return P.badge(r.risk_level); } },
-        { title: '来源', key: 'source_system' },
+        { title: '来源', render: function (r) { return sourceZh(r.source_system); } },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
         { title: '任务', render: function (r) { return r.mission_id || '—'; } },
-        { title: '创建时间', key: 'created_at' }
+        { title: '创建时间', render: function (r) { return UI.fmtDT(r.created_at); } }
       ],
       onRow: function (r) { alertDrawer(r, fSt); },
       emptyText: '暂无告警（攻防演练/密文核查触发或手工登记后出现）'
     });
 
     root.append(h('div', { class: 'd-grid-2' }, raiseCard, statusCard));
-    root.append(card('告警台账（五维过滤；行点击 → 详情、推进预填、转追踪）', tblAl));
+    root.append(card('告警台账',
+      h('div', { class: 'p-card-sub' }, '五维过滤 · 行点击查看详情、预填推进表单或转身份追踪'), tblAl));
   }
 
   /* Alert 10 键完整 kv（cockpit.js 落点详情卡复用） */
@@ -138,11 +147,11 @@
       ['事件类型', P.badge(a.event_type)],
       ['风险等级', P.badge(a.risk_level)],
       ['状态', P.badge(a.status)],
-      ['来源系统', a.source_system],
+      ['来源系统', sourceZh(a.source_system)],
       ['航空器伪名', h('code', { class: 'p-mono' }, a.uav_pseudonym)],
       ['关联任务', a.mission_id || '—'],
       ['证据摘要', h('code', { class: 'p-mono' }, UI.trunc(a.evidence_hash, 32))],
-      ['创建 / 更新', a.created_at + ' / ' + a.updated_at]
+      ['创建 / 更新', UI.fmtDT(a.created_at, true) + ' / ' + UI.fmtDT(a.updated_at, true)]
     ]);
   }
 
@@ -154,7 +163,7 @@
       P.actionBar([
         fSt ? { label: '预填推进表单', run: function () {
           fSt.set('alert_id', a.alert_id);
-          UI.toast('已预填，下一步通常是 ' + nextOf(a.status));
+          UI.toast('已预填，下一步通常是「' + nextOf(a.status) + '」');
         } } : null,
         { label: '转七级身份追踪 →', kind: 'primary', run: function () {
           STORE.note('ALERT', a.alert_id, { mission_id: a.mission_id });
@@ -165,7 +174,7 @@
 
   function nextOf(s) {
     var i = STATUSES.indexOf(s);
-    return (i >= 0 && i < STATUSES.length - 1) ? STATUSES[i + 1] : '（已终态）';
+    return (i >= 0 && i < STATUSES.length - 1) ? P.statusZh(STATUSES[i + 1]) : '已终态';
   }
 
   RG.alerts = { render: render, alertKv: alertKv, alertDrawer: alertDrawer };

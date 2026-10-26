@@ -31,7 +31,7 @@
     var lastSeen = {};    /* 上轮在图无人机（demo/reset 后同步清图标） */
     var busy = false;
 
-    var statsBox = h('div', {}, P.empty('⏳ 监管概览加载中…'));
+    var statsBox = h('div', {}, P.empty('监管概览加载中…'));
     var hbarsBox = h('div', {}, P.empty('—'));
     var recentBox = h('div', {}, P.empty('—'));
     var pinBox = h('div', {}, P.empty('点击地图上的告警落点查看详情'));
@@ -45,17 +45,17 @@
       sub: '跨域态势大屏——航线、节点、在飞无人机与告警落点，一屏总览' }));
     root.append(statsBox);
     root.append(h('div', { class: 'd-toolbar' },
-      h('label', { class: 'd-small' }, autoEl, ' 自动刷新(5s)'),
+      h('label', { class: 'd-small' }, autoEl, ' 自动刷新（5 秒）'),
       h('button', { class: 'p-btn', onClick: function () { loadAll(); } }, '立即刷新'),
       h('span', { class: 'd-spacer' }),
       h('span', { class: 'd-small d-muted' }, '在飞：'), flyingEl, h('span', { class: 'd-small d-muted' }, ' 架'),
       genEl));
     root.append(h('div', { class: 'd-grid-side' },
       h('div', { class: 'd-col' }, mapEl,
-        h('div', { class: 'd-map-hint' }, '✈️ = 在飞无人机；红虚线 = 虫洞伪造链路；红色落点 = 告警，点击查看详情。ATTACKER 节点监管端全量可见。自动刷新更新在飞无人机位置；统计与告警落点随「立即刷新」更新。暂无遥测数据的航空器不在图上显示。')),
+        h('div', { class: 'd-map-hint' }, '无人机图标 = 在飞无人机；红虚线 = 虫洞伪造链路；红色落点 = 告警，点击查看详情。攻击节点监管端全量可见。自动刷新更新在飞无人机位置；统计与告警落点随「立即刷新」更新。暂无遥测数据的航空器不在图上显示。')),
       h('div', { class: 'd-col' },
         card('告警类型分布', hbarsBox),
-        card('最近告警（前 5）', recentBox),
+        card('最近告警', h('div', { class: 'p-card-sub' }, '最近 5 条 · 点击查看详情'), recentBox),
         card('告警落点详情', pinBox))));
     /* --- 能力态势：三大绩效目标能力卡（实时证据 + 一键实验自证，高危实验有门禁）--- */
     root.append(CAPX.section('cockpit'));
@@ -156,14 +156,14 @@
           sub: '检出 ' + d.wormhole_events.detect + ' · 隔离 ' + d.wormhole_events.isolate + ' · 恢复 ' + d.wormhole_events.recover,
           tone: d.wormhole_events.detect > 0 ? 'critical' : null }
       ]));
-      genEl.textContent = '汇总生成：' + (d.generated_at || '—');
+      genEl.textContent = '汇总生成：' + UI.fmtDT(d.generated_at, true);
 
       /* 告警类型分布（by_type map → hbars 数组；红黄语义 Global Constraints #7） */
       var bt = d.alerts.by_type || {};
       var keys = Object.keys(bt);
       hbarsBox.innerHTML = '';
       hbarsBox.append(keys.length
-        ? P.hbars(keys.map(function (k) { return { label: k, value: bt[k], tone: 'critical' }; }))
+        ? P.hbars(keys.map(function (k) { return { label: P.statusZh(k), value: bt[k], tone: 'critical' }; }))
         : P.empty('暂无告警'));
 
       /* 最近 5 条告警（复用 alerts.js 的抽屉） */
@@ -198,7 +198,7 @@
         var lat = Number(rt.start_lat), lon = Number(rt.start_lon);
         if (!GEO.hasCoord(lat, lon)) continue;
         (function (al, la, lo) {
-          mx.alertPin(la, lo, al.alert_id + ' · ' + al.event_type, function () { showPin(al); });
+          mx.alertPin(la, lo, al.alert_id + ' · ' + P.statusZh(al.event_type), function () { showPin(al); });
         })(a, lat, lon);
       }
     }

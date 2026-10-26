@@ -25,7 +25,7 @@
     var tblR = P.dataTable({
       endpoint: '/api/realname/list', pageSize: 10,
       filters: [{ name: 'subject_type', label: '主体类型', type: 'select',
-        options: ['ENTERPRISE', 'INDIVIDUAL'] }],
+        options: ['ENTERPRISE', 'INDIVIDUAL'].map(function (s) { return [s, P.statusZh(s)]; }) }],
       columns: [
         { title: '主体号', render: function (r) { return UI.trunc(r.subject_id, 22); }, mono: true },
         { title: '类型', render: function (r) { return P.badge(r.subject_type); } },
@@ -67,7 +67,7 @@
   /* 实名主体详情：realname/query 平铺 Subject（8 键） */
   async function openSubject(sid, panel) {
     panel.innerHTML = '';
-    panel.append(h('div', { class: 'p-empty' }, '⏳ 实名主体查询中…'));
+    panel.append(h('div', { class: 'p-empty' }, '实名主体查询中…'));
     var r = await API.call('/api/realname/query', { subject_id: sid });
     if (!panel.isConnected) return;
     panel.innerHTML = '';
@@ -82,7 +82,7 @@
         ['证件号', h('code', { class: 'p-mono' }, s.id_number)],
         ['联系方式', s.contact || '—'],
         ['状态', P.badge(s.status)],
-        ['建档 / 更新', s.created_at + ' → ' + s.updated_at]
+        ['建档 / 更新', UI.fmtDT(s.created_at, true) + ' → ' + UI.fmtDT(s.updated_at, true)]
       ]),
       h('p', { class: 'd-small d-muted' }, '演示数据域：证件号为模拟值，不接真实认证系统。'));
   }
@@ -90,7 +90,7 @@
   /* 飞行员执照详情：pilot/query 平铺 License（11 键）+ SM9 验签 */
   async function openLicense(lid, panel) {
     panel.innerHTML = '';
-    panel.append(h('div', { class: 'p-empty' }, '⏳ 执照详情查询中…'));
+    panel.append(h('div', { class: 'p-empty' }, '执照详情查询中…'));
     var r = await API.call('/api/pilot/query', { license_id: lid });
     if (!panel.isConnected) return;
     panel.innerHTML = '';
@@ -107,20 +107,21 @@
         ['证件号', h('code', { class: 'p-mono' }, L.id_number)],
         ['类别', P.badge(L.category)],
         ['状态', P.badge(L.status)],
-        ['签发 / 失效', L.issued_at + ' → ' + L.expires_at],
+        ['签发 / 失效', UI.fmtDT(L.issued_at, true) + ' → ' + UI.fmtDT(L.expires_at, true)],
         ['SM9 签名', h('code', { class: 'p-mono' }, UI.trunc(L.signature, 40))]
       ]),
-      h('div', { class: 'd-section' }, 'SM9 验签（局方签发身份 ' + PILOT_SIGNER + '）'),
+      h('div', { class: 'd-section' }, 'SM9 验签'),
       P.actionBar([{ label: 'SM9 验签', kind: 'primary', title: '以局方签发材料复核签名',
         run: function (el) { verifyLicense(L, verifyBox, el); } }]),
       verifyBox,
-      h('p', { class: 'd-small d-muted' }, '验签采用执照七项关键信息组成的规范载荷，与签发时的签名材料完全一致。演示数据域：证件号为模拟值。'));
+      h('p', { class: 'd-small d-muted' }, '验签以局方签发身份 ', h('code', { class: 'p-mono' }, PILOT_SIGNER),
+        ' 复核，采用执照七项关键信息组成的规范载荷，与签发时的签名材料完全一致。演示数据域：证件号为模拟值。'));
   }
 
   /* crypto/sm9/verify：payload = query 响应七键子集；合法签名 valid true/false 均 code=0 */
   async function verifyLicense(L, box, el) {
     box.innerHTML = '';
-    box.append(h('div', { class: 'p-empty' }, '⏳ SM9 验签中…'));
+    box.append(h('div', { class: 'p-empty' }, 'SM9 验签中…'));
     if (el) el.disabled = true;
     var payload = {
       license_id: L.license_id, license_no: L.license_no, name: L.name,
@@ -135,10 +136,10 @@
     if (!r.ok) { box.append(P.errCard(r)); return; }   /* 1002 签名 base64 非法 */
     var ok = !!r.data.valid;
     box.append(
-      P.statCards([{ label: 'SM9 验签', value: ok ? '✓ 通过' : '✗ 未通过',
+      P.statCards([{ label: 'SM9 验签', value: ok ? '通过' : '未通过',
         sub: ok ? '签名与执照签发材料一致' : '签名与执照材料不一致（疑似篡改）',
-        tone: ok ? 'good' : 'critical' }]),
-      UI.jsonBlock(payload, 160));
+        tone: ok ? 'good' : 'critical' }]));
+    if (P.DEBUG) box.append(UI.jsonBlock(payload, 160));   /* 规范载荷 JSON 仅调试展示 */
   }
 
   AU.registry = { render: render };

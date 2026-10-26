@@ -183,7 +183,7 @@
       return mx;
     };
 
-    /* --- 节点 circleMarker：类型定色/半径，OFFLINE 空心、ISOLATED 红虚线+⛔、ATTACKER ⚠ --- */
+    /* --- 节点 circleMarker：类型定色/半径，OFFLINE 空心、ISOLATED 红虚线+「已隔离」、ATTACKER「攻击节点」 --- */
     mx.drawNodes = function (nodes, opts2) {
       var oo = opts2 || {};
       (nodes || []).forEach(function (n) {
@@ -201,9 +201,9 @@
           fillOpacity: offline ? 0 : (n.node_type === 'ATTACKER' ? .55 : .35)
         });
         m.bindTooltip(
-          (isolated ? '⛔ ' : (n.node_type === 'ATTACKER' ? '⚠ ' : '')) +
+          (isolated ? '已隔离 · ' : (n.node_type === 'ATTACKER' ? '攻击节点 · ' : '')) +
           '<b>' + n.node_id + '</b> · ' + (style.label || n.node_type || '节点') +
-          '<br>状态 ' + (n.status || '--') +
+          '<br>状态 ' + (window.PUI ? window.PUI.statusZh(n.status || '--') : (n.status || '--')) +
           ' · 风险分 ' + (n.risk_score != null ? Number(n.risk_score).toFixed(2) : '--'),
           { sticky: true }
         );
@@ -213,7 +213,7 @@
       return mx;
     };
 
-    /* --- 虫洞伪造边：红虚线 + 中点 ⚠ 标记；任一端点缺地理坐标 → 跳过（红线） --- */
+    /* --- 虫洞伪造边：红虚线 + 中点警示标；任一端点缺地理坐标 → 跳过（红线） --- */
     mx.drawWormholes = function (edges, nodes) {
       var coord = {};
       (nodes || []).forEach(function (n) {
@@ -225,10 +225,10 @@
         var a = coord[e.from], b = coord[e.to];
         if (!a || !b) return;
         L.polyline([a, b], { color: '#b91c1c', weight: 2.5, dashArray: '5 5', opacity: .9 })
-          .bindTooltip('⚠ 虫洞伪造边 ' + e.from + ' ⇄ ' + e.to, { sticky: true })
+          .bindTooltip('虫洞伪造边（预警） ' + e.from + ' ⇄ ' + e.to, { sticky: true })
           .addTo(mx._layers.marks);
         L.marker([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], {
-          icon: divIcon('<div class="d-wormhole-ico">⚠</div>', [26, 26], [13, 13]),
+          icon: divIcon('<div class="d-wormhole-ico"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 19.5H3z"/><line x1="12" y1="10" x2="12" y2="14"/><line x1="12" y1="16.8" x2="12" y2="16.9"/></svg></div>', [26, 26], [13, 13]),
           interactive: false, keyboard: false
         }).addTo(mx._layers.marks);
       });

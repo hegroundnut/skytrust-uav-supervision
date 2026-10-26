@@ -20,7 +20,7 @@
   var NOTICES = [
     { date: '2026-09-30', text: '依照《无人驾驶航空器飞行管理暂行条例》，民用无人驾驶航空器须完成实名登记并取得电子飞行许可后方可实施飞行活动。' },
     { date: '2026-09-18', text: '本平台已全面启用「登记即上链」：航空器登记、任务申请、许可签发均在三链留痕，跨链存证可在本页地图与各详情页查验。' },
-    { date: '2026-09-02', text: '莫干山演示空域走廊数据已更新（Zone-A / Zone-B），飞行前请在「空域查询」页确认走廊状态（OPEN / RESTRICTED / CLOSED）。' }
+    { date: '2026-09-02', text: '莫干山演示空域走廊数据已更新（Zone-A / Zone-B），飞行前请在「空域查询」页确认走廊状态（开放 / 限制 / 关闭）。' }
   ];
 
   function render(root, ctx) {
@@ -35,7 +35,7 @@
     mx = MAPX.create(mapEl, { view: GEO.DEFAULT_VIEW });
 
     /* --- 空域态势条（chain/status + 计数）--- */
-    var strip = h('div', { class: 'd-mt' }, h('div', { class: 'p-empty' }, '⏳ 空域态势加载中…'));
+    var strip = h('div', { class: 'd-mt' }, h('div', { class: 'p-empty' }, '空域态势加载中…'));
     root.append(strip);
 
     /* --- 三大核心能力（绩效目标自然嵌入：实时证据 + 实验自证 + 官方原文小字）--- */
@@ -51,7 +51,7 @@
 
     /* --- 政策公告（静态装饰区）--- */
     root.append(h('div', { class: 'd-notice d-mt2' },
-      h('h3', {}, '📢 政策公告'),
+      h('h3', {}, '政策公告'),
       h('ul', {}, NOTICES.map(function (n) {
         return h('li', {}, n.text, h('span', { class: 'd-notice-date' }, n.date));
       }))));
@@ -99,7 +99,8 @@
     var cards = [];
     PORTAL.CHAINS.forEach(function (c) {
       var st = (chainR.ok && chainR.data && chainR.data.chains) ? chainR.data.chains[c.key] : '未知';
-      cards.push({ label: c.label, value: st || '未知', tone: st === 'ONLINE' ? 'good' : 'critical' });
+      cards.push({ label: c.label, value: P.statusZh(st), title: st,
+        tone: st === 'ONLINE' ? 'good' : 'critical' });
     });
     cards.push({ label: '空域走廊', value: routesR.ok ? String(routesR.data.total || 0) : '--', sub: '已发布走廊总数' });
     cards.push({ label: '网络节点', value: topoR.ok ? String(visNodes.length) : '--', sub: '平台服务节点统计' });

@@ -112,11 +112,11 @@
     opts = opts || {};
     var portal = opts.portal || 'index';
     var box = h('div', { class: 'd-cxv-goals' },
-      h('div', { class: 'p-empty' }, '⏳ 加载中…'));
+      h('div', { class: 'p-empty' }, '加载中…'));
     var metaSlot = h('div', {});
     root.append(h('section', { class: 'p-card d-cxv-goal-sec' },
-      h('h3', { class: 'p-card-title' },
-        '三目标证据条 · 实时活数呈现'),
+      h('h3', { class: 'p-card-title' }, '三目标证据条'),
+      h('div', { class: 'p-card-sub' }, '实时活数呈现 —— 数字全部来自本次实时聚合'),
       metaSlot, box));
     load();
 
@@ -124,12 +124,15 @@
       var r = await API.call('/api/explorer/goals', {});
       if (!box.isConnected) return;   /* 已导航离开/「刷新全部」卸载本区 → 弃填充 */
       metaSlot.innerHTML = '';
-      metaSlot.append(P.metaLine(r));
+      var ml = P.metaLine(r); if (ml) metaSlot.append(ml);
       box.innerHTML = '';
       if (!r.ok) {
         /* 失败/非 0 code → 错误态文案如实直出，芯片区不显示任何数字（绝不写死、绝不缓存假数） */
         box.append(h('div', { class: 'd-cxv-goal-err' },
-          h('div', {}, h('b', {}, '⚠ 三目标证据加载失败（code=' + r.code + '）——芯片拒绝显示任何数字')),
+          h('div', {}, h('b', {},
+            h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+              h('use', { href: '#d-ico-triangle-alert' })),
+            ' 三目标证据加载失败 —— 芯片拒绝显示任何数字')),
           h('div', { class: 'd-small' }, '芯片数字全部来自本次实时聚合；加载失败时如实呈现，绝不以预设值充数。'),
           P.errCard(r)));
         return;

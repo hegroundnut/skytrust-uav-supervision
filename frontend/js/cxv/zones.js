@@ -37,9 +37,12 @@
   var SOURCE_NOTE = { rpc: '链上实时实测', 'static+probe': '登记信息 + 在线探活', sim: '模拟链环境' };
   var lastChain = {};   /* portal → 最近选中链（路由重渲染后保持；仅内存） */
 
-  function card(title) {
-    var kids = Array.prototype.slice.call(arguments, 1);
-    return h('section', { class: 'p-card' }, h('h3', { class: 'p-card-title' }, title), kids);
+  function card(title, sub) {
+    var kids = Array.prototype.slice.call(arguments, 2);
+    return h('section', { class: 'p-card' },
+      h('h3', { class: 'p-card-title' }, title),
+      sub ? h('div', { class: 'p-card-sub' }, sub) : null,
+      kids);
   }
 
   /* 三区侧私有 helper：degradeCard 原样副本（薄壳 openBlock 仍用其本地副本；SHARED 导出面
@@ -56,7 +59,7 @@
      逻辑逐字不变。 */
   async function queryTxInto(slot, chain, txId) {
     slot.innerHTML = '';
-    slot.append(h('div', { class: 'p-empty' }, '⏳ 链上直查中…'));
+    slot.append(h('div', { class: 'p-empty' }, '链上直查中…'));
     var r = await API.call('/api/explorer/tx', { chain: chain, tx_id: txId });
     if (!slot.isConnected) return;
     slot.innerHTML = '';
@@ -86,7 +89,7 @@
              render 会抹掉壳级已组装段（Task 6 前向陷阱修复）；薄壳未装载时回落本地 render。 */
           (window.CXV && window.CXV.render ? window.CXV.render : render)(root, opts);
         }
-      }, '⟳ 刷新全部')]
+      }, '刷新全部')]
     }));
 
     /* ---------- 链选择（跨区共享） ---------- */
@@ -127,9 +130,9 @@
     }
 
     /* ---------- ① 节点情况 ---------- */
-    var cardBox = h('div', { class: 'd-cxv-chains' }, h('div', { class: 'p-empty' }, '⏳ 链总览加载中…'));
+    var cardBox = h('div', { class: 'd-cxv-chains' }, h('div', { class: 'p-empty' }, '链总览加载中…'));
     var nodesBox = h('div', {}, h('div', { class: 'p-empty' }, '等待总览加载…'));
-    var zone1 = card('① 节点情况（点击链卡选中链，联动节点表与块浏览）',
+    var zone1 = card('① 节点情况', '点击链卡选中链，联动节点表与块浏览',
       cardBox, nodesBox);
 
     async function loadOverview() {
@@ -167,7 +170,7 @@
 
     async function loadNodes(box, chain) {
       box.innerHTML = '';
-      box.append(h('div', { class: 'p-empty' }, '⏳ 节点查询中…'));
+      box.append(h('div', { class: 'p-empty' }, '节点查询中…'));
       var r = await API.call('/api/explorer/nodes', { chain: chain });
       if (!box.isConnected) return;
       box.innerHTML = '';
@@ -197,21 +200,21 @@
     var z2Tag = h('span', {});
     var heightEl = h('b', { class: 'p-mono' }, '当前高度 —');
     var blocksBox = h('div', {}, h('div', { class: 'p-empty' }, '等待总览加载…'));
-    var zone2 = card('② 块浏览（最近 20 块 · 新→旧 · 点击行查看块详情，点击交易链上直查）',
+    var zone2 = card('② 块浏览', '最近 20 块 · 新→旧 · 点击行查看块详情，点击交易链上直查',
       h('div', { class: 'd-cxv-zone-head' }, z2Sel, z2Tag, heightEl,
         h('button', {
           class: 'p-btn p-btn-sm',
           onClick: function () { if (state.chain) loadBlocks(blocksBox, heightEl, state.chain, state.modes[state.chain]); }
-        }, '⟳ 重新拉取')),
+        }, '重新拉取')),
       blocksBox);
 
     async function loadBlocks(box, hEl, chain, mode) {
       box.innerHTML = '';
-      box.append(h('div', { class: 'p-empty' }, '⏳ 区块查询中…'));
+      box.append(h('div', { class: 'p-empty' }, '区块查询中…'));
       var r = await API.call('/api/explorer/blocks', { chain: chain, limit: 20 });
       if (!box.isConnected) return;
       box.innerHTML = '';
-      box.append(P.metaLine(r));
+      var ml = P.metaLine(r); if (ml) box.append(ml);
       if (window.CXV.SHARED.isDegrade(r)) { box.append(degradeCard(r, chain, '区块查询')); return; }
       if (!r.ok) { box.append(P.errCard(r)); return; }
       hEl.textContent = '当前高度 ' + String((r.data && r.data.height) ?? '—');
@@ -242,37 +245,38 @@
       recs: [], total: 0, page: 1, pageSize: 10
     };
     var metaSlot = h('div', {});
-    var rowsBox = h('div', {}, h('div', { class: 'p-empty' }, '⏳ 链上台账查询中…'));
+    var rowsBox = h('div', {}, h('div', { class: 'p-empty' }, '链上台账查询中…'));
     var pagerBox = h('div', { class: 'd-cxv-pager' });
     var windowNote = h('span', {}, '窗口：—');
 
-    var statusSel = h('select', { title: '服务端状态过滤', onChange: function () { st.status = statusSel.value; loadTrace(); } },
-      [h('option', { value: '' }, '全部状态（服务端）')].concat(
-        window.CXV.SHARED.CX_STATUSES.map(function (s) { return h('option', { value: s }, s); })));
+    var statusSel = h('select', { title: '按状态过滤（服务端）', onChange: function () { st.status = statusSel.value; loadTrace(); } },
+      [h('option', { value: '' }, '全部状态')].concat(
+        window.CXV.SHARED.CX_STATUSES.map(function (s) { return h('option', { value: s, title: s }, P.statusZh(s)); })));
     var bizInp = h('input', {
-      type: 'text', placeholder: '业务单号（窗口内筛选）', title: window.CXV.SMALL_PRINT,
+      type: 'text', placeholder: '业务单号（近 200 条内）', title: window.CXV.SMALL_PRINT,
       onInput: function () { st.biz = bizInp.value; st.page = 1; renderTable(); }
     });
     var filterBar = h('div', { class: 'd-cxv-filterbar' },
-      h('label', { class: 'd-small d-muted' }, '状态（服务端）：'), statusSel, bizInp,
+      h('label', { class: 'd-small d-muted' }, '状态：'), statusSel, bizInp,
       h('button', { class: 'p-btn p-btn-sm', onClick: function () { loadTrace(); } }, '查询'),
       h('button', { class: 'p-btn p-btn-sm p-btn-ghost', onClick: resetTrace }, '重置'));
 
     /* 类型 = 客户端筛选芯片（icon+文字：☑/☐ 永不仅靠颜色）；op 端默认聚焦 defaultMsgTypes */
     var chipSyncs = [];
-    var chipRow = h('div', { class: 'd-cxv-chips' }, h('span', { class: 'd-small d-muted' }, '类型（窗口内筛选）：'));
+    var chipRow = h('div', { class: 'd-cxv-chips' }, h('span', { class: 'd-small d-muted' }, '类型：'));
     window.CXV.SHARED.MSG_TYPES.forEach(function (t) {
+      var zh = window.CXV.msgTypeZh(t);
       var b = h('button', {
-        type: 'button', class: 'd-cxv-chip', title: window.CXV.SMALL_PRINT,
+        type: 'button', class: 'd-cxv-chip', title: t + ' · ' + window.CXV.SMALL_PRINT,
         onClick: function () {
           if (st.types.has(t)) st.types.delete(t); else st.types.add(t);
           syncChip();
           st.page = 1; renderTable();
         }
-      }, t);
+      }, zh);
       function syncChip() {
         b.className = 'd-cxv-chip' + (st.types.has(t) ? ' on' : '');
-        b.textContent = (st.types.has(t) ? '☑ ' : '☐ ') + t;
+        b.textContent = (st.types.has(t) ? '☑ ' : '☐ ') + zh;
       }
       syncChip();
       chipSyncs.push(syncChip);
@@ -280,20 +284,20 @@
     });
     if (opts.defaultMsgTypes && opts.defaultMsgTypes.length) {
       chipRow.append(h('span', { class: 'd-small d-muted' },
-        '本端默认聚焦 ' + opts.defaultMsgTypes.join(' / ') + '（点选芯片可调整）'));
+        '本页默认查看：' + opts.defaultMsgTypes.map(function (t) { return window.CXV.msgTypeZh(t); }).join('、') + '（点选芯片可调整）'));
     }
     var smallPrint = h('p', { class: 'd-cxv-smallprint' }, window.CXV.SMALL_PRINT, ' · ', windowNote);
 
     async function loadTrace() {
       rowsBox.innerHTML = '';
-      rowsBox.append(h('div', { class: 'p-empty' }, '⏳ 链上台账查询中…'));
+      rowsBox.append(h('div', { class: 'p-empty' }, '链上台账查询中…'));
       pagerBox.innerHTML = '';
       var body = { page: 1, page_size: 200 };
       if (st.status) body.status = st.status;
       var r = await API.call('/api/crosschain/list', body);
       if (!rowsBox.isConnected) return;
       metaSlot.innerHTML = '';
-      metaSlot.append(P.metaLine(r));
+      var mlT = P.metaLine(r); if (mlT) metaSlot.append(mlT);
       rowsBox.innerHTML = '';
       if (!r.ok) { rowsBox.append(P.errCard(r)); return; }
       st.total = (r.data && r.data.total) || 0;
@@ -332,25 +336,25 @@
       if (st.page > pages) st.page = pages;
       var view = recs.slice((st.page - 1) * st.pageSize, st.page * st.pageSize);
       rowsBox.append(h('div', { class: 'p-tbl-wrap' }, h('table', { class: 'p-tbl' },
-        h('thead', {}, h('tr', {}, ['跨链号', '类型', '业务单号', '链路', '状态', '验签', '时延', '创建时间'].map(function (t) { return h('th', {}, t); }))),
+        h('thead', {}, h('tr', {}, ['跨链流水号', '类型', '业务单号', '链路', '状态', '验签', '耗时', '创建时间'].map(function (t) { return h('th', {}, t); }))),
         h('tbody', {}, view.map(function (x) {
           return h('tr', {
             class: 'clickable', title: '点击打开四段存证详情',
             onClick: function () { window.CXV.SHARED.openCx(x.cross_tx_id, portal); }
           },
             h('td', { class: 'p-mono', title: x.cross_tx_id }, UI.trunc(x.cross_tx_id, 18)),
-            h('td', {}, x.message_type || '—'),
+            h('td', { title: x.message_type || '' }, x.message_type ? window.CXV.msgTypeZh(x.message_type) : '—'),
             h('td', { class: 'p-mono' }, x.business_id || '—'),
             h('td', {}, h('span', { class: 'd-cxv-route' }, P.chainTag(x.source_chain), h('span', {}, '→'), P.chainTag(x.final_target_chain))),
             h('td', {}, P.badge(x.status)),
             h('td', {}, x.verify_result ? P.badge(x.verify_result) : '—'),
-            h('td', { class: 'num' }, (x.latency_ms ?? '—') + 'ms'),
-            h('td', {}, x.created_at || '—'));
+            h('td', { class: 'num' }, UI.fmtMs(x.latency_ms)),
+            h('td', {}, UI.fmtDT(x.created_at)));
         })))));
       pagerBox.append(
         h('span', {}, '筛选后 ' + recs.length + ' 条 · 第 ' + st.page + '/' + pages + ' 页'),
-        h('button', { class: 'p-btn p-btn-sm p-btn-ghost', disabled: st.page <= 1, onClick: function () { st.page--; renderTable(); } }, '‹ 上一页'),
-        h('button', { class: 'p-btn p-btn-sm p-btn-ghost', disabled: st.page >= pages, onClick: function () { st.page++; renderTable(); } }, '下一页 ›'));
+        h('button', { class: 'p-btn p-btn-sm p-btn-ghost', disabled: st.page <= 1, onClick: function () { st.page--; renderTable(); } }, '上一页'),
+        h('button', { class: 'p-btn p-btn-sm p-btn-ghost', disabled: st.page >= pages, onClick: function () { st.page++; renderTable(); } }, '下一页'));
     }
 
     /* 直查表单（链选 + TxID → explorer/tx） */
@@ -365,10 +369,10 @@
       try { await queryTxInto(dqResult, chain, tx); } finally { dqBtn.disabled = false; }
     }
 
-    var zone3 = card('③ 链上数据追踪（含链上直查）',
+    var zone3 = card('③ 链上数据追踪', '含链上直查',
       filterBar, chipRow, smallPrint,
       h('div', {}, metaSlot, rowsBox, pagerBox),
-      h('div', { class: 'p-drawer-sec' }, '链上直查（选择链并粘贴交易编号；查不到即如实报告，绝不虚构回执）'),
+      h('div', { class: 'p-drawer-sec' }, '链上直查 —— 选择链并粘贴交易编号；查不到即如实报告，绝不虚构回执'),
       h('div', { class: 'd-cxv-filterbar' }, dqSel, dqInp, dqBtn),
       dqResult);
 

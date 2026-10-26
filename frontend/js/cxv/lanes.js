@@ -113,7 +113,7 @@
         ? lane.short + ' 中继 ' + c.relay + ' 跳'
         : lane.short + ' ' + c.biz[lane.chain] + ' 笔';
     }).join(' · ');
-    if (c.unknown.length) s += ' · ⚠ ' + c.unknown.length + ' 跳源链不属四链（展开如实披露）';
+    if (c.unknown.length) s += ' · ' + c.unknown.length + ' 跳源链不属四链（展开如实披露）';
     return s;
   }
 
@@ -195,7 +195,7 @@
       if (c.unknown.length) {
         gridBox.append(h('div', { class: 'd-cxv-lane-warn' },
           c.unknown.map(function (hop) {
-            return h('div', {}, '⚠ 跳 ' + String(hop.seq || '—') + ' 源链 ' + String(hop.source_chain || '(空)') +
+            return h('div', {}, '跳 ' + String(hop.seq || '—') + ' 源链 ' + String(hop.source_chain || '(空)') +
               ' 不属四链——如实披露，不猜测归列（TxID ' + String(hop.cross_tx_id || '—') + '）');
           })));
       }

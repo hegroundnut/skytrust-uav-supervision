@@ -46,7 +46,7 @@
               ['审核员', x.reviewer],
               ['命中规则', PORTAL.jp(x.rules_hit, []).join('、') || '—'],
               ['意见', x.comment || '—'],
-              ['审核时间', x.review_time]
+              ['审核时间', x.review_time ? UI.fmtDT(x.review_time, true) : '—']
             ]));
           });
           return box;
@@ -58,17 +58,18 @@
       endpoint: '/api/crosschain/list', pageSize: 10,
       baseBody: { message_type: 'MISSION_REVIEW_RESULT' },
       filters: [
-        { name: 'status', label: '状态', type: 'select', options: ['SUCCESS', 'FAILED'] }
+        { name: 'status', label: '状态', type: 'select',
+          options: [['SUCCESS', P.statusZh('SUCCESS')], ['FAILED', P.statusZh('FAILED')]] }
       ],
       columns: [
-        { title: 'cross_tx_id', render: function (r) { return UI.trunc(r.cross_tx_id, 20); }, mono: true },
+        { title: '跨链流水号', render: function (r) { return UI.trunc(r.cross_tx_id, 20); }, mono: true },
         { title: '审核号', render: function (r) { return UI.trunc(r.business_id, 26); }, mono: true },
         { title: '回传路由', render: function (r) {
           return h('span', {}, P.chainTag(r.source_chain), ' → ', P.chainTag(r.final_target_chain));
         } },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
-        { title: '时延(ms)', key: 'latency_ms', num: true },
-        { title: '回传时间', key: 'created_at' },
+        { title: '耗时', render: function (r) { return UI.fmtMs(r.latency_ms); }, num: true },
+        { title: '回传时间', render: function (r) { return UI.fmtDT(r.created_at); } },
         { title: '操作', render: function (r) {
           return h('button', { class: 'p-btn p-btn-sm p-btn-ghost',
             onClick: function (e) { e.stopPropagation(); P.openCxDetail(r.cross_tx_id); } }, '四段存证');
@@ -77,7 +78,8 @@
       onRow: function (r) { P.openCxDetail(r.cross_tx_id); },
       emptyText: '暂无裁决回传记录（提交裁决后自动出现）'
     });
-    root.append(card('裁决跨链回传流水（MISSION_REVIEW_RESULT · 点击行查看四段存证）', tblC));
+    root.append(card('裁决跨链回传流水',
+      h('div', { class: 'p-card-sub' }, '点击行查看四段存证'), tblC));
   }
 
   AU.records = { render: render };

@@ -24,11 +24,11 @@
     idbarEl.innerHTML = '';
     if (isSubjectSlot(s)) {
       var name = (s.extra && s.extra.name) || s.id;
-      var kind = (s.extra && s.extra.subject_type === 'ENTERPRISE') ? '🏢 企业' : '👤 个人';
+      var kind = (s.extra && s.extra.subject_type === 'ENTERPRISE') ? '企业' : '个人';
       idbarEl.append(
         h('span', { class: 'd-idbar-label' }, '当前身份'),
         h('span', { class: 'd-idchip' }, kind + ' · ' + name + ' · ' + s.id),
-        h('span', { class: 'd-small d-muted' }, '（登记或选定后自动更新，如需清除请点击顶栏「✕ 清空」）'));
+        h('span', { class: 'd-small d-muted' }, '（登记或选定后自动更新，如需清除请点击顶栏「清空」）'));
     } else {
       idbarEl.append(
         h('span', { class: 'd-idbar-label' }, '当前身份'),
@@ -105,7 +105,7 @@
           ['证件号码（模拟）', h('code', { class: 'p-mono' }, s.id_number)],
           ['联系方式', s.contact || '—'],
           ['状态', P.badge(s.status)],
-          ['登记时间', s.created_at]
+          ['登记时间', UI.fmtDT(s.created_at, true)]
         ]))));
   }
 
@@ -122,11 +122,12 @@
       { name: 'category', label: '航空器类别', type: 'select', required: true, value: '垂直起降',
         options: ['多旋翼', '固定翼', '垂直起降'] }
     ]);
-    box.append(card('执照申领（即申即发）', f.root,
+    box.append(card('执照申领',
+      h('div', { class: 'p-card-sub' }, '即申即发 · 有效期两年'), f.root,
       P.actionBar([{ label: '提交执照申领', kind: 'primary', run: P.runOp({
         path: '/api/pilot/apply',
         body: function () { return PORTAL.need(f.read(), 'name', 'id_number', 'category'); },
-        rp: rp, successText: '执照已即申即发（ISSUED · 有效期两年）',
+        rp: rp, successText: '执照已签发（即申即发 · 有效期两年）',
         render: function (d) { return licenseCert(d.license); },   /* {license} 包裹（§8） */
         onOk: function () { if (tbl) tbl.reload(); }               /* pilot 域无 STORE 落点 */
       }) }]),
@@ -169,15 +170,15 @@
           ['证件号码（模拟）', h('code', { class: 'p-mono' }, L.id_number)],
           ['航空器类别', P.badge(L.category)],
           ['状态', P.badge(L.status)],
-          ['签发时间', L.issued_at],
-          ['失效时间（签发+2 年）', L.expires_at],
+          ['签发时间', UI.fmtDT(L.issued_at, true)],
+          ['失效时间（签发+2 年）', UI.fmtDT(L.expires_at, true)],
           ['SM9 签名', h('code', { class: 'p-mono' }, UI.trunc(L.signature, 48))]
         ]),
         h('p', { class: 'd-small d-muted' }, '演示数据域：证件号为模拟值；执照为演示环境即发，不构成真实资质。'))));
   }
 
   async function openLicense(lid, tbl) {
-    var d = P.drawer('操控员执照 ' + lid, h('div', { class: 'p-empty' }, '⏳ 执照详情查询中…'));
+    var d = P.drawer('操控员执照 ' + lid, h('div', { class: 'p-empty' }, '执照详情查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/pilot/query', { license_id: lid });
     body.innerHTML = '';
@@ -189,14 +190,15 @@
   function tabList(box) {
     box.append(P.dataTable({
       endpoint: '/api/realname/list', pageSize: 10,
-      filters: [{ name: 'subject_type', label: '类型', type: 'select', options: ['ENTERPRISE', 'INDIVIDUAL'] }],
+      filters: [{ name: 'subject_type', label: '类型', type: 'select',
+        options: ['ENTERPRISE', 'INDIVIDUAL'].map(function (s) { return [s, P.statusZh(s)]; }) }],
       columns: [
         { title: '主体 ID', key: 'subject_id', mono: true },
         { title: '名称', key: 'name' },
         { title: '类型', render: function (r) { return r.subject_type === 'ENTERPRISE' ? '企业' : '个人'; } },
         { title: '证件号（模拟）', key: 'id_number', mono: true },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
-        { title: '登记时间', key: 'created_at' },
+        { title: '登记时间', render: function (r) { return UI.fmtDT(r.created_at); } },
         { title: '操作', render: function (r) {
             return h('span', { class: 'd-row' },
               h('button', { class: 'p-btn p-btn-sm', title: '设为当前身份，办理时自动填写',
@@ -217,7 +219,7 @@
   }
 
   async function openSubject(sid, tbl) {
-    var d = P.drawer('实名主体 ' + sid, h('div', { class: 'p-empty' }, '⏳ 主体详情查询中…'));
+    var d = P.drawer('实名主体 ' + sid, h('div', { class: 'p-empty' }, '主体详情查询中…'));
     var body = d.root.querySelector('.p-drawer-body');
     var r = await API.call('/api/realname/query', { subject_id: sid });
     body.innerHTML = '';

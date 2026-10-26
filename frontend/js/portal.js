@@ -53,6 +53,9 @@
     var chipsEl = document.getElementById('d-chips');
     var lampsEl = document.getElementById('d-lamps');
     var backendEl = document.getElementById('d-backend');
+    /* 后端徽章是演示探活工具、非产品功能：默认由 CSS 隐藏（drone.css .d-backend{display:none}）；
+       调试态（?debug=1 / localStorage）加 .force 显形，:root[data-debug] 亦已在 pui.js 置位。 */
+    if (window.PUI.DEBUG && backendEl) backendEl.classList.add('force');
 
     /* --- 导航构建（top/side 布局共用 .d-nav-item，样式由容器决定） --- */
     var navItems = [];
@@ -70,7 +73,7 @@
     /* --- 三链状态灯（.d-lampwrap > .d-lamp + 文字标签，永不单靠颜色） --- */
     CHAINS.forEach(function (c) {
       lampsEl.append(h('span', { class: 'd-lampwrap' },
-        h('span', { class: 'd-lamp', 'data-chain': c.key, title: c.key + ': 探测中…' }),
+        h('span', { class: 'd-lamp', 'data-chain': c.key, title: c.label + '：状态探测中…' }),
         c.label));
     });
     function lampsAll(state) {
@@ -80,32 +83,38 @@
     }
 
     /* --- 心跳：立即 + 每 15s 轮询 chain/status（语义复刻 app.js pollChains） --- */
+    function chainLabel(key) {
+      for (var i = 0; i < CHAINS.length; i++) if (CHAINS[i].key === key) return CHAINS[i].label;
+      return key;
+    }
     async function heartbeat() {
       try {
         var r = await window.API.call('/api/chain/status', {});
         if (r.ok && r.data && r.data.chains) {
-          backendEl.textContent = '后端 ' + r.latencyMs + 'ms';
-          backendEl.className = 'd-backend ok';
+          if (window.PUI.DEBUG) backendEl.textContent = '后端 ' + r.latencyMs + 'ms';
+          backendEl.className = 'd-backend ok' + (window.PUI.DEBUG ? ' force' : '');
           lampsEl.querySelectorAll('.d-lamp').forEach(function (l) {
             var st = r.data.chains[l.dataset.chain];
             l.className = 'd-lamp ' + (st === 'ONLINE' ? 'on' : 'off');
-            l.title = l.dataset.chain + ': ' + st;
+            l.title = chainLabel(l.dataset.chain) + '：' + window.PUI.statusZh(st);
           });
         } else {
-          backendEl.textContent = '后端异常 code=' + r.code;
-          backendEl.className = 'd-backend bad';
+          backendEl.textContent = '服务异常';
+          backendEl.title = 'code=' + r.code;
+          backendEl.className = 'd-backend bad' + (window.PUI.DEBUG ? ' force' : '');
           lampsAll('err');
         }
       } catch (err) {   /* API.call 永不 throw；此 catch 只兜 DOM 意外 */
-        backendEl.textContent = '后端不可达';
-        backendEl.className = 'd-backend bad';
+        backendEl.textContent = '服务不可达';
+        backendEl.className = 'd-backend bad' + (window.PUI.DEBUG ? ' force' : '');
         lampsAll('err');
       }
     }
-    /* 每次业务调用刷新徽章延迟（app.js API.onCall 同语义） */
+    /* 每次业务调用刷新徽章延迟（app.js API.onCall 同语义）——仅调试态更新，演示态不动 */
     window.API.onCall(function (r) {
+      if (!window.PUI.DEBUG) return;
       backendEl.textContent = '后端 ' + r.latencyMs + 'ms' + (r.ok ? '' : ' · code=' + r.code);
-      backendEl.className = 'd-backend ' + (r.ok ? 'ok' : 'bad');
+      backendEl.className = 'd-backend force ' + (r.ok ? 'ok' : 'bad');
     });
 
     /* --- 天地图 key 引导（Global Constraints #8：每会话一次；无 key 跳过=退化底图） --- */
@@ -121,13 +130,13 @@
       });
       var mask = h('div', { class: 'p-modal-mask' },
         h('div', { class: 'p-modal' },
-          h('div', { class: 'p-modal-title' }, '🗺 配置天地图密钥'),
+          h('div', { class: 'p-modal-title' }, '配置地图服务密钥'),
           h('div', { class: 'p-modal-msg' },
             '地图底图使用天地图（免费政务地图服务）。在天地图控制台（console.tianditu.gov.cn）申请「浏览器端」密钥，粘贴到此处保存。',
             '密钥仅保存在本地浏览器，绝不上传服务器、绝不写入代码仓库；未配置时地图自动切换为简化底图，不影响任何业务操作。',
             h('div', { class: 'd-keyform' }, input)),
           h('div', { class: 'p-modal-btns' },
-            h('button', { class: 'p-btn p-btn-ghost', onClick: close }, '跳过（简化底图）'),
+            h('button', { class: 'p-btn p-btn-ghost', onClick: close }, '暂不配置'),
             h('button', {
               class: 'p-btn p-btn-primary',
               onClick: function () {

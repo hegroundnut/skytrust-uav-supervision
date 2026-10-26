@@ -37,16 +37,18 @@
     var rp = P.resultPanel();
     rp.root.append(P.empty('尚无签发操作 —— 在上方待签发表格点「签发」，签发回执（电子证面与链上存证）显示在此'));
     var listBox = h('div', {});
-    root.append(card('待签发任务（已获批准、尚未发证）', listBox,
+    root.append(card('待签发任务',
+      h('div', { class: 'p-card-sub' }, '已获批准、尚未发证'), listBox,
       h('p', { class: 'd-small d-muted' }, '统计窗口：两侧各取最近 200 条比对——超出窗口的总量在计数行如实标注。')));
-    root.append(card('签发结果（成功展示电子证面，失败提示原因与重试入口）', rp.root));
+    root.append(card('签发结果',
+      h('div', { class: 'p-card-sub' }, '成功展示电子证面 · 失败提示原因与重试入口'), rp.root));
     loadPending(listBox, rp);
   }
 
   /* ---------- 待签发表格（客户端 join，红线 #9：只渲染实时响应） ---------- */
   async function loadPending(box, rp) {
     box.innerHTML = '';
-    box.append(h('div', { class: 'p-empty' }, '⏳ 待签发任务加载中…'));
+    box.append(h('div', { class: 'p-empty' }, '待签发任务加载中…'));
     var mR = await API.call('/api/mission/list', { status: 'APPROVED', page: 1, page_size: 200 });
     var pR = await API.call('/api/pass/list', { page: 1, page_size: 200 });
     if (!box.isConnected) return;                      /* 加载中用户已离开本页 */
@@ -60,7 +62,7 @@
       '已批准任务共 ' + (mR.data.total || 0) + ' 条 · 证照台账共 ' + (pR.data.total || 0) +
       ' 条（最近 200 条窗口内比对）→ 待签发 ' + pend.length + ' 条'),
       h('button', { class: 'p-btn p-btn-sm p-btn-ghost d-mb',
-        onClick: function () { loadPending(box, rp); } }, '⟳ 刷新'));
+        onClick: function () { loadPending(box, rp); } }, '刷新'));
     if (!pend.length) {
       box.append(P.empty('暂无待签发任务 —— 任务经管理当局审核批准、尚未发证时出现在此'));
       return;
@@ -135,7 +137,7 @@
       bodyBox.innerHTML = '';
       bodyBox.append(
         h('div', { class: 'p-empty', style: { height: 'auto', padding: '18px 6px' } },
-          '⏳ 跨链签发约 3-6s：证照链→监管链中继→运营链'),
+          '跨链签发约 3-6 秒：证照链→监管链中继→运营链'),
         h('p', { class: 'd-small d-muted d-center' },
           '证照链源发上链 → 监管链签收中继 → 运营链跨链存证',
           h('br', {}), '请勿重复提交；提交中不可关闭本弹窗。'));
@@ -168,7 +170,9 @@
       rp.root.append(h('div', {
         style: { marginTop: '10px', padding: '12px', background: 'var(--d-warning-soft)',
           border: '1px dashed var(--d-warning)', borderRadius: '6px', color: 'var(--d-warning)' } },
-        h('b', {}, '⚠ 证照生成中（跨链存证未完成）—— 同证照号可重试：'),
+        h('b', {},
+          h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, h('use', { href: '#d-ico-triangle-alert' })),
+          ' 证照生成中（跨链存证未完成）—— 同证照号可重试：'),
         h('code', { class: 'p-mono' }, fd.pass.pass_id),
         h('div', { class: 'd-small', style: { color: 'var(--d-ink-2)' } },
           '重试将复用上次已确认的源链 TxID 续办原证签发，不会产生第二张证照。'),
@@ -200,7 +204,7 @@
           ['许可航线', PORTAL.jp(p.route, []).join(' → ') || '—'],
           ['SM3 摘要', h('code', { class: 'p-mono', title: p.sm3_hash }, UI.trunc(p.sm3_hash, 48))],
           ['SM9 签名', h('code', { class: 'p-mono', title: p.signature }, UI.trunc(p.signature, 48))],
-          ['签发时间', p.created_at]
+          ['签发时间', UI.fmtDT(p.created_at, true)]
         ])),
         qrEl),
       h('div', { class: 'd-seal' }, '证照链\n签发'));
@@ -208,7 +212,9 @@
       pass_id: p.pass_id, mission_id: p.mission_id, uav_id: p.uav_id, valid_to: p.valid_to }),
       'QR 生成失败——证照号等以左侧文字为准，不虚构二维码');
     return h('div', {},
-      h('div', { class: 'p-ok-line' }, '✓ 证照已签发并上链（状态以回执为准：' + (p.status || '—') + '）'),
+      h('div', { class: 'p-ok-line' },
+        h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, h('use', { href: '#d-ico-check' })),
+        '证照已签发并上链（状态以回执为准：' + (p.status ? P.statusZh(p.status) : '—') + '）'),
       cert,
       cx ? h('div', {},
         h('div', { class: 'd-section' }, '四段 TxID 跨链存证（点击任一段查看全量证据）'),

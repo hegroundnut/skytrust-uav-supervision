@@ -8,21 +8,21 @@
   --p-line: #e3e6ef;        --p-line-strong: #c9cfe0;
   /* 文字 */
   --p-ink: #1c2333;         --p-ink-2: #4a5468;        --p-ink-3: #8a93a8;
-  /* 品牌（靛蓝） */
-  --p-brand: #4338ca;       --p-brand-ink: #ffffff;    --p-brand-soft: #eef0ff;
+  /* 品牌（政务蓝，与壳层 --d-brand 同族） */
+  --p-brand: #0b4ea2;       --p-brand-ink: #ffffff;    --p-brand-soft: #e7eff9;
   /* 语义色（成对：前景/浅底） */
   --p-good: #15803d;        --p-good-soft: #ecfdf3;
   --p-warning: #b45309;     --p-warning-soft: #fffbeb;
   --p-critical: #b91c1c;    --p-critical-soft: #fef2f2;
   --p-serious: #c2410c;     --p-serious-soft: #fff7ed;
   --p-info: #1d4ed8;        --p-info-soft: #eff6ff;
-  /* 三链身份色（语义与旧系统一致：chainmaker 紫 / fabric 蓝 / fisco 青） */
+  /* 三链身份色（语义与旧系统一致：chainmaker 紫 / fabric 蓝 / fisco 青——永不互换） */
   --p-chain-chainmaker: #7c3aed;
   --p-chain-fabric: #2563eb;
   --p-chain-fisco: #0891b2;
-  /* 侧边栏（深靛） */
-  --p-side-bg: #1e1b4b;     --p-side-ink: #c7d2fe;     --p-side-active: #312e81;
-  --p-side-line: #312e81;
+  /* 侧边栏（深藏蓝） */
+  --p-side-bg: #0f2a4a;     --p-side-ink: #c3d4e8;     --p-side-active: #163d66;
+  --p-side-line: #1d4a75;
   /* 形状与层级 */
   --p-radius: 10px;         --p-radius-sm: 6px;
   --p-shadow-1: 0 1px 2px rgba(16,24,40,.06);
@@ -36,13 +36,13 @@
   --p-bg: #0f1117;          --p-panel: #171a23;        --p-panel-2: #1d212c;
   --p-line: #2a2f3d;        --p-line-strong: #3a4152;
   --p-ink: #e6e9f2;         --p-ink-2: #aab2c5;        --p-ink-3: #6f7891;
-  --p-brand: #818cf8;       --p-brand-ink: #14122e;    --p-brand-soft: #232647;
+  --p-brand: #5b9bd5;       --p-brand-ink: #0a1a2e;    --p-brand-soft: #14304f;
   --p-good: #4ade80;        --p-good-soft: #12261c;
   --p-warning: #fbbf24;     --p-warning-soft: #26200f;
   --p-critical: #f87171;    --p-critical-soft: #2a1416;
   --p-serious: #fb923c;     --p-serious-soft: #291a10;
   --p-info: #60a5fa;        --p-info-soft: #122036;
-  --p-side-bg: #14122e;     --p-side-ink: #a5b4fc;     --p-side-active: #272458;
+  --p-side-bg: #0a1c31;     --p-side-ink: #a8c3dd;     --p-side-active: #123256;
   --p-shadow-1: 0 1px 2px rgba(0,0,0,.4);
   --p-shadow-2: 0 8px 24px rgba(0,0,0,.55);
 }
@@ -96,6 +96,16 @@ body { background: var(--p-bg); }
 .p-tone-serious  { color: var(--p-serious);  background: var(--p-serious-soft); }
 .p-tone-info     { color: var(--p-info);     background: var(--p-info-soft); }
 .p-tone-neutral  { color: var(--p-ink-3);    background: var(--p-panel-2); }
+/* .d-ico 基础兜底（index 端不加载 drone.css 时图标仍可描边显形；
+   四门户端 drone.css 级联在后、同特异性覆盖为 18px/1.7，视觉不变） */
+.d-ico {
+  width: 14px; height: 14px; flex: 0 0 auto;
+  fill: none; stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+  vertical-align: -2px;
+}
+/* 徽章/链标签内 SVG 图标（雪碧图 d-ico-*）：12px 小尺寸 */
+.p-badge .d-ico, .p-chain-tag .d-ico { width: 12px; height: 12px; stroke-width: 2; }
 
 /* ---------- 链身份标签：左边框 3px 链色 ---------- */
 .p-chain-tag {
@@ -218,7 +228,7 @@ body { background: var(--p-bg); }
   cursor: pointer; transition: border-color .12s;
 }
 .p-chip:hover { border-color: var(--p-brand); }
-.p-chip i { font-style: normal; color: var(--p-ink-3); font-size: 11px; }
+.p-chip i { font-style: normal; color: var(--p-ink-3); font-size: 12px; }
 .p-chip b { font-weight: 600; }
 .p-chip-empty { color: var(--p-ink-3); border-style: dashed; cursor: default; }
 .p-chip-empty:hover { border-color: var(--p-line-strong); }
@@ -261,7 +271,9 @@ body { background: var(--p-bg); }
 .p-card-title { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: var(--p-ink); }
 .p-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .p-row + .p-row { margin-top: 8px; }
-.p-ok-line { color: var(--p-good); font-size: 13px; font-weight: 700; }
+.p-ok-line { color: var(--p-good); font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; gap: 6px; }
+.p-ok-line .d-ico { width: 14px; height: 14px; stroke-width: 2.2; }
 
 /* ==========================================================================
    PUI 组件样式（数据段）——form / dataTable / 统计卡 / 条形 / 评分条 /
@@ -274,7 +286,7 @@ body { background: var(--p-bg); }
 .p-field-wide { grid-column: span 2; }
 .p-field-label { font-size: 12px; color: var(--p-ink-3); }
 .p-req { font-style: normal; color: var(--p-critical); margin-left: 2px; }
-.p-field-hint { font-size: 11px; color: var(--p-ink-3); }
+.p-field-hint { font-size: 12px; color: var(--p-ink-3); }
 .p-form input[type="text"], .p-form input[type="number"],
 .p-form select, .p-form textarea {
   height: 30px; padding: 0 8px; border: 1px solid var(--p-line);
@@ -345,9 +357,9 @@ body { background: var(--p-bg); }
 .p-stat-label { font-size: 12px; color: var(--p-ink-3); }
 .p-stat-value {
   margin: 2px 0; font-size: 22px; font-weight: 700; color: var(--p-ink);
-  font-family: var(--p-mono); font-variant-numeric: tabular-nums;
+  font-family: var(--p-font); font-variant-numeric: tabular-nums;
 }
-.p-stat-sub { font-size: 11px; color: var(--p-ink-3); }
+.p-stat-sub { font-size: 12px; color: var(--p-ink-3); }
 .p-stat.p-tone-good     { border-left-color: var(--p-good);     background: var(--p-panel); color: var(--p-ink); }
 .p-stat.p-tone-warning  { border-left-color: var(--p-warning);  background: var(--p-panel); color: var(--p-ink); }
 .p-stat.p-tone-critical { border-left-color: var(--p-critical); background: var(--p-panel); color: var(--p-ink); }
@@ -403,8 +415,10 @@ body { background: var(--p-bg); }
 .p-cx-seg:hover { border-color: var(--p-brand); }
 .p-cx-seg + .p-cx-seg { position: relative; margin-left: 14px; }
 .p-cx-seg + .p-cx-seg::before {
-  content: "→"; position: absolute; left: -14px; top: 50%;
-  transform: translateY(-50%); font-size: 12px; color: var(--p-ink-3);
+  content: ""; position: absolute; left: -12px; top: 50%;
+  width: 7px; height: 7px;
+  border-top: 1.5px solid var(--p-ink-3); border-right: 1.5px solid var(--p-ink-3);
+  transform: translateY(-50%) rotate(45deg); font-size: 0;
 }
 .p-cx-seg.missing { border-style: dashed; opacity: .55; }
 .p-cx-role {

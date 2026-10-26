@@ -15,6 +15,12 @@
   const card = (title, ...b) => h('section', { class: 'p-card' },
     h('h3', { class: 'p-card-title' }, title), ...b);
   var mx = null;
+  /* 走廊状态为空域域语义（开放/限制/关闭），与告警域 OPEN=待处置 不同——领域徽章自持中文与色 */
+  var CORRIDOR = { OPEN: ['开放', 'good'], RESTRICTED: ['限制', 'warning'], CLOSED: ['关闭', 'critical'] };
+  function corridorBadge(s) {
+    var m = CORRIDOR[s];
+    return P.badgeZh(s, m ? m[0] : s, m ? m[1] : 'neutral');
+  }
 
   function render(root, ctx) {
     if (mx) { mx.destroy(); mx = null; }
@@ -38,12 +44,12 @@
     var f = P.form([
       { name: 'zone', label: '空域分区', type: 'text', placeholder: 'Zone-A / Zone-B（留空查全部）' },
       { name: 'corridor_status', label: '走廊状态', type: 'select',
-        options: [['', '全部'], ['OPEN', 'OPEN · 开放走廊'], ['RESTRICTED', 'RESTRICTED · 限制走廊'], ['CLOSED', 'CLOSED · 关闭走廊']] }
+        options: [['', '全部'], ['OPEN', '开放走廊'], ['RESTRICTED', '限制走廊'], ['CLOSED', '关闭走廊']] }
     ]);
 
     root.append(h('div', { class: 'd-grid-side' },
       h('div', { class: 'd-col' }, mapEl,
-        h('div', { class: 'd-map-hint' }, '🗺️ 点击航线查看详情并高亮。走廊着色：绿色为开放 OPEN · 琥珀色为限制 RESTRICTED · 红色为关闭 CLOSED。')),
+        h('div', { class: 'd-map-hint' }, '点击航线查看详情并高亮。走廊着色：绿色=开放 · 琥珀色=限制 · 红色=关闭。')),
       h('div', { class: 'd-col' },
         card('查询条件', f.root,
           P.actionBar([
@@ -63,7 +69,7 @@
       if (b.zone) body.zone = b.zone;
       if (b.corridor_status) body.corridor_status = b.corridor_status;
       listBox.innerHTML = '';
-      listBox.append(h('div', { class: 'p-empty' }, '⏳ 空域航段查询中…'));
+      listBox.append(h('div', { class: 'p-empty' }, '空域航段查询中…'));
       var r = await API.call('/api/route/list', body);
       if (!listBox.isConnected) return;
       listBox.innerHTML = '';
@@ -79,7 +85,7 @@
           onclick: function () { showDetail(rt.route_id); } },
           h('div', { class: 'd-row' },
             h('code', { class: 'p-mono d-strong' }, rt.route_id),
-            P.badge(rt.corridor_status),
+            corridorBadge(rt.corridor_status),
             h('span', { class: 'd-small d-muted' }, rt.zone)),
           h('div', { class: 'd-small d-muted' }, rt.start_point + ' → ' + rt.end_point)));
       });
@@ -105,13 +111,12 @@
       detail.append(P.kv([
         ['航段号', h('code', { class: 'p-mono' }, rt.route_id)],
         ['空域分区', rt.zone],
-        ['走廊状态', h('span', {}, P.badge(rt.corridor_status),
-          ' ' + (GEO.ZONE_LABEL[rt.corridor_status] || ''))],
+        ['走廊状态', corridorBadge(rt.corridor_status)],
         ['起止点', rt.start_point + ' → ' + rt.end_point],
         ['起点坐标', GEO.fmtCoordPair(rt.start_lat, rt.start_lon)],
         ['终点坐标', GEO.fmtCoordPair(rt.end_lat, rt.end_lon)],
         ['高度带', (rt.altitude_min || rt.altitude_max) ? rt.altitude_min + '–' + rt.altitude_max + ' m' : '未设'],
-        ['登记时间', rt.created_at]
+        ['登记时间', UI.fmtDT(rt.created_at, true)]
       ]));
     }
 
@@ -132,7 +137,7 @@
         'border-radius': '2px', background: color, 'margin-right': '4px' } });
     }
     var chips = GEO.ZONES.map(function (z) {
-      return h('span', { class: 'd-idchip' }, swatch(GEO.ZONE_COLOR[z]), z + ' · ' + GEO.ZONE_LABEL[z]);
+      return h('span', { class: 'd-idchip', title: z }, swatch(GEO.ZONE_COLOR[z]), GEO.ZONE_LABEL[z]);
     });
     ['MANAGEMENT', 'EDGE', 'UAV'].forEach(function (t) {
       var s = GEO.NODE_STYLE[t];

@@ -5,30 +5,88 @@
   'use strict';
   const h = UI.h;
 
-  /* ---------- 状态徽章（映射表与旧系统语义一致，视觉为新令牌） ---------- */
+  /* 调试态：URL 加 ?debug=1 或 localStorage.setItem('skytrust-debug','1') 后刷新——
+     演示态默认隐藏 code/trace/延迟/原始 JSON 等协议信息（去 AI 味 §4） */
+  const DEBUG = /[?&]debug=1/.test(location.search) ||
+                (function () { try { return localStorage.getItem('skytrust-debug') === '1'; } catch (e) { return false; } })();
+  if (DEBUG) try { document.documentElement.setAttribute('data-debug', '1'); } catch (e) {}
+
+  /* ---------- 状态徽章（语义色映射表与旧系统一致；图标由 TONE_ICON 走 SVG 雪碧图，
+     不再携带字符画字形——去 AI 味 §3.1 三重编码：颜色 + 图标 + 中文） ---------- */
   const STATUS_MAP = {
-    ONLINE: ['good', '●'], VERIFIED: ['good', '●'], SUCCESS: ['good', '✓'], VALID: ['good', '✓'],
-    ACTIVE: ['good', '●'], APPROVED: ['good', '✓'], RESOLVED: ['good', '✓'], AUTHORIZED: ['good', '✓'],
-    RECOVERED: ['good', '✓'], DONE: ['good', '✓'], PASS: ['good', '✓'],
-    ROUTE_OK: ['good', '✓'], PAYLOAD_OK: ['good', '✓'], QUALIFIED: ['good', '✓'], RELAYED: ['good', '⇄'],
-    PENDING: ['warning', '◔'], DRAFT: ['warning', '◔'], DEGRADED: ['warning', '⚠'],
-    SENT: ['warning', '◔'], SUBMITTED: ['warning', '◔'], REVIEWING: ['warning', '◔'],
-    COORDINATING: ['warning', '◔'], SUSPENDED: ['warning', '◸'], NEED_COORDINATION: ['warning', '⚠'],
-    SEALED: ['critical', '🔒'], OFFLINE: ['critical', '○'], ISOLATED: ['critical', '⛔'],
-    REVOKED: ['critical', '✕'], FAILED: ['critical', '✕'], REJECTED: ['critical', '✕'],
-    DENIED: ['critical', '✕'], DETECT: ['critical', '⚠'], BLOCK: ['critical', '⛔'],
-    ROUTE_DEVIATION: ['critical', '⚠'], EXPIRED: ['critical', '◷'], ABORTED: ['critical', '✕'],
-    REGISTERED: ['info', '◌'], GENERATING: ['info', '◌'], USED: ['info', '✔'],
-    INIT: ['info', '◌'],
-    MISSION_MISMATCH: ['serious', '⚠'], COMPLETED: ['info', '▣'], ARCHIVED: ['warning', '▣'],
-    OPEN: ['serious', '◉'], IDENTIFIED: ['serious', '◉'], TRACED: ['serious', '◉'],
-    REVIEWED: ['serious', '◉'], HIGH: ['critical', '▲'], MEDIUM: ['warning', '▲'], LOW: ['good', '▲'],
-    BROKEN: ['critical', '✕'],
+    ONLINE: 'good', VERIFIED: 'good', SUCCESS: 'good', VALID: 'good',
+    ACTIVE: 'good', APPROVED: 'good', RESOLVED: 'good', AUTHORIZED: 'good',
+    RECOVERED: 'good', DONE: 'good', PASS: 'good',
+    ROUTE_OK: 'good', PAYLOAD_OK: 'good', QUALIFIED: 'good', RELAYED: 'good',
+    AUTHENTICATED: 'good', RECOVER: 'good', EXECUTING: 'good', LOW: 'good',
+    PENDING: 'warning', DRAFT: 'warning', DEGRADED: 'warning',
+    SENT: 'warning', SUBMITTED: 'warning', REVIEWING: 'warning',
+    COORDINATING: 'warning', SUSPENDED: 'warning', NEED_COORDINATION: 'warning',
+    ARCHIVED: 'warning', TIME: 'warning', ROUTE: 'warning', ALTITUDE: 'warning', MEDIUM: 'warning',
+    SEALED: 'critical', OFFLINE: 'critical', ISOLATED: 'critical',
+    REVOKED: 'critical', FAILED: 'critical', REJECTED: 'critical',
+    DENIED: 'critical', DETECT: 'critical', BLOCK: 'critical',
+    ATTACKER: 'critical', ISOLATE: 'critical',
+    ROUTE_DEVIATION: 'critical', EXPIRED: 'critical', ABORTED: 'critical',
+    HIGH: 'critical', BROKEN: 'critical',
+    REGISTERED: 'info', GENERATING: 'info', USED: 'info', INIT: 'info', COMPLETED: 'info',
+    MISSION_MISMATCH: 'serious', OPEN: 'serious', IDENTIFIED: 'serious', TRACED: 'serious',
+    REVIEWED: 'serious',
   };
+  /* 状态中文词典：英文枚举退出界面，降级为徽章 tooltip（去 AI 味 §3.1） */
+  const STATUS_ZH = {
+    ONLINE: '在线', VERIFIED: '已核验', SUCCESS: '成功', VALID: '生效中', ACTIVE: '启用',
+    APPROVED: '已批准', RESOLVED: '已处置', AUTHORIZED: '已授权', RECOVERED: '已恢复',
+    DONE: '已完成', PASS: '通过', ROUTE_OK: '航路合规', PAYLOAD_OK: '载荷合规',
+    QUALIFIED: '合格', RELAYED: '已中继',
+    PENDING: '待处理', DRAFT: '草稿', DEGRADED: '已降级', SENT: '已发送', SUBMITTED: '已提交',
+    REVIEWING: '审核中', COORDINATING: '协调中', SUSPENDED: '已暂停', NEED_COORDINATION: '待协调',
+    SEALED: '已封缄', OFFLINE: '离线', ISOLATED: '已隔离', REVOKED: '已吊销', FAILED: '失败',
+    REJECTED: '已驳回', DENIED: '已拒绝', DETECT: '已检测', BLOCK: '已阻断',
+    ROUTE_DEVIATION: '航线偏离', EXPIRED: '已过期', ABORTED: '已中止',
+    INVALID_PASS: '许可无效', UNKNOWN_NODE_ACCESS: '未知节点接入',
+    WORMHOLE_ALERT: '虫洞告警', IDENTITY_ANOMALY: '身份异常',
+    ALERT_ID: '告警号', PSEUDO: '航空器伪名', DEVICE_ADDRESS: '设备地址',
+    REGISTERED: '已登记', GENERATING: '生成中', USED: '已使用', INIT: '初始化',
+    ENTERPRISE: '企业', INDIVIDUAL: '个人',
+    MISSION_MISMATCH: '任务不匹配', COMPLETED: '已完成', ARCHIVED: '已归档',
+    OPEN: '待处置', IDENTIFIED: '已定位', TRACED: '已追踪', REVIEWED: '已复核',
+    HIGH: '高危', MEDIUM: '中风险', LOW: '低风险', BROKEN: '断链',
+    SOURCE_CONFIRMED: '源链已确认', REG_RECEIVED: '监管已签收',
+    REG_VERIFIED: '监管已核验', REG_RELAYED: '监管已中继',
+    TARGET_CONFIRMED: '目标链已确认', RETURN_REG_RECEIVED: '回程监管已签收',
+    AUTHENTICATED: '已认证', CLOSED: '已关闭', OPENED: '已开启', UNKNOWN: '未知',
+    /* 节点类型 / 会话消息类型 / 安全动作 / 场景 / 实验类型（去 AI 味 §3.1 同律） */
+    MANAGEMENT: '管理节点', EDGE: '边缘节点', UAV: '无人机', ATTACKER: '攻击节点',
+    HEARTBEAT: '心跳', POSITION_UPDATE: '位置上报', PASS_VERIFY: '许可核验',
+    NODE_CHALLENGE: '节点挑战', ROUTE_STATUS: '航路状态', EVENT_REPORT: '事件上报',
+    ISOLATE: '隔离', RECOVER: '恢复', NORMAL: '正常', ATTACK: '攻击', DEFENSE: '防御',
+    EXECUTING: '执行中', TIME: '时窗重叠', ROUTE: '航路交叉', ALTITUDE: '高度冲突',
+    CROSSCHAIN_LOOP: '跨链全流程回环', SM3_INTEGRITY: 'SM3 摘要完整性', SM9_VERIFY: 'SM9 签名验真',
+    CONFLICT_DETECT: '三维冲突检测', MESSAGE_FLOW: '消息链路三场景', RISK_SCAN: '虫洞风险扫描',
+    STRESS: '链下并发压力', TRACE_BATCH: '批量身份追踪', INSPECT_UNAUTHORIZED: '未授权封缄核验',
+    INSPECT_AUTHORIZED: '授权密文开箱', ALERT_BATCH: '告警批量流转',
+  };
+  /* 语义色 → SVG 图标（雪碧图 d-ico-*；serious 用三角警示） */
+  const TONE_ICON = { good: 'check', warning: 'clock', critical: 'x',
+                      serious: 'triangle-alert', info: 'dot', neutral: 'dot' };
+  function statusZh(s) { return STATUS_ZH[String(s)] || String(s ?? '—'); }
   function badge(status) {
     const s = String(status ?? '—');
-    const m = STATUS_MAP[s] || ['', '·'];
-    return h('span', { class: 'p-badge p-tone-' + (m[0] || 'neutral'), title: s }, m[1] + ' ' + s);
+    const tone = STATUS_MAP[s] || 'neutral';
+    return h('span', { class: 'p-badge p-tone-' + tone, title: s },   // 英文枚举降级为悬浮提示
+      h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+        h('use', { href: '#d-ico-' + (TONE_ICON[tone] || 'dot') })),
+      statusZh(s));
+  }
+  /* 领域徽章：同一枚举在不同业务域语义不同（如走廊 OPEN=开放 / 告警 OPEN=待处置）时，
+     由页面给出权威中文与语义色；结构与 badge 同构（图标 + 中文 + 枚举 tooltip） */
+  function badgeZh(status, zh, tone) {
+    const t = tone || 'neutral';
+    return h('span', { class: 'p-badge p-tone-' + t, title: String(status ?? '') },
+      h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+        h('use', { href: '#d-ico-' + (TONE_ICON[t] || 'dot') })),
+      String(zh ?? status ?? '—'));
   }
   const CHAIN_NAME = { chainmaker: 'ChainMaker 监管链', fabric: 'Fabric 运营链', 'fisco-bcos': 'FISCO BCOS 管理链', irita: 'IRITA 证照链' };
   function chainTag(chain) {
@@ -46,6 +104,7 @@
   function empty(text) { return h('div', { class: 'p-empty' }, text || '暂无记录'); }
   function metaLine(r) {
     if (!r) return null;
+    if (!DEBUG) return null;                       // 演示态：整行不渲染
     return h('div', { class: 'p-meta' },
       r.ok ? h('span', { class: 'p-badge p-tone-good' }, '✓ code=0')
            : h('span', { class: 'p-badge p-tone-critical' }, '✕ code=' + r.code),
@@ -55,8 +114,8 @@
   }
   function errCard(r) {
     const why = (window.EXPLAIN && EXPLAIN.codes[r.code]) || '';
-    return h('div', { class: 'p-err' },
-      h('div', { class: 'p-err-head' }, '✕ code=' + r.code + ' · ' + (r.message || '')),
+    return h('div', { class: 'p-err', title: 'code=' + r.code },
+      h('div', { class: 'p-err-head' }, (r.message || '操作未成功')),
       r.code === -1
         ? h('div', { class: 'p-err-why' }, '后端服务暂不可达：请确认平台服务已启动后重试。')
         : why ? h('div', { class: 'p-err-why' }, why) : null);
@@ -65,10 +124,11 @@
     const root = h('div', { class: 'p-result' });
     function show(r, renderFn) {
       root.innerHTML = '';
-      root.append(metaLine(r));
+      const ml = metaLine(r);
+      if (ml) root.append(ml);
       if (!r.ok) root.append(errCard(r));
       else if (renderFn) { const v = renderFn(r.data, r); if (v) root.append(v); }
-      root.append(h('details', { class: 'p-rawjson' },
+      if (DEBUG) root.append(h('details', { class: 'p-rawjson' },
         h('summary', {}, '原始响应 JSON'), UI.jsonBlock(r.raw)));
       return r;
     }
@@ -96,7 +156,9 @@
     const panel = h('div', { class: 'p-drawer' },
       h('div', { class: 'p-drawer-head' },
         h('h3', {}, title),
-        h('button', { class: 'p-btn p-btn-ghost p-btn-sm', onClick: () => close() }, '✕')),
+        h('button', { class: 'p-btn p-btn-ghost p-btn-sm', title: '关闭', onClick: () => close() },
+          h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+            h('use', { href: '#d-ico-x' })))),
       h('div', { class: 'p-drawer-body' }, ...body));
     const mask = h('div', { class: 'p-drawer-mask' }, panel);
     function close() { mask.remove(); document.removeEventListener('keydown', onKey); }
@@ -113,7 +175,7 @@
       }, b.label);
       el.addEventListener('click', async () => {
         if (b.confirm && !(await confirm(b.confirm.title || '请确认', b.confirm.msg, b.confirm.ok))) return;
-        el.disabled = true; const old = el.textContent; el.textContent = '⏳ ' + old;
+        el.disabled = true; const old = el.textContent; el.textContent = old + '…';
         try { await b.run(el); } finally { el.disabled = false; el.textContent = old; }
       });
       return el;
@@ -128,7 +190,7 @@
     wrap.innerHTML = '';
     wrap.append(h('span', { class: 'p-chipbar-label' }, '当前业务对象'));
     if (!ents.length) {
-      wrap.append(h('span', { class: 'p-chip p-chip-empty' }, '（尚无——完成操作后自动汇集，点击可复制 ID）'));
+      wrap.append(h('span', { class: 'p-chip p-chip-empty' }, '（暂无关联对象 · 办理业务后自动汇集）'));
       return;
     }
     ents.forEach(e => {
@@ -147,7 +209,8 @@
     wrap.append(h('button', {
       class: 'p-chip p-chip-clear', title: '清空当前业务对象标记（不影响后端数据）',
       onClick: () => STORE.clear(),
-    }, '✕ 清空'));
+    }, h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+      h('use', { href: '#d-ico-x' })), '清空'));
   }
   function chipBar(opts) {
     const wrap = h('div', { class: 'p-chipbar' });
@@ -193,7 +256,9 @@
       const r = await API.call(o.path, body);
       o.rp.show(r, d => {
         const parts = [];
-        if (o.successText) parts.push(h('div', { class: 'p-ok-line' }, '✓ ' + o.successText));
+        if (o.successText) parts.push(h('div', { class: 'p-ok-line' },
+          h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+            h('use', { href: '#d-ico-check' })), o.successText));
         if (o.render) { const v = o.render(d); if (v) parts.push(v); }
         return parts.length ? h('div', {}, ...parts) : null;
       });
@@ -301,14 +366,17 @@
   function dataTable(opts) {
     const st = { page: 1, pageSize: opts.pageSize || 10, total: 0, filters: {} };
     (opts.filters || []).forEach(f => { if (f.value) st.filters[f.name] = f.value; });
-    const body = h('div', { class: 'p-dt-body' }, h('div', { class: 'p-empty' }, '⏳ 加载中…'));
+    const body = h('div', { class: 'p-dt-body' }, h('div', { class: 'p-empty' }, '加载中…'));
     const pager = h('div', { class: 'p-dt-pager' });
     const fEls = {};
     const filterBar = (opts.filters && opts.filters.length) ? h('div', { class: 'p-dt-filters' },
       opts.filters.map(f => {
         const el = f.type === 'select'
           ? h('select', {}, [h('option', { value: '' }, '全部' + f.label)]
-              .concat((f.options || []).map(o => h('option', { value: o, selected: st.filters[f.name] === o }, o))))
+              .concat((f.options || []).map(o => {
+                const [v, t] = Array.isArray(o) ? o : [o, o];   // 支持 [枚举, 中文] 对
+                return h('option', { value: v, selected: st.filters[f.name] === v }, t);
+              })))
           : h('input', { type: 'text', placeholder: f.label, value: st.filters[f.name] || '' });
         fEls[f.name] = el;
         return h('label', { class: 'p-dt-filter' }, el);
@@ -323,11 +391,11 @@
     }
     const root = h('div', { class: 'p-dt' },
       h('div', { class: 'p-dt-head' }, filterBar || h('span', {}),
-        h('button', { class: 'p-btn p-btn-sm p-btn-ghost', title: '刷新', onClick: () => load(st.page) }, '⟳ 刷新')),
+        h('button', { class: 'p-btn p-btn-sm p-btn-ghost', title: '刷新', onClick: () => load(st.page) }, '刷新')),
       body, pager);
     async function load(page) {
       if (page) st.page = page;
-      body.innerHTML = ''; body.append(h('div', { class: 'p-empty' }, '⏳ 加载中…'));
+      body.innerHTML = ''; body.append(h('div', { class: 'p-empty' }, '加载中…'));
       pager.innerHTML = '';
       const reqBody = Object.assign({}, opts.baseBody || {}, st.filters,
         { page: st.page, page_size: st.pageSize });
@@ -352,14 +420,19 @@
         }, cols.map(c => h('td', { class: (c.num ? 'num ' : '') + (c.mono ? 'p-mono' : '') },
           c.render ? c.render(rec, i) : String(rec[c.key] ?? '—'))))))));
     }
+    function chevron(dir) {   /* 分页方向图标（内联 SVG，不依赖雪碧图） */
+      return h('svg', { class: 'd-ico', viewBox: '0 0 24 24', 'aria-hidden': 'true',
+        style: { width: '12px', height: '12px' } },
+        h('path', dir === 'left' ? { d: 'M14.5 5.5 8 12l6.5 6.5' } : { d: 'M9.5 5.5 16 12l-6.5 6.5' }));
+    }
     function renderPager() {
       const pages = Math.max(1, Math.ceil(st.total / st.pageSize));
       pager.append(
         h('span', { class: 'p-dt-total' }, '共 ' + st.total + ' 条 · 第 ' + st.page + '/' + pages + ' 页'),
         h('button', { class: 'p-btn p-btn-sm p-btn-ghost', disabled: st.page <= 1,
-          onClick: () => load(st.page - 1) }, '‹ 上一页'),
+          onClick: () => load(st.page - 1) }, chevron('left'), '上一页'),
         h('button', { class: 'p-btn p-btn-sm p-btn-ghost', disabled: st.page >= pages,
-          onClick: () => load(st.page + 1) }, '下一页 ›'));
+          onClick: () => load(st.page + 1) }, '下一页', chevron('right')));
     }
     root.reload = extra => { if (extra) Object.assign(st.filters, extra); load(st.page); };
     if (opts.autoLoad !== false) load(1);
@@ -368,13 +441,13 @@
 
   /* ---------- CSV 导出（BOM 头保证 Excel 中文兼容） ---------- */
   function csvExport(opts) {
-    const b = h('button', { class: 'p-btn p-btn-sm' }, opts.label || '⤓ 导出 CSV');
+    const b = h('button', { class: 'p-btn p-btn-sm' }, opts.label || '导出 CSV');
     b.addEventListener('click', async () => {
       b.disabled = true;
       const body = Object.assign({}, opts.body || {}, opts.filters ? opts.filters() : {});
       const r = await API.call(opts.endpoint, body);
       b.disabled = false;
-      if (!r.ok) { UI.toast('导出失败 code=' + r.code + '：' + r.message, 'err'); return; }
+      if (!r.ok) { UI.toast('导出失败：' + (r.message || '请稍后重试'), 'err'); return; }
       const name = opts.filename || (opts.endpoint.replace(/[\/\W]+/g, '_') + '.csv');
       const url = URL.createObjectURL(new Blob(['﻿' + r.data.content],
         { type: 'text/csv;charset=utf-8' }));
@@ -389,7 +462,8 @@
   /* ---------- 统计卡 / 条形 / 评分条 ---------- */
   function statCards(items) {
     return h('div', { class: 'p-stats' }, items.filter(Boolean).map(it =>
-      h('div', { class: 'p-stat' + (it.tone ? ' p-tone-' + it.tone : '') },
+      h('div', Object.assign({ class: 'p-stat' + (it.tone ? ' p-tone-' + it.tone : '') },
+        it.title ? { title: it.title } : null),
         h('div', { class: 'p-stat-label' }, it.label),
         h('div', { class: 'p-stat-value' }, String(it.value ?? '—')),
         it.sub ? h('div', { class: 'p-stat-sub' }, it.sub) : null)));
@@ -436,9 +510,12 @@
     return h('div', { class: 'p-cx' },
       h('div', { class: 'p-cx-head' },
         h('code', { class: 'p-mono' }, cx.cross_tx_id), badge(cx.status),
-        h('span', { class: 'p-cx-sub' }, cx.message_type, ' · ', (cx.latency_ms ?? '—') + 'ms',
-          ' · 验签=', cx.verify_result || '—', ' · 策略=', cx.policy_result || '—',
-          cx.error_code ? ' · 错误码=' + cx.error_code : '')),
+        h('span', { class: 'p-cx-sub' },
+          (window.CXV && CXV.msgTypeZh) ? CXV.msgTypeZh(cx.message_type) : cx.message_type,
+          ' · 耗时 ' + (window.UI.fmtMs ? UI.fmtMs(cx.latency_ms) : (cx.latency_ms ?? '—')),
+          ' · 验签' + (cx.verify_result === 'PASS' ? '通过' : (cx.verify_result || '—')),
+          ' · 策略' + (cx.policy_result === 'PASS' ? '通过' : (cx.policy_result || '—')),
+          cx.error_code ? ' · 失败码 ' + cx.error_code : '')),
       h('div', { class: 'p-cx-flow' },
         cxSeg('①', '源链上链', cx.source_chain, cx.source_chain_tx_id, cx.cross_tx_id),
         cxSeg('②', '监管链签收', 'chainmaker', cx.reg_receive_tx_id, cx.cross_tx_id),
@@ -447,25 +524,28 @@
   }
   async function openCxDetail(crossTxId) {
     if (!crossTxId) return;
-    const d = drawer('跨链存证详情 ' + crossTxId, h('div', { class: 'p-empty' }, '⏳ 查询中…'));
+    const d = drawer('跨链存证详情', h('div', { class: 'p-empty' }, '查询中…'));
     const r = await API.call('/api/crosschain/query', { cross_tx_id: crossTxId });
     d.root.querySelector('.p-drawer-body').innerHTML = '';
     const body = d.root.querySelector('.p-drawer-body');
     if (!r.ok) { body.append(errCard(r)); return; }
     const x = r.data;
+    const hex = v => h('code', { class: 'p-mono', title: v }, UI.trunc(v, 22));
     body.append(cxTrail(x),
       kv([
+        ['流水号', h('code', { class: 'p-mono', title: x.cross_tx_id }, UI.trunc(x.cross_tx_id, 22))],
         ['业务单号', h('code', { class: 'p-mono' }, x.business_id)],
         ['监管记录', x.reg_record_id || '—'],
-        ['幂等键', h('code', { class: 'p-mono' }, UI.trunc(x.idempotency_key, 48))],
+        ['幂等键', hex(x.idempotency_key)],
         x.retry_of ? ['重试自', h('code', { class: 'p-mono' }, x.retry_of)] : null,
-        ['SM3 摘要', h('code', { class: 'p-mono' }, UI.trunc(x.sm3_hash, 48))],
+        ['SM3 摘要', hex(x.sm3_hash)],
         ['SM9 身份', h('code', { class: 'p-mono' }, x.sm9_identity || '—')],
-        ['签名', h('code', { class: 'p-mono' }, UI.trunc(x.signature, 48))],
-        ['错误码', x.error_code ? String(x.error_code) : '0'],
-        ['创建/更新', x.created_at + ' → ' + x.updated_at],
-      ]),
-      h('details', { class: 'p-rawjson' }, h('summary', {}, '原始响应 JSON'), UI.jsonBlock(r.raw)));
+        ['签名', hex(x.signature)],
+        x.error_code ? ['失败码', String(x.error_code)] : null,
+        ['创建/更新', UI.fmtDT(x.created_at, true) + ' → ' + UI.fmtDT(x.updated_at, true)],
+      ]));
+    if (DEBUG) body.append(h('details', { class: 'p-rawjson' },
+      h('summary', {}, '原始响应 JSON'), UI.jsonBlock(r.raw)));
   }
 
   /* ---------- 消息逐跳时延 ---------- */
@@ -483,6 +563,7 @@
   /* ---------- 链下拓扑 SVG（新视觉；算法照抄 act2.js topoSVG 34-100 行，仅替换类名/颜色令牌） ---------- */
   const SVGNS = 'http://www.w3.org/2000/svg';
   const TYPE_COLOR = { UAV: 'var(--p-chain-fabric)', EDGE: 'var(--p-good)', MANAGEMENT: 'var(--p-chain-chainmaker)', ATTACKER: 'var(--p-critical)' };
+  const TYPE_ZH = { UAV: '无人机', EDGE: '边缘节点', MANAGEMENT: '管理节点', ATTACKER: '攻击节点' };
   function svgEl(tag, attrs) {
     const el = document.createElementNS(SVGNS, tag);
     for (const [k, v] of Object.entries(attrs || {})) el.setAttribute(k, v);
@@ -513,7 +594,7 @@
       line.addEventListener('mousemove', ev => UI.showTip(
         '<b>' + e.from + ' ⇄ ' + e.to + '</b><br>距离 ' + Number(e.distance || 0).toFixed(1) +
         ' · 宣告延迟 ' + (e.advertised_latency_ms ?? '—') + 'ms' +
-        (e.wormhole_edge ? '<br>⚠ 虫洞伪造边' : '') + (inHl(e.from, e.to) ? '<br>● 当前会话路径' : ''), ev.clientX, ev.clientY));
+        (e.wormhole_edge ? '<br>虫洞伪造边（预警）' : '') + (inHl(e.from, e.to) ? '<br>● 当前会话路径' : ''), ev.clientX, ev.clientY));
       line.addEventListener('mouseleave', UI.hideTip);
       svg.append(line);
     });
@@ -530,16 +611,17 @@
         'stroke-dasharray': isolated ? '4 3' : '' });
       g.append(c);
       const label = svgEl('text', { x: p.X, y: p.Y + 24, class: 'p-topo-label' });
-      label.textContent = (isolated ? '⛔' : offline ? '○ ' : '') + n.node_id;
+      label.textContent = n.node_id;
       if (isolated) label.setAttribute('fill', 'var(--p-critical)');
       g.append(label);
       if (n.node_type === 'ATTACKER') {
         const tag = svgEl('text', { x: p.X, y: p.Y - 16, 'text-anchor': 'middle', fill: 'var(--p-critical)', 'font-size': '10' });
-        tag.textContent = '⚠ ATTACKER';
+        tag.textContent = '攻击节点';
         g.append(tag);
       }
       g.addEventListener('mousemove', ev => UI.showTip(
-        '<b>' + n.node_id + '</b><br>类型 ' + n.node_type + ' · 状态 ' + n.status +
+        '<b>' + n.node_id + '</b><br>类型 ' + (TYPE_ZH[n.node_type] || n.node_type) +
+        ' · 状态 ' + statusZh(n.status) +
         '<br>SM9 ' + UI.trunc(n.sm9_identity || '—', 30) +
         '<br>邻居 ' + (n.neighbors || '[]') + (n.risk_score ? '<br>风险分 ' + n.risk_score : ''), ev.clientX, ev.clientY));
       g.addEventListener('mouseleave', UI.hideTip);
@@ -549,9 +631,9 @@
   }
 
   window.PUI = {
-    h, badge, chainTag, kv, empty, metaLine, errCard, resultPanel, actionBar,
+    h, badge, badgeZh, chainTag, kv, empty, metaLine, errCard, resultPanel, actionBar,
     confirm, drawer, chipBar, pageHead, tabs, tabParam, setTabParam, runOp,
     form, dataTable, csvExport, statCards, scoreBars, hbars, cxTrail,
-    openCxDetail, topoSVG, pathHops,
+    openCxDetail, topoSVG, pathHops, statusZh, DEBUG,
   };
 })();
