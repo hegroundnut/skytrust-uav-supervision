@@ -1,7 +1,8 @@
 /* js/pages/demo.js — 演示说明页（index.html #/demo，内部总控导航专用）。
    按立项三目标组织 21 步真实 API 演示流程（目标① 6 步 / 目标② 8 步 / 目标③ 7 步）。
    每步一张三区块卡：①现在在干什么（+系统位置指引 +链上见证点）②要发送的数据（真实
-   请求体，随链式状态实时刷新）③发送按钮 + 返回结果（元信息行/kv 摘选/原始 JSON）。
+   请求体，可直接编辑：未手改时随链式状态实时刷新，手改稿按步骤号存活于页签切换，
+   「恢复默认」一键回填；JSON 解析失败即中止发送并如实说明）③发送按钮 + 返回结果（元信息行/kv 摘选/原始 JSON）。
    诚实红线（同 act1/2/3）：
    - 全部调用真实后端接口，真实写库、真实上链，零 mock 零沙箱；
    - 单号链式传递：mission_id/application_id/session_id/alert_id/authorization_id 一律
@@ -35,8 +36,9 @@
     S.alertIdLive = null;                       // ③-1 alert/raise 返回
     S.authId = 'AUTH-DEMO-' + S.TS;             // ③-4 请求体预制
     S.authIdLive = null;                        // ③-4 authorize/apply 返回
-    S.authApproved = false;                     // ③-6 authorize/review 成功
+    S.authApproved = false;                     // ③-6 authorize/review 批准通过
     S.chainTxId = null;                         // ③-6 上链存证 TxID
+    S.edits = {};                               // 每步请求体手改稿（键=步骤编号）——页签重渲存活，重置单号即全清
   }
 
   /* 目标③  mission_id 取值：本页 ①-2 实跑值 → 演示上下文最近任务 → 种子任务。
@@ -51,7 +53,7 @@
   let REFR = [];
   function refreshAll() {
     REFR.forEach(r => {
-      r.pre.textContent = JSON.stringify(r.st.body(), null, 2);
+      if (!r.dirty()) r.fill();                 // 未手改的卡随链式单号刷新默认请求体；手改稿绝不覆盖
       const gate = r.st.ready ? r.st.ready() : null;
       r.send.disabled = !!gate;
       r.hint.textContent = gate || '';
@@ -75,10 +77,19 @@
   }
 
   /* ================= 发送管线（三区块之第三块） ================= */
-  async function onSend(st, out, send, btnLabel) {
+  async function onSend(st, out, send, btnLabel, ta) {
+    /* 第二块可编辑：先解析 JSON——格式破坏即中止并如实说明，绝不带病发请求 */
+    let body;
+    try { body = JSON.parse(ta.value); }
+    catch (e) {
+      out.innerHTML = '';
+      out.append(h('div', { class: 'dm-parseerr' },
+        '请求体不是合法 JSON（' + e.message + '）——已中止发送。请修正报文，或点「恢复默认」重新取链式单号。'));
+      return;
+    }
     send.disabled = true;
     send.textContent = '发送中…';
-    const r = await API.call(st.path, st.body());
+    const r = await API.call(st.path, body);
     out.innerHTML = '';
 
     /* 元信息行——本页恒开（DEBUG 门控不适用，见文件头诚实红线） */
@@ -124,21 +135,38 @@
     send.disabled = !!gate;
   }
 
-  /* ================= 步骤卡（三区块结构） ================= */
+  /* ================= 步骤卡（三区块结构；第二块 = 可直接编辑的 JSON 报文） ================= */
   function stepCard(no, st) {
-    const pre = h('pre', { class: 'dm-json' });
-    pre.textContent = JSON.stringify(st.body(), null, 2);
+    const ta = h('textarea', {
+      class: 'dm-json dm-edit', spellcheck: 'false',
+      title: '可直接编辑（JSON）——链式单号自动预填，改坏可一键「恢复默认」',
+    });
+    function fillDefault() {
+      ta.value = JSON.stringify(st.body(), null, 2);
+      ta.rows = Math.min(14, Math.max(4, ta.value.split('\n').length));
+    }
+    const saved = S.edits[no];
+    let dirty = saved !== undefined;
+    if (dirty) ta.value = saved; else fillDefault();
+    const restoreBtn = h('button', {
+      class: 'p-btn p-btn-sm p-btn-ghost dm-restore', hidden: !dirty,
+      title: '丢弃手改，按当前链式单号重新填充默认请求体',
+      onClick: () => { dirty = false; delete S.edits[no]; fillDefault(); restoreBtn.hidden = true; },
+    }, '恢复默认');
+    ta.addEventListener('input', () => {
+      dirty = true; S.edits[no] = ta.value; restoreBtn.hidden = false;
+    });
     const out = h('div', { class: 'dm-result' });
     const hint = h('div', { class: 'p-field-hint', hidden: true });
     const btnLabel = '发送请求';
     const send = h('button', {
       class: 'p-btn p-btn-primary',
       title: 'POST ' + st.path,
-      onClick: () => onSend(st, out, send, btnLabel),
+      onClick: () => onSend(st, out, send, btnLabel, ta),
     }, btnLabel);
     const gate = st.ready ? st.ready() : null;
     if (gate) { send.disabled = true; hint.textContent = gate; hint.hidden = false; }
-    REFR.push({ pre, send, hint, st });
+    REFR.push({ fill: fillDefault, send, hint, st, dirty: () => dirty });
 
     return h('section', { class: 'p-card dm-block' },
       h('div', { class: 'dm-head' },
@@ -150,9 +178,10 @@
       h('p', { class: 'dm-why' }, st.why),
       guideLine('dm-locate', '系统位置', st.locate),
       st.witness ? guideLine('dm-witness-guide', '链上见证', st.witness) : null,
-      /* 第二块——要发送的数据（随链式状态实时刷新，发送前可核对） */
-      h('div', { class: 'dm-label' }, '要发送的数据'),
-      pre,
+      /* 第二块——要发送的数据（可直接编辑；未手改时随链式单号自动刷新） */
+      h('div', { class: 'dm-label dm-labelrow' }, h('span', {}, '要发送的数据（可直接编辑）'), restoreBtn),
+      ta,
+      st.editHint ? h('div', { class: 'dm-edithint' }, '✎ ' + st.editHint) : null,
       /* 第三块——发送按钮 + 返回结果 */
       h('div', { class: 'dm-label' }, '发送与返回'),
       h('div', { class: 'dm-sendrow' }, send, hint),
@@ -163,6 +192,7 @@
   const G1_STEPS = [
     {
       name: '航空器实名登记（SM9 身份签发 · 存证上链）',
+      editHint: '可改：model、operator_id、manufacturer_id；uav_id / serial_no 已含时间戳预填（重演可再改，注意避开历史数据）。',
       why: '运营商为本次演示新登记一架无人机（编号含时间戳，避开历史数据）。后端为其生成 SM9 身份标识，并把登记证明跨链写入 ChainMaker 监管链——这是目标①「商密跨链」的起点：后续申请、审核、许可全部锚定这个国密身份。',
       locate: '运营商门户「我的航空器」→ 登记航空器（同一接口、同一表单字段）。',
       witness: '任一门户「链上浏览器」→「链上数据追踪」，消息类型选「航空器登记证明」，即可看到本步记录（SM3 摘要 + SM9 验签结果实时展示）。',
@@ -185,6 +215,7 @@
     },
     {
       name: '创建飞行任务（载荷密文落库 · 明文不落库）',
+      editHint: '可改：route_segments、altitude_min/max、payload_type、description、start_time/end_time（格式 YYYY-MM-DD HH:MM:SS；「恢复默认」按当前时刻重算相对偏移）。uav_id / operator_id / mission_type 为种子固定值。',
       why: '运营商创建一条巡检任务：航段、时间窗、高度、载荷类型。落库时敏感字段以 SM4 密文存储，业务库只见掩码值与 SM3 摘要——明文永不落库。这是目标③「密文内容监管」的数据基础：此刻任何人（包括监管方）都看不到明文，直到走完 ③-4～③-7 的授权开箱。本步只写业务库，不产生跨链消息（如实：所以本步没有链上见证点）。',
       locate: '运营商门户「飞行活动申请」→ 新建任务草稿（同一接口、同一字段集）。',
       witness: null,
@@ -208,6 +239,7 @@
     },
     {
       name: '提交任务申请（Fabric → ChainMaker → FISCO 跨链中继）',
+      editHint: '可改：operator。mission_id 自动取 ①-2 实跑返回值——改成不存在的单号，接口会如实报错（这本身也是可演示的诚实行为）。',
       why: '草稿提交为正式申请：申请单写入 Fabric 运营链，经 ChainMaker 监管链验签中继，送达 FISCO BCOS 管理链等待管理当局审核。目标①的商密跨链中继在这一步真实发生——每跳均 SM3 摘要 + SM9 签名，全程可在台账回查。',
       locate: '运营商门户「飞行活动申请」→ 选中草稿 → 提交申请。',
       witness: '「链上浏览器」→「链上数据追踪」，消息类型「任务申请」；点击该行可打开四段存证抽屉（源链上链 → 监管链签收 → 监管链中继 → 目标链存证）。',
@@ -227,6 +259,7 @@
     },
     {
       name: '管理当局审核通过（FISCO → Fabric 反向回传）',
+      editHint: '可改：comment、rules_hit；result 可改 REJECTED 演示「驳回」的不同跨链回传路径。application_id 自动链式传递。',
       why: '管理当局（FISCO BCOS 侧）对申请单作出 APPROVED 审核，附规则引擎命中记录；审核结果跨链回传 Fabric 运营链，任务状态随之推进。这是目标①的反向中继：管理链的审核结论成为运营链的业务事实，两链账本各自独立、证据互认可查。',
       locate: '管理当局门户「审核队列」→ 选中申请 → 通过；审核历史见「审核留痕」。',
       witness: '「链上浏览器」→「链上数据追踪」，消息类型「审核结果」（FISCO BCOS → Fabric 回传行），可用上一步申请单号直查。',
@@ -251,6 +284,7 @@
     },
     {
       name: '签发电子飞行许可（第 4 条异构链 IRITA · SM2 体系）',
+      editHint: '可改：issuer、valid_from/valid_to（同 YYYY-MM-DD HH:MM:SS 格式）。mission_id 自动链式传递——签发前提是 ①-4 已审核通过。',
       why: '审核通过后，为任务签发电子飞行许可（通行证）——落在 IRITA 证照链上。IRITA 是与 ChainMaker / Fabric / FISCO BCOS 并存的第 4 条异构链（SM2 商密体系）：立项要求「至少 3 种」，系统实际在网 4 种，本步就是第 4 链的现场证据。许可含航线与有效期，上链即不可篡改。',
       locate: '证照中心门户「通行证签发」；签发后运营商门户「电子飞行许可」可查验，管理当局门户「许可管理」见台账。',
       witness: '「链上浏览器」→「链上数据追踪」消息类型「电子许可」；再切「块浏览」→ 选 IRITA 证照链 → 最新块，可见本步的原始交易。',
@@ -275,6 +309,7 @@
     },
     {
       name: '拉取跨链交易台账（四链全部跨链消息一屏核验）',
+      editHint: '可改：page、page_size（加大 page_size 可扩大台账窗口）。',
       why: '拉取最近的跨链交易列表：每行都是一次完整的商密跨链中继（源链 → 监管链中继 → 目标链），带 SM3/SM9 验签结果与端到端耗时。前面五步应新增了 4 条以上记录——目标①不是口号，是这本可查询、可验签的台账。',
       locate: '任一门户「链上浏览器」→「链上数据追踪」（同一数据源的可视化时间线 + 四链泳道视图）。',
       witness: '本步即链上台账本体——下表任一 cross_tx_id 在「链上数据追踪」点击即可打开四段存证详情。',
@@ -299,6 +334,7 @@
   const G2_STEPS = [
     {
       name: '打开链下安全会话（SM9 双向认证 · 秒级建立）',
+      editHint: '可改：uav_id（默认种子 UAV-A-001）。',
       why: '无人机节点与管理端建立链下会话：SM9 身份互认 + nonce 新鲜性挑战，不经共识、不写任何账本——会话建立即为秒级。这是目标②「秒级链下交易网络」的接入层：高频飞行动态走这一层，只有关键证据（登记/申请/许可）才落链。',
       locate: '管理当局门户「链网安全运营」→「会话·消息」→ 打开会话；运营商门户「运行识别·飞行动态」的起飞报备调用同一接口。',
       witness: null,
@@ -319,6 +355,7 @@
     },
     {
       name: '发送飞行动态消息（毫秒级延迟基线）',
+      editHint: '可改：msg_type、source_node、target_node。session_id 自动取 ②-1 返回值——改成不存在的会话将如实报错。',
       why: '会话内发送一条 POSITION_UPDATE 位置报文：返回 latency_ms 为端到端实测延迟（通常几十毫秒）——目标②「秒级」的直接证据（实际做到毫秒级）：SM3 完整性 + SM9 签名全部在链下网络内完成，零共识开销。本步先立正常基线，供 ②-4 攻击态对比。',
       locate: '管理当局门户「链网安全运营」→「会话·消息」→ 选会话 → 发送消息（运营商端「运行识别·飞行动态」位置上报同接口）。',
       witness: null,
@@ -335,6 +372,7 @@
     },
     {
       name: '注入虫洞攻击（打开攻击模拟开关）',
+      editHint: '可改：operator。enabled 为本步演示语义所在，保持 true。',
       why: '模拟攻击者打开虫洞隧道：伪造低延迟邻居，诱使节点改走隧道路由。若返回 4001 属按设计拒绝——上次攻防演练的 ISOLATED 隔离残留未复位，系统拒绝在残留状态上再次注入（防止演练状态互相污染），这本身就是安全机制的一部分。',
       locate: '管理当局门户「链网安全运营」→「攻防演练」→ 虫洞注入开关；「拓扑·节点」图上红色虚线虫洞边同步出现。',
       witness: null,
@@ -351,6 +389,7 @@
     },
     {
       name: '攻击态下继续发消息（观察时延劣化与隧道路径）',
+      editHint: '可改项同 ②-2（msg_type、source_node、target_node）；session_id 自动链式传递。在 ②-3 注入后发送才能观察到时延劣化。',
       why: '虫洞生效后再发一条同样的报文：latency_ms 会明显高于 ②-2 的基线（数倍起步）——这正是虫洞攻击的危害本质：制造「更快」的假象，实际物理路径被拉长、流量被劫持到隧道。实际经过路径中的 NODE-X / NODE-Y 即隧道节点特征。',
       locate: '同「会话·消息」页；管理当局门户「攻防演练」画面的时延对比曲线为同一批数据。',
       witness: null,
@@ -368,6 +407,7 @@
     },
     {
       name: '风险评估（五维打分 · DETECT 判定）',
+      editHint: 'session_id 自动链式传递，无可改字段（评估对象即当前会话）。',
       why: '对当前会话做风险评估：身份一致性 / 邻接真实性 / 时延合理性 / 挑战同步性 / 路径稳定性五个维度分别打分，综合分越过阈值即判定 DETECT（检测到虫洞）。这是目标②「抵抗」的前半段——先能识破：不靠先验名单，靠行为证据。',
       locate: '管理当局门户「链网安全运营」→「攻防演练」→ 风险评估；五维得分条图同屏展示。',
       witness: null,
@@ -385,6 +425,7 @@
     },
     {
       name: '路径切换（避开虫洞 · 秒级恢复）',
+      editHint: '可改：operator。session_id 自动链式传递；对健康会话执行将被按设计拒绝（4002）。',
       why: '对受攻击会话执行路径切换：路由避开虫洞隧道、恢复安全路径，recovery_latency_ms 为切换实测耗时（秒级）——目标②「抵抗」的后半段：识破之后能绕开，且绕开得快。注意：对健康会话执行切换会被按设计拒绝（4002），切换是应急处置动作而非常规操作。',
       locate: '管理当局门户「链网安全运营」→「攻防演练」→ 路径切换；「拓扑·节点」图上红色虚线消失、会话恢复常态色。',
       witness: null,
@@ -405,6 +446,7 @@
     },
     {
       name: '恢复后验证消息（时延回落至基线）',
+      editHint: '可改项同 ②-2（msg_type、source_node、target_node）；session_id 自动链式传递。',
       why: '路径切换后再发一条同样的报文对比：latency_ms 回落到 ②-2 的正常水平。攻击注入 → 行为劣化 → 风险识破 → 路径规避 → 恢复验证，全闭环完成——全程秒级、全程零账本写入（这正是链下层的设计目的）。',
       locate: '同「会话·消息」页；「攻防演练」画面的时延回落曲线为同一批数据。',
       witness: null,
@@ -419,6 +461,7 @@
     },
     {
       name: '关闭虫洞攻击（撤除模拟开关）',
+      editHint: '可改：operator。enabled 保持 false（本步语义即撤除攻击）。',
       why: '关闭攻击模拟，网络恢复无攻击状态。如实说明：关闭开关不会自动解除受影响节点的 ISOLATED 隔离标记——解除隔离需单独操作，或经「总览 → 演示维护」复位。这是有意设计：攻击撤除不应零成本，隔离记录保留供审计复盘。',
       locate: '管理当局门户「链网安全运营」→「攻防演练」→ 虫洞注入开关关闭；监管端「监管驾驶舱」攻防事件统计同源可见。',
       witness: null,
@@ -435,6 +478,7 @@
   const G3_STEPS = [
     {
       name: '发起一条高危告警（化名身份 · 密文锚点）',
+      editHint: '可改：event_type、risk_level、uav_pseudonym、operator；alert_id 已含时间戳预填（重演可再改）。mission_id 依次取目标①实跑值 → 演示上下文 → 种子任务。',
       why: '监管员对航线偏离（ROUTE_DEVIATION）发起高危告警。注意告警里只有无人机化名 PSEUDO-UAV-83921——真实身份被封存在密文层，告警经手人无权直接看到。目标③「秒级身份追踪」要演示的正是：从这个化名出发，秒级还原真实身份。',
       locate: '监管门户「告警管理」→ 发起告警（同一接口）；发起后同屏列表实时可见。',
       witness: '本步写业务库（含 evidence_hash 证据摘要），不产生跨链消息——如实：无链上见证点，链上见证从 ③-3 身份追踪与 ③-6 审批存证开始。',
@@ -456,6 +500,7 @@
     },
     {
       name: '告警状态机流转（OPEN → IDENTIFIED）',
+      editHint: '可改：to_status、reason、operator（可试其他合法流转）。alert_id 自动取 ③-1 返回值。',
       why: '把告警推进到「已识别」：告警状态机全程留痕（OPEN → IDENTIFIED → … → RESOLVED），每步流转记录操作者与理由——监管审计的要求落在状态机的每一次迁移上，而不是事后补录。',
       locate: '监管门户「告警管理」→ 选中告警 → 推进状态。',
       witness: null,
@@ -469,6 +514,7 @@
     },
     {
       name: '秒级身份追踪（化名 → 真实身份）',
+      editHint: '可改：operator。alert_id 自动链式传递。',
       why: '对告警执行身份追踪：从无人机化名逐级回溯到真实身份（entry 入口 → 逐级层级），trace_latency_ms 是实测追踪耗时——目标③「秒级」的直接证据，一个可读的数字，不是形容词。',
       locate: '监管门户「身份追踪」→ 输入告警编号 → 追踪；追踪路径逐级图同屏展示。',
       witness: '「链上浏览器」→「块浏览」→ ChainMaker 监管链 → 最新块，可见身份索引写入交易；追踪每一级的存证可在「链上数据追踪」按业务单号直查。',
@@ -486,6 +532,7 @@
     },
     {
       name: '申请密文开箱授权（PENDING 授权单 · 最小范围）',
+      editHint: '可改：scope（少勾范围会收窄 ③-7 的开箱范围，可对比观察）、reason、target_type/target_id；authorization_id 已含时间戳预填——单号被占用（如 ③-6 改走 REJECT 后重演）可手动换个后缀重新提交。',
       why: '看到身份不等于能看内容——要开箱任务密文载荷，必须先申请授权：指定范围（scope）与目标（target），生成 PENDING 授权单等待审批。这是目标③「密文内容监管」的最小授权前半段：监管者自己被流程管住。',
       locate: '监管门户「授权中心」→ 新建授权申请（scope 勾选 / 目标选择同一字段集）。',
       witness: null,
@@ -506,6 +553,7 @@
     },
     {
       name: '未授权直接开箱（按设计拒绝 · 越权开不了箱）',
+      editHint: 'authorization_id 故意为错单号 AUTH-NOT-EXIST-WEB——换成 ③-6 已批准的有效单号，本步即变为开箱成功；payload_type、trajectory 可改。',
       why: '故意用一个不存在的授权号 AUTH-NOT-EXIST-WEB 去开箱密文：后端必须拒绝（5002）。这一步演示「密文监管」不是空承诺——监管方自己越权也开不了箱，只返回封缄态信息（掩码值 / 摘要 / 密文状态），明文一个字节都不泄。',
       locate: '监管门户「密文核验」→ 输入任务号 + 授权号 → 核验（填一个错误授权号即可复现本拒绝）；开箱尝试同步记录到「监管审计」。',
       witness: null,
@@ -528,6 +576,7 @@
     },
     {
       name: '双签审批通过（授权生效 · 审批事实上链存证）',
+      editHint: '可改：comment、reviewer_id；decision 改 REJECT 可演示「拒绝不上链」路径（拒绝后 ③-7 保持门控，需换单号重走 ③-4）。authorization_id 自动取 ③-4 返回值。',
       why: '审批人对该授权单 APPROVE：授权生效、写监管审计记录，且审批事实本身上链存证（返回 chain_tx_id）——目标③的双签闭环：授权开箱的权力，自己也被链上证据管住，事后可追、不可抵赖。',
       locate: '监管门户「授权中心」→ 待审授权单 → 批准；审计记录见「监管审计」。',
       witness: '复制返回的 chain_tx_id → 「链上浏览器」→「直查」→ 链选 ChainMaker 监管链 → 粘贴查询，可见本次审批的原始存证交易。',
@@ -541,7 +590,8 @@
         ['上链存证 TxID', d.chain_tx_id ? mono(d.chain_tx_id, 40) : '—'],
       ],
       absorb: d => {
-        S.authApproved = true;
+        const s = String((d.auth && d.auth.status) || '').toUpperCase();
+        S.authApproved = s === 'APPROVED' || s === 'ACTIVE';   // 手改 decision=REJECT 时 ③-7 保持门控（如实）
         S.chainTxId = d.chain_tx_id || S.chainTxId;
         if (d.chain_tx_id) STORE.note('CROSS_TX', d.chain_tx_id);
       },
@@ -549,6 +599,7 @@
     },
     {
       name: '持有效授权开箱核验（密文内容监管闭环）',
+      editHint: '可改：payload_type；trajectory 改 ABNORMAL 可观察核验结论与新触发告警的变化。mission_id / authorization_id 自动链式传递。',
       why: '再用已批准的授权开箱：authorized ✓、返回明文视图 decrypted_view、SM3 摘要比对一致 + SM9 验签通过，并对航线 / 载荷出具核验结论。「未授权开不了箱（③-5）→ 授权后开箱且全程留痕（本步）」——目标③的完整闭环，每次开箱动作都进监管审计。',
       locate: '监管门户「密文核验」→ 输入任务号 + 有效授权号 → 核验开箱。',
       witness: '监管门户「监管审计」：③-5（被拒）与本步（通过）两条开箱记录均可查询、可导出 CSV——开箱动作本身全程留痕。',
@@ -673,7 +724,7 @@
 
     host.append(P.pageHead({
       title: '演示说明 · 立项三目标实跑流程',
-      sub: '本页每一步都调用真实后端接口，真实写库、真实上链（无 mock、无沙箱）。请按编号顺序执行——单号自动从上一步的真实返回值链式传递，前置缺口会如实禁用按钮并说明。请求体发送前可核对，原始响应全部可展开核查。',
+      sub: '本页每一步都调用真实后端接口，真实写库、真实上链（无 mock、无沙箱）。请按编号顺序执行——单号自动从上一步的真实返回值链式传递，前置缺口会如实禁用按钮并说明。请求体可在第二块直接编辑（改坏可一键恢复默认），原始响应全部可展开核查。',
       actions: [h('button', {
         class: 'p-btn p-btn-ghost', onClick: resetDemo,
         title: '重新生成本页全套演示单号（UAV/ALERT/AUTH 后缀）——仅换号，不清库、不触碰链上数据；库内演练残留请到「总览 → 演示维护」复位',
