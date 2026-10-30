@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="css/product.css">
 <link rel="stylesheet" href="css/drone.css">
 <link rel="stylesheet" href="css/theme-au.css">
+<link rel="stylesheet" href="css/login.css">
 </head>
 <!-- 固定主题：深蓝权威浅色（Global Constraints #7） -->
 <body class="d-portal d-au" data-theme="light">
@@ -38,6 +39,8 @@
   <symbol id="d-ico-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/></symbol>
 </defs></svg>
 
+<script src="js/login.js"></script><!-- 演示登录门：test/test，本端会话级、四端互不共享；置于壳层前避免闪屏 -->
+
 <div class="d-layout">
   <aside class="d-side">
     <a class="d-brand" href="#/queue">
@@ -47,7 +50,8 @@
     <nav class="d-sidenav" id="d-nav"><!-- PORTAL.boot 构建导航项 --></nav>
     <div class="d-side-foot">
       审核签发 · 链网安全运营<br>
-      <a href="index.html" title="内部总控导航页">内部导航页</a>
+      <a href="index.html" title="内部总控导航页">内部导航页</a> ·
+      <a href="#logout" data-logout title="清除本端登录态并重新登录">退出登录</a>
     </div>
   </aside>
   <div class="d-body">

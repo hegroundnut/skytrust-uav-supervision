@@ -107,8 +107,9 @@ for f in \
   frontend/operator.html frontend/authority.html frontend/regulator.html \
   frontend/license-center.html frontend/index.html \
   frontend/css/drone.css frontend/css/theme-op.css frontend/css/theme-au.css frontend/css/theme-rg.css \
-  frontend/css/theme-ct.css \
+  frontend/css/theme-ct.css frontend/css/login.css \
   frontend/js/api.js frontend/js/store.js frontend/js/portal.js frontend/js/map.js \
+  frontend/js/login.js \
   frontend/js/shell-op.js frontend/js/shell-au.js frontend/js/shell-rg.js frontend/js/shell-ct.js \
   frontend/js/chainview.js frontend/js/wormhole-topo.js \
   frontend/js/cxv/goals.js frontend/js/cxv/journey.js frontend/js/cxv/lanes.js frontend/js/cxv/zones.js \
@@ -131,7 +132,7 @@ for f in \
   docs/demo-script.md ; do
   [ -f "$ROOT/$f" ] || { bad "缺文件 $f"; MISS=1; }
 done
-[ "$MISS" = "0" ] && ok "四端全部产物文件存在（5 HTML + 5 CSS + 共享底座含 shell-ct/CXV/WTOPO + vendor + 25 业务页 + 5 浏览器挂载页 + index 总览/演示说明页 + demo-script）"
+[ "$MISS" = "0" ] && ok "四端全部产物文件存在（5 HTML + 6 CSS + 共享底座含登录门/shell-ct/CXV/WTOPO + vendor + 25 业务页 + 5 浏览器挂载页 + index 总览/演示说明页 + demo-script）"
 JSFAIL=0
 while IFS= read -r f; do
   node --check "$f" >/dev/null 2>&1 || { bad "node --check $f"; JSFAIL=1; }
@@ -145,6 +146,10 @@ grep -q 'shell-op.js' "$SIM_DIR/operator.html" && ok "operator.html 引用 shell
 grep -q 'shell-au.js' "$SIM_DIR/authority.html" && ok "authority.html 引用 shell-au.js" || bad "authority.html 未引用 shell-au.js"
 grep -q 'shell-rg.js' "$SIM_DIR/regulator.html" && ok "regulator.html 引用 shell-rg.js" || bad "regulator.html 未引用 shell-rg.js"
 grep -q 'shell-ct.js' "$SIM_DIR/license-center.html" && ok "license-center.html 引用 shell-ct.js" || bad "license-center.html 未引用 shell-ct.js"
+for p in operator authority regulator license-center; do
+  grep -q 'js/login.js' "$SIM_DIR/$p.html" && ok "$p.html 挂载演示登录门（js/login.js——test/test，本端会话级、四端互不共享）" || bad "$p.html 未挂载 js/login.js"
+done
+! grep -q 'js/login.js' "$SIM_DIR/index.html" && ok "index.html 不挂登录门（内部总控导航页保持直通——2026-10-30 用户裁决：只四端门户）" || bad "index.html 误挂登录门"
 for p in operator authority regulator license-center index; do
   grep -q 'js/chainview.js' "$SIM_DIR/$p.html" && ok "$p.html 挂载 CXV 浏览器共享模块（js/chainview.js）" || bad "$p.html 未挂载 js/chainview.js"
 done

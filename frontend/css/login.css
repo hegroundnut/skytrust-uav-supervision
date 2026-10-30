@@ -1,0 +1,57 @@
+/* login.css — 四端门户演示登录门（配合 js/login.js，挂载于四端 HTML <body> 顶部）。
+   配色全部走 --d-* 令牌：四端自动获得各自主题（op 政务蓝 / au 深蓝权威 /
+   rg 深藏青 / ct 证照暗绿），本文件不写任何端专属颜色。
+   z-index 层级：2000 —— 盖过模态/抽屉遮罩 1000、toast 1200、tip 1300。 */
+
+body.lg-locked { overflow: hidden; }
+
+.lg-veil {
+  position: fixed; inset: 0; z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 18px;
+  background:
+    radial-gradient(1100px 520px at 50% -8%, rgba(255, 255, 255, .09), transparent 62%),
+    var(--d-side-bg);
+  transition: opacity .25s ease;
+}
+.lg-veil.lg-out { opacity: 0; pointer-events: none; }
+
+.lg-card {
+  width: 100%; max-width: 384px;
+  background: var(--d-panel); color: var(--d-ink);
+  border: 1px solid var(--d-line); border-radius: var(--d-radius);
+  box-shadow: 0 18px 48px rgba(4, 12, 28, .35);
+  padding: 28px 30px 20px;
+}
+.lg-brand { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; }
+.lg-brand .d-ico { width: 26px; height: 26px; flex: 0 0 auto; color: var(--d-brand); }
+.lg-sub { margin-top: 6px; font-size: 12.5px; color: var(--d-ink-3); }
+
+.lg-field { margin-top: 16px; }
+.lg-field label { display: block; margin-bottom: 6px; font-size: 12.5px; color: var(--d-ink-2); }
+.lg-field input {
+  width: 100%; box-sizing: border-box;
+  padding: 9px 11px;
+  border: 1px solid var(--d-line-strong); border-radius: var(--d-radius-sm);
+  background: var(--d-panel-2); color: var(--d-ink);
+  font-size: 14px; font-family: inherit;
+}
+.lg-field input:focus {
+  outline: 2px solid var(--d-brand); outline-offset: -1px;
+  background: var(--d-panel);
+}
+
+.lg-btn {
+  width: 100%; margin-top: 20px; padding: 10px 0;
+  background: var(--d-brand); color: var(--d-brand-ink);
+  border: none; border-radius: var(--d-radius-sm);
+  font-size: 14.5px; font-weight: 600; cursor: pointer;
+}
+.lg-btn:hover { filter: brightness(1.1); }
+
+.lg-err { margin-top: 12px; min-height: 18px; font-size: 12.5px; color: var(--d-critical); }
+.lg-hint {
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px dashed var(--d-line-strong);
+  font-size: 12px; color: var(--d-ink-3); text-align: center;
+}
