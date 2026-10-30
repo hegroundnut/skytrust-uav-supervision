@@ -35,7 +35,7 @@
   /* ============ Tab 1：新建申请（左地图右表单，UOM 对位） ============ */
   function tabCreate(box) {
     var routes = [], selected = [];
-    var mapEl = h('div', { class: 'd-map d-map-lg' });
+    var mapEl = h('div', { class: 'd-map d-map-xl' });
     var rpCr = P.resultPanel(), rpCf = P.resultPanel(), rpRs = P.resultPanel(), rpSb = P.resultPanel();
 
     var f = P.form([
@@ -78,8 +78,8 @@
         placeholder: 'Operator-MED（须为航空器归属运营方；创建任务成功后自动回填）' }
     ]);
 
-    box.append(h('div', { class: 'd-grid-side' },
-      h('div', { class: 'd-col' },
+    box.append(h('div', { class: 'd-grid-form' },
+      h('div', { class: 'd-col d-sticky' },
         h('div', { class: 'd-map-hint' }, '点击地图航线即可勾选或取消（高亮即入单）。走廊着色：绿色=开放 · 琥珀色=限制 · 红色=关闭'),
         mapEl),
       h('div', { class: 'd-col' },
