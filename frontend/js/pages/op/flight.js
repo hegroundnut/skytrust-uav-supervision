@@ -56,7 +56,7 @@
       { name: 'pilot_license_id', label: '关联执照', type: 'select', options: [['', '不关联（可选）']],
         hint: '可关联操控员执照；执照无效或过期时无法通过校验' },
       { name: 'description', label: '任务描述', type: 'textarea', rows: 3,
-        placeholder: '如：紧急医疗运输——特殊血样送达市一医院（演示剧情）',
+        placeholder: '如：紧急医疗运输——特殊血样送达市一医院',
         hint: '任务描述经国密算法加密存储：管理端与台账仅见脱敏值，明文不出运营商域' }
     ]);
     var slot = STORE.get('MISSION');

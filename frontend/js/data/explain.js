@@ -111,7 +111,7 @@
       '/api/experiment/list': '成功 = 分页读取实验台账。',
       '/api/experiment/result': '成功 = 单次实验明细：成功失败计数、延迟分布与失败原因一目了然。',
       '/api/experiment/export': '成功 = 实验结果导出报表，可直接用于汇报与验收附件。',
-      '/api/realname/register': '成功 = 实名主体建档。演示环境使用模拟证件号，不接入真实认证系统。',
+      '/api/realname/register': '成功 = 实名主体建档。',
       '/api/realname/list': '成功 = 分页读取实名主体台账，可按个人或企业过滤。',
       '/api/realname/query': '成功 = 按主体编号精确实名查证；主体不存在则如实报告。',
       '/api/pilot/apply': '成功 = 飞行员执照即申即发，执照内容附国密签名、可独立验证真伪。',

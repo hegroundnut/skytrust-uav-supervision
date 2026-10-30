@@ -40,7 +40,7 @@
     idbarEl = h('div', { class: 'd-idbar' });
     root.append(P.pageHead({
       title: '实名登记',
-      sub: '实名主体登记 · 操控员执照即申即发 · 演示环境仅收取模拟证件号，不采集任何真实证件信息' }));
+      sub: '实名主体登记 · 操控员执照即申即发' }));
     root.append(idbarEl);
     drawIdbar();
     root.append(P.tabs([
@@ -72,10 +72,9 @@
       { name: 'subject_type', label: '主体类型', type: 'select', required: true, value: 'ENTERPRISE',
         options: [['ENTERPRISE', '企业'], ['INDIVIDUAL', '个人']] },
       { name: 'name', label: '主体名称', type: 'text', required: true,
-        placeholder: '如：杭州应急医疗运输有限公司（演示）' },
-      { name: 'id_number', label: '证件号码（模拟）', type: 'text', required: true,
-        placeholder: '企业 91420100DEMO001X / 个人 420100199001010011',
-        hint: '仅收取演示用模拟证件号，系统不采集、不存储任何真实证件信息' },
+        placeholder: '如：杭州应急医疗运输有限公司' },
+      { name: 'id_number', label: '证件号码', type: 'text', required: true,
+        placeholder: '企业 91420100DEMO001X / 个人 420100199001010011' },
       { name: 'contact', label: '联系方式', type: 'text', placeholder: '如 027-88880001（可选）' }
     ]);
     box.append(card('主体登记', f.root,
@@ -102,7 +101,7 @@
         P.kv([
           ['主体名称', s.name],
           ['主体类型', s.subject_type === 'ENTERPRISE' ? '企业' : '个人'],
-          ['证件号码（模拟）', h('code', { class: 'p-mono' }, s.id_number)],
+          ['证件号码', h('code', { class: 'p-mono' }, s.id_number)],
           ['联系方式', s.contact || '—'],
           ['状态', P.badge(s.status)],
           ['登记时间', UI.fmtDT(s.created_at, true)]
@@ -115,10 +114,9 @@
     var rp = P.resultPanel();
     var f = P.form([
       { name: 'name', label: '姓名', type: 'text', required: true,
-        placeholder: '如：医疗运输操控员（演示）' },
-      { name: 'id_number', label: '证件号码（模拟）', type: 'text', required: true,
-        placeholder: '如 420100199203054321',
-        hint: '仅收取演示用模拟证件号，系统不采集、不存储任何真实证件信息' },
+        placeholder: '如：医疗运输操控员' },
+      { name: 'id_number', label: '证件号码', type: 'text', required: true,
+        placeholder: '如 420100199203054321' },
       { name: 'category', label: '航空器类别', type: 'select', required: true, value: '垂直起降',
         options: ['多旋翼', '固定翼', '垂直起降'] }
     ]);
@@ -161,20 +159,19 @@
     if (!L) return null;
     return h('div', { class: 'd-cert' },
       h('div', { class: 'd-cert-head' },
-        h('span', { class: 'd-cert-title' }, '无人驾驶航空器操控员执照（演示）'),
+        h('span', { class: 'd-cert-title' }, '无人驾驶航空器操控员执照'),
         h('span', { class: 'd-cert-no' }, L.license_no)),
       h('div', { class: 'd-cert-body' }, h('div', { class: 'd-cert-main' },
         P.kv([
           ['执照 ID', h('code', { class: 'p-mono' }, L.license_id)],
           ['持有人', L.name],
-          ['证件号码（模拟）', h('code', { class: 'p-mono' }, L.id_number)],
+          ['证件号码', h('code', { class: 'p-mono' }, L.id_number)],
           ['航空器类别', P.badge(L.category)],
           ['状态', P.badge(L.status)],
           ['签发时间', UI.fmtDT(L.issued_at, true)],
           ['失效时间（签发+2 年）', UI.fmtDT(L.expires_at, true)],
           ['SM9 签名', h('code', { class: 'p-mono' }, UI.trunc(L.signature, 48))]
-        ]),
-        h('p', { class: 'd-small d-muted' }, '演示数据域：证件号为模拟值；执照为演示环境即发，不构成真实资质。'))));
+        ]))));
   }
 
   async function openLicense(lid, tbl) {
@@ -196,7 +193,7 @@
         { title: '主体 ID', key: 'subject_id', mono: true },
         { title: '名称', key: 'name' },
         { title: '类型', render: function (r) { return r.subject_type === 'ENTERPRISE' ? '企业' : '个人'; } },
-        { title: '证件号（模拟）', key: 'id_number', mono: true },
+        { title: '证件号', key: 'id_number', mono: true },
         { title: '状态', render: function (r) { return P.badge(r.status); } },
         { title: '登记时间', render: function (r) { return UI.fmtDT(r.created_at); } },
         { title: '操作', render: function (r) {

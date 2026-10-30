@@ -815,7 +815,7 @@ window.ENDPOINTS = [
  {
   "path": "/api/realname/register",
   "tag": "UOM登记",
-  "summary": "实名登记（个人/企业，模拟证件号；→REGISTERED）",
+  "summary": "实名登记（个人/企业；→REGISTERED）",
   "operationId": "realnameRegister",
   "req": {
    "contact": "027-88880001",

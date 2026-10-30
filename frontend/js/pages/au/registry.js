@@ -83,8 +83,7 @@
         ['联系方式', s.contact || '—'],
         ['状态', P.badge(s.status)],
         ['建档 / 更新', UI.fmtDT(s.created_at, true) + ' → ' + UI.fmtDT(s.updated_at, true)]
-      ]),
-      h('p', { class: 'd-small d-muted' }, '演示数据域：证件号为模拟值，不接真实认证系统。'));
+      ]));
   }
 
   /* 飞行员执照详情：pilot/query 平铺 License（11 键）+ SM9 验签 */
@@ -115,7 +114,7 @@
         run: function (el) { verifyLicense(L, verifyBox, el); } }]),
       verifyBox,
       h('p', { class: 'd-small d-muted' }, '验签以局方签发身份 ', h('code', { class: 'p-mono' }, PILOT_SIGNER),
-        ' 复核，采用执照七项关键信息组成的规范载荷，与签发时的签名材料完全一致。演示数据域：证件号为模拟值。'));
+        ' 复核，采用执照七项关键信息组成的规范载荷，与签发时的签名材料完全一致。'));
   }
 
   /* crypto/sm9/verify：payload = query 响应七键子集；合法签名 valid true/false 均 code=0 */

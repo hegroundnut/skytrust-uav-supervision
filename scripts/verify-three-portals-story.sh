@@ -561,7 +561,7 @@ cat <<'HUMAN'
   （Task 10 降级——签发/吊销操作件已移除）；行抽屉 pass/query 详情 + pass/verify 验证绿/红灯；
   吊销后 valid=false「许可已吊销」
 - records：rules_hit 解析列表、空键 toast、MISSION_REVIEW_RESULT 流水抽屉
-- registry：类型/类别过滤、七键验签材料 JSON 块、「模拟证件号」免责声明
+- registry：类型/类别过滤、七键验签材料 JSON 块
 - masterdata：两击蓝点+坐标回填（6 位小数）、第三击清空、半套坐标拦截、台账行高亮联动
 - netsec：topo 统计卡+NODE-X/Y 红色可见（全量地理视角）、WTOPO 抽象拓扑区块（地理层下方——
   详见【虫洞拓扑】）、drill 红虚线隧道边+中点 ⚠、风险 5 维评分条+阈值线、逐跳时延条、
