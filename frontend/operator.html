@@ -38,20 +38,27 @@
   <symbol id="d-ico-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/></symbol>
 </defs></svg>
 
-<header class="d-topbar">
-  <a class="d-brand" href="#/home">
-    <svg class="d-ico d-ico-lg"><use href="#d-ico-drone"></use></svg>
-    云巡信链 · 民用无人驾驶航空器综合服务<span class="d-brand-sub">运营商端</span>
-  </a>
-  <nav class="d-nav" id="d-nav"><!-- PORTAL.boot 构建导航项 --></nav>
-  <div class="d-topbar-right">
-    <span class="d-lamps" id="d-lamps"></span>
-    <span class="d-backend" id="d-backend">后端探测中…</span>
-    <a class="d-linkbtn" href="index.html" title="内部总控导航页">内部导航</a>
+<div class="d-layout">
+  <aside class="d-side">
+    <a class="d-brand" href="#/home">
+      <svg class="d-ico d-ico-lg"><use href="#d-ico-drone"></use></svg>
+      云巡信链 · 无人机综合服务<span class="d-brand-sub">运营商端</span>
+    </a>
+    <nav class="d-sidenav" id="d-nav"><!-- PORTAL.boot 构建导航项 --></nav>
+    <div class="d-side-foot">
+      实名登记 · 飞行申请 · 运行识别<br>
+      <a href="index.html" title="内部总控导航页">内部导航页</a>
+    </div>
+  </aside>
+  <div class="d-body">
+    <header class="d-subbar">
+      <span class="d-lamps" id="d-lamps"></span>
+      <span class="d-backend" id="d-backend">后端探测中…</span>
+    </header>
+    <div class="d-chiprow" id="d-chips"></div>
+    <main class="d-main" id="d-page"></main>
   </div>
-</header>
-<div class="d-chiprow" id="d-chips"></div>
-<main class="d-main" id="d-page"></main>
+</div>
 <div id="toast-box"></div>
 
 <script src="js/data/explain.js"></script>

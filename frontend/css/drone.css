@@ -48,7 +48,6 @@ button { font-family: inherit; }
   --d-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
             "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --d-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
-  --d-topbar-h: 56px;
   --d-subbar-h: 46px;
   --d-side-w: 216px;
   --d-map-grid: #e8ecf3;              /* 退化底图基色 */
@@ -57,16 +56,7 @@ button { font-family: inherit; }
   --d-seal-ink: #c0392b;              /* 证照印章红 */
 }
 
-/* ---------- 2. 壳层：顶部导航布局（运营商端） ---------- */
-.d-topbar {
-  position: sticky; top: 0; z-index: 900;
-  height: var(--d-topbar-h);
-  display: flex; align-items: center; gap: 18px;
-  padding: 0 18px;
-  background: var(--d-panel);
-  border-bottom: 1px solid var(--d-line);
-  box-shadow: var(--d-shadow);
-}
+/* ---------- 2. 壳层：品牌与导航项基样式（四端侧栏布局共用） ---------- */
 .d-brand {
   display: flex; align-items: center; gap: 8px;
   font-weight: 700; font-size: 15px; color: var(--d-ink);
@@ -74,9 +64,8 @@ button { font-family: inherit; }
 }
 .d-brand .d-ico { width: 22px; height: 22px; color: var(--d-brand); }
 .d-brand-sub { font-size: 12px; color: var(--d-ink-3); font-weight: 400; }
-.d-nav { display: flex; gap: 2px; flex: 1; overflow-x: auto; min-width: 0; }
 .d-nav-item {
-  padding: 0 14px; height: var(--d-topbar-h);
+  padding: 0 14px;
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 14px; color: var(--d-ink-2); text-decoration: none;
   border: none; border-bottom: 3px solid transparent;
@@ -84,9 +73,8 @@ button { font-family: inherit; }
 }
 .d-nav-item:hover { color: var(--d-brand); background: var(--d-brand-soft); }
 .d-nav-item.active { color: var(--d-brand); font-weight: 600; border-bottom-color: var(--d-brand); }
-.d-topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 
-/* ---------- 3. 壳层：侧栏布局（管理端/监管端） ---------- */
+/* ---------- 3. 壳层：侧栏布局（四端门户） ---------- */
 .d-layout { display: flex; min-height: 100vh; }
 .d-side {
   width: var(--d-side-w); flex: 0 0 var(--d-side-w);
@@ -330,10 +318,6 @@ button { font-family: inherit; }
   border: 1px solid var(--d-line-strong); border-radius: var(--d-radius-sm);
   font-family: var(--d-mono); font-size: 13px;
   background: var(--d-panel); color: var(--d-ink);
-}
-.d-linkbtn {
-  background: none; border: none; padding: 0;
-  color: var(--d-brand); cursor: pointer; font-size: 12.5px; text-decoration: underline;
 }
 
 /* ---------- 13. 图标（stroke 线性，配 HTML symbol 雪碧图） ---------- */
